@@ -1,12 +1,14 @@
-<html lang="en"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Horner Field">
-<meta name="theme-color" content="#1B3A6B">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Horner Field" />
+<meta name="theme-color" content="#1B3A6B" />
 <title>Horner Plumbing — Field App</title>
-<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'&gt;&lt;rect width='180' height='180' rx='36' fill='%231B3A6B'/&gt;&lt;text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='-apple-system,Helvetica' font-size='80' font-weight='800' fill='white'&gt;HP&lt;/text&gt;&lt;/svg&gt;">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%231B3A6B'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='-apple-system,Helvetica' font-size='80' font-weight='800' fill='white'>HP</text></svg>" />
 <style>
   html, body { margin: 0; padding: 0; height: 100%; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #F0F4FA; }
   #root { height: 100%; }
@@ -18,15 +20,16 @@
   #boot .spin { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spn 0.7s linear infinite; }
   @keyframes spn { to { transform: rotate(360deg); } }
   body.kb-open .fab { display: none !important; }
+  @media (orientation: landscape) { .lsHint { display: none !important; } }
 </style>
 </head>
 <body>
-
-<div id="root"><div style="font-family: system-ui, sans-serif; background: rgb(240, 244, 250); min-height: 100vh; display: flex; flex-direction: column;"><style>input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}</style><header style="background: rgb(27, 58, 107); color: white; height: 56px; display: flex; align-items: center; padding: 0px 16px; gap: 12px; position: sticky; top: 0px; z-index: 100; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 8px;"><button style="background: none; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; color: white; font-size: 22px; cursor: pointer; padding: 4px 6px; line-height: 1;">☰</button><div style="flex: 1 1 0%; display: flex; align-items: center; gap: 8px;"><span style="font-weight: 900; font-size: 17px; letter-spacing: 1px;">HORNER</span><span style="background: rgb(46, 109, 180); border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 1px;">FIELD</span></div><button style="background: none; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; color: rgba(255, 255, 255, 0.7); font-size: 18px; cursor: pointer;">⚙️</button></header><main style="flex: 1 1 0%; padding: 14px 14px 140px; max-width: 860px; margin: 0px auto; width: 100%; box-sizing: border-box;"><div style="position: relative; margin-bottom: 14px;"><input placeholder="Search projects…" value="" style="width: 100%; padding: 9px 10px 9px 40px; border-radius: 8px; border: 1.5px solid rgb(221, 227, 237); font-size: 14px; outline: none; background: white; box-sizing: border-box;"><span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgb(127, 140, 154); pointer-events: none;">🔍</span></div><div style="font-size: 12px; color: rgb(127, 140, 154); margin-bottom: 10px;">3 active projects</div><div style="display: flex; flex-direction: column; gap: 8px;"><button style="background: white; border: 1.5px solid rgb(221, 227, 237); border-radius: 12px; padding: 13px 14px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 3px;"><div style="width: 42px; height: 42px; background: rgb(27, 58, 107); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px;">📁</div><div style="flex: 1 1 0%; min-width: 0px;"><div style="font-weight: 700; color: rgb(44, 62, 80); font-size: 14px;">BRA-25103</div><div style="color: rgb(127, 140, 154); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">CI Design Office &amp; Apts</div></div><div style="background: rgba(27, 58, 107, 0.094); color: rgb(27, 58, 107); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; flex-shrink: 0;">Corey</div></button><button style="background: white; border: 1.5px solid rgb(221, 227, 237); border-radius: 12px; padding: 13px 14px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 3px;"><div style="width: 42px; height: 42px; background: rgb(27, 58, 107); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px;">📁</div><div style="flex: 1 1 0%; min-width: 0px;"><div style="font-weight: 700; color: rgb(44, 62, 80); font-size: 14px;">CAT-25166</div><div style="color: rgb(127, 140, 154); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Dousman Clubhouse</div></div><div style="background: rgba(27, 58, 107, 0.094); color: rgb(27, 58, 107); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; flex-shrink: 0;">Jeremy</div></button><button style="background: white; border: 1.5px solid rgb(221, 227, 237); border-radius: 12px; padding: 13px 14px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 3px;"><div style="width: 42px; height: 42px; background: rgb(27, 58, 107); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px;">📁</div><div style="flex: 1 1 0%; min-width: 0px;"><div style="font-weight: 700; color: rgb(44, 62, 80); font-size: 14px;">CMA-117</div><div style="color: rgb(127, 140, 154); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">The Corliss - Bldg 7L</div></div><div style="background: rgba(27, 58, 107, 0.094); color: rgb(27, 58, 107); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; flex-shrink: 0;">Steve</div></button></div></main><div style="height: 60px;"></div></div></div>
+<div id="boot"><div class="logo">HORNER PLUMBING</div><div class="sub">Loading field app…</div><div class="spin"></div></div>
+<div id="root"></div>
 
 <!-- React 18 + Babel standalone (CDN) -->
-<script crossorigin="" src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin="" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
 <!-- Application code (compiled by Babel at runtime) -->
 <script>
@@ -162,7 +165,7 @@ const FORM_FOLDERS = {
   "ORDER SHEETS": ['2" Water Meter Order Sheet', '3" Water Meter Order Sheet', '4" Water Meter Order Sheet', "Blank Order Sheet", "BLK-GAL-BRA Order Sheet", "Case Quantity Reference Sheet", "CPVC Order Sheet", "Finish Order Sheet", "MISC Order Sheet", "PEX Order Sheet", "Pipe Insulation Order Sheet", "PVC Order Sheet", "SCH80 Corzan Order Sheet", "Shop Order Sheet"],
   "RETURNS": ["BLK-GAL-BRA Return Sheet", "CPVC Return Sheet", "PEX Return Sheet", "Finish Return Sheet", "MISC Return Sheet"],
   "TIME CARDS": ["Commercial Time Card"],
-  "FORMS": ["Site Safety Inspection", "Tool Box Talk", "RFI Form", "RFC Form"]
+  "FORMS": ["Daily Field Report", "Site Safety Inspection", "Tool Box Talk", "RFI Form", "RFC Form"]
 };
 const SAMPLE_PDFS = {
   "PLANS": ["Sheet A1.0 - Site Plan.pdf", "Sheet P1.0 - Ground Floor Plumbing.pdf"],
@@ -6519,7 +6522,7 @@ const TC_PHASES = [{
   name: "Warranty"
 }];
 const ORDER_PHASES = TC_PHASES.filter(p => p.name !== "School");
-const TC_JOB_SUGGESTIONS = ["Out Sick", "Time Off", "Weather"];
+const TC_JOB_SUGGESTIONS = ["School", "Weather", "Out Sick", "Time Off"];
 const LAB_PHASES = [{
   code: 161,
   name: "Demo"
@@ -7783,7 +7786,7 @@ function OrderSheet({
     }));
   })), /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 60
+      height: 30
     }
   }));
 }
@@ -8132,7 +8135,7 @@ function BlankOrderSheet({
     }
   }, "+ Add Row")), /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 60
+      height: 30
     }
   }));
 }
@@ -8421,6 +8424,7 @@ function App() {
     if (n === '3" Water Meter Order Sheet') return "wm3";
     if (n === '4" Water Meter Order Sheet') return "wm4";
     if (n === "Case Quantity Reference Sheet") return "case_qty";
+    if (n === "Daily Field Report") return "dailylog";
     return "ordersheet";
   };
   const Crumb = () => {
@@ -8504,7 +8508,7 @@ function App() {
       }
     }, cr) : null;
   };
-  const formViews = ["ordersheet", "insulation", "cpvc", "pvc", "blank", "shop", "pex", "finish", "misc_os", "sch80", "wm2", "wm3", "wm4", "timecard", "case_qty"];
+  const formViews = ["ordersheet", "insulation", "cpvc", "pvc", "blank", "shop", "pex", "finish", "misc_os", "sch80", "wm2", "wm3", "wm4", "timecard", "case_qty", "dailylog"];
   return /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "system-ui,sans-serif",
@@ -8673,8 +8677,8 @@ function App() {
   })), /*#__PURE__*/React.createElement(Crumb, null), /*#__PURE__*/React.createElement("main", {
     style: {
       flex: 1,
-      padding: formViews.includes(view) ? "0 0 140px" : "14px 14px 140px",
-      maxWidth: 860,
+      padding: formViews.includes(view) ? "0 0 80px" : "14px 14px 80px",
+      maxWidth: view === "timecard" ? "none" : 860,
       margin: "0 auto",
       width: "100%",
       boxSizing: "border-box"
@@ -9062,6 +9066,9 @@ function App() {
     onToast: showToast
   }), view === "case_qty" && activeForm && /*#__PURE__*/React.createElement(CaseQuantityReference, {
     onToast: showToast
+  }), view === "dailylog" && activeForm && /*#__PURE__*/React.createElement(DailyLog, {
+    project: project,
+    onToast: showToast
   }), view === "admin" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 800,
@@ -9128,21 +9135,12 @@ function App() {
         showToast("Job Code and Name required", false);
         return;
       }
-      showToast("Creating job in SharePoint…", true);
-      fetch("https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: newJob.code, name: newJob.name, pm: PMS[newJob.pm]?.name || newJob.pm })
-      })
-      .then(res => {
-        if (res.ok || res.status === 202) {
-          showToast("(" + newJob.code + ") created in SharePoint!", true);
-          setNewJob({ code: "", name: "", pm: "corey" });
-        } else {
-          showToast("SharePoint error — please try again", false);
-        }
-      })
-      .catch(() => showToast("Network error — please try again", false));
+      showToast("(" + newJob.code + ") created in SharePoint.");
+      setNewJob({
+        code: "",
+        name: "",
+        pm: "corey"
+      });
     },
     style: {
       background: NAVY,
@@ -9199,7 +9197,620 @@ function App() {
     }
   }, c.email)))))), /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 60
+      height: 30
+    }
+  }));
+}
+function JobPicker({
+  value,
+  onChange,
+  placeholder
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const ql = q.toLowerCase().trim();
+  const fStaples = ql ? TC_JOB_SUGGESTIONS.filter(s => s.toLowerCase().includes(ql)) : TC_JOB_SUGGESTIONS;
+  const fProjects = ql ? PROJECTS.filter(p => p.code.toLowerCase().includes(ql) || p.name.toLowerCase().includes(ql)) : PROJECTS;
+  const choose = v => {
+    onChange(v);
+    setOpen(false);
+    setQ("");
+  };
+  const exact = ql && !fStaples.some(s => s.toLowerCase() === ql) && !fProjects.some(p => p.code.toLowerCase() === ql);
+  const optStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+    background: "white",
+    border: "none",
+    borderBottom: "1px solid #F0F4FA",
+    padding: "13px 16px",
+    textAlign: "left",
+    fontSize: 15,
+    color: "#2C3E50",
+    cursor: "pointer"
+  };
+  const secStyle = {
+    background: "#F0F4FA",
+    padding: "6px 16px",
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#7F8C9A",
+    letterSpacing: .5,
+    textTransform: "uppercase"
+  };
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(true),
+    style: {
+      ...mini,
+      width: "100%",
+      fontSize: 11,
+      height: 28,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      cursor: "pointer",
+      color: value ? "#2C3E50" : "#7F8C9A",
+      textAlign: "left"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      flex: 1
+    }
+  }, value || placeholder), value ? /*#__PURE__*/React.createElement("span", {
+    onClick: e => {
+      e.stopPropagation();
+      onChange("");
+    },
+    style: {
+      color: "#BDC3C7",
+      fontSize: 14,
+      marginLeft: 4,
+      padding: "0 4px",
+      lineHeight: 1
+    }
+  }, "\xD7") : /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#7F8C9A",
+      fontSize: 9,
+      marginLeft: 4
+    }
+  }, "\u25BE")), open && /*#__PURE__*/React.createElement("div", {
+    onClick: () => setOpen(false),
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 200,
+      background: "rgba(0,0,0,0.4)",
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "center",
+      padding: "40px 14px 14px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      background: "white",
+      borderRadius: 14,
+      width: "100%",
+      maxWidth: 480,
+      maxHeight: "60vh",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 14,
+      borderBottom: "1px solid #EEF0F5",
+      display: "flex",
+      gap: 10,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    autoFocus: true,
+    value: q,
+    onChange: e => setQ(e.target.value),
+    placeholder: "Search jobs or type custom...",
+    style: {
+      flex: 1,
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 8,
+      padding: "10px 12px",
+      fontSize: 16,
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(false),
+    style: {
+      background: "none",
+      border: "none",
+      color: "#7F8C9A",
+      fontSize: 24,
+      cursor: "pointer",
+      padding: "0 6px",
+      lineHeight: 1
+    }
+  }, "\xD7")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      overflowY: "auto"
+    }
+  }, exact && /*#__PURE__*/React.createElement("button", {
+    onClick: () => choose(q.trim()),
+    style: optStyle
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#7F8C9A",
+      fontSize: 12
+    }
+  }, "Use:"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 600
+    }
+  }, q.trim())), fStaples.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: secStyle
+  }, "Staples"), fStaples.map(s => /*#__PURE__*/React.createElement("button", {
+    key: s,
+    onClick: () => choose(s),
+    style: optStyle
+  }, s))), fProjects.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: secStyle
+  }, "Active Projects"), fProjects.map(p => /*#__PURE__*/React.createElement("button", {
+    key: p.code,
+    onClick: () => choose(p.code),
+    style: optStyle
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontWeight: 700,
+      color: "#1B3A6B"
+    }
+  }, p.code), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#7F8C9A",
+      fontSize: 13
+    }
+  }, p.name)))), !exact && fStaples.length === 0 && fProjects.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "24px 16px",
+      color: "#7F8C9A",
+      fontSize: 13,
+      textAlign: "center"
+    }
+  }, "No matches. Type to use a custom value.")))));
+}
+function DailyLog({
+  project,
+  onToast
+}) {
+  const mkRow = () => ({
+    personnel: "",
+    trade: "",
+    desc: "",
+    pct: ""
+  });
+  const isoToday = () => {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  };
+  const [empId, setEmpId] = useState("");
+  const [subcontractor, setSubcontractor] = useState("Horner Plumbing");
+  const [date, setDate] = useState(isoToday());
+  const [absent, setAbsent] = useState("");
+  const [comments, setComments] = useState("");
+  const [rows, setRows] = useState(Array.from({
+    length: 6
+  }, mkRow));
+  const [preview, setPreview] = useState(null);
+  const emp = EMPLOYEES.find(e => e.id === parseInt(empId));
+  const pm = project ? PMS[project.pm] : null;
+  const totalPersonnel = rows.reduce((s, r) => s + (parseInt(r.personnel) || 0), 0);
+  const filled = rows.filter(r => r.personnel || r.trade.trim() || r.desc.trim() || r.pct);
+  const canSub = emp && project?.code && date && filled.length > 0;
+  const upRow = (i, f, v) => setRows(rs => rs.map((r, x) => x === i ? {
+    ...r,
+    [f]: v
+  } : r));
+  const addRow = () => setRows(rs => [...rs, mkRow()]);
+  const delRow = i => setRows(rs => rs.filter((_, x) => x !== i));
+  const fmtDate = iso => iso ? iso.slice(5, 7) + "/" + iso.slice(8, 10) + "/" + iso.slice(2, 4) : "";
+  const submit = () => {
+    if (!canSub) {
+      onToast("Foreman, date, and at least one work entry required", false);
+      return;
+    }
+    const subj = project.code + " Daily Field Report - " + fmtDate(date);
+    let body = "SUBCONTRACTOR DAILY FIELD REPORT\nDate: " + fmtDate(date) + "\nJob: " + project.code + " - " + project.name + "\nSubcontractor: " + subcontractor + "\n\nPERSONNEL / WORK:\n";
+    filled.forEach(r => {
+      body += "  " + (r.personnel || "—") + " pers · " + (r.trade || "—") + " · " + (r.desc || "—") + (r.pct ? " · " + r.pct + "% complete" : "") + "\n";
+    });
+    body += "\nTotal Personnel: " + totalPersonnel + "\nTotal Absent: " + (absent || "0");
+    if (comments.trim()) body += "\n\nComments / Problems:\n" + comments.trim();
+    body += "\n\nSignature/Title: " + emp.name + (emp.phone ? " · " + emp.phone : "") + "\n\nThe undersigned agrees that the work being performed by the Subcontractor is not being delayed for any reason unless specifically mentioned above.\n\nSent from Horner Field App";
+    // BETA recipient: matches order-sheet convention. Production: revisit (likely PM-only or field-reports@).
+    setPreview({
+      to: CONTACTS.purchasing,
+      cc: pm?.email || "",
+      subject: subj,
+      body
+    });
+  };
+  const sendEmail = () => {
+    if (!preview) return;
+    const url = "mailto:" + preview.to + "?cc=" + encodeURIComponent(preview.cc) + "&subject=" + encodeURIComponent(preview.subject) + "&body=" + encodeURIComponent(preview.body);
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => setPreview(null), 150);
+  };
+  const reset = () => {
+    setEmpId("");
+    setSubcontractor("Horner Plumbing");
+    setDate(isoToday());
+    setAbsent("");
+    setComments("");
+    setRows(Array.from({
+      length: 6
+    }, mkRow));
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
+    onClose: () => setPreview(null),
+    onSend: sendEmail
+  })), /*#__PURE__*/React.createElement("button", {
+    className: "fab",
+    onClick: () => window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    }),
+    style: {
+      position: "fixed",
+      bottom: 24,
+      left: 20,
+      zIndex: 90,
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: "50%",
+      width: 60,
+      height: 60,
+      fontSize: 22,
+      cursor: "pointer",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.28)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      lineHeight: 1
+    }
+  }, "\u2191", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5,
+      marginTop: 1
+    }
+  }, "TOP")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderBottom: "1.5px solid #DDE3ED",
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      color: NAVY,
+      fontSize: 14,
+      textAlign: "center",
+      marginBottom: 10
+    }
+  }, "SUBCONTRACTOR DAILY FIELD REPORT"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Foreman / Signer *"), /*#__PURE__*/React.createElement("select", {
+    value: empId,
+    onChange: e => setEmpId(e.target.value),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Select name\u2026"), EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
+    key: e.id,
+    value: e.id
+  }, e.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Date *"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: date,
+    onChange: e => setDate(e.target.value),
+    style: inp
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Job Name"), /*#__PURE__*/React.createElement("input", {
+    value: project ? project.code + " - " + project.name : "",
+    readOnly: true,
+    style: {
+      ...inp,
+      background: "#F0F4FA",
+      color: "#7F8C9A"
+    }
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Subcontractor"), /*#__PURE__*/React.createElement("input", {
+    value: subcontractor,
+    onChange: e => setSubcontractor(e.target.value),
+    style: inp
+  })))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      padding: "10px 14px",
+      background: "white",
+      borderBottom: "1.5px solid #DDE3ED"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    style: {
+      flex: 2,
+      background: canSub ? RED : "#bbb",
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: 12,
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: canSub ? "pointer" : "not-allowed"
+    }
+  }, "\u2709\uFE0F Submit", filled.length > 0 ? " (" + filled.length + " entries)" : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: reset,
+    style: {
+      flex: 1,
+      background: BLUE,
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: 12,
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "Reset")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: NAVY,
+      color: "white",
+      padding: "8px 10px",
+      borderRadius: "12px 12px 0 0",
+      display: "grid",
+      gridTemplateColumns: "54px 110px 1fr 64px 28px",
+      gap: 6,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: .5,
+      textAlign: "center"
+    }
+  }, "# PERS"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: .5
+    }
+  }, "TRADE"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: .5
+    }
+  }, "DESCRIPTION & LOCATION"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: .5,
+      textAlign: "center"
+    }
+  }, "% COMP"), /*#__PURE__*/React.createElement("div", null)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      border: "1.5px solid #DDE3ED",
+      borderTop: "none",
+      borderRadius: "0 0 12px 12px",
+      overflow: "hidden"
+    }
+  }, rows.map((row, i) => {
+    const hasContent = row.personnel || row.trade.trim() || row.desc.trim() || row.pct;
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        display: "grid",
+        gridTemplateColumns: "54px 110px 1fr 64px 28px",
+        gap: 6,
+        alignItems: "center",
+        padding: "6px 10px",
+        borderBottom: i < rows.length - 1 ? "1px solid #F0F4FA" : "none",
+        background: hasContent ? "#FFFBEA" : "white"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "0",
+      value: row.personnel,
+      onChange: e => upRow(i, "personnel", e.target.value),
+      style: {
+        width: "100%",
+        height: 38,
+        padding: "0 4px",
+        borderRadius: 6,
+        border: "1.5px solid #DDE3ED",
+        textAlign: "center",
+        fontSize: 15,
+        fontWeight: hasContent ? 700 : 400,
+        outline: "none",
+        background: "white",
+        MozAppearance: "textfield",
+        appearance: "textfield",
+        boxSizing: "border-box"
+      }
+    }), /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      value: row.trade,
+      onChange: e => upRow(i, "trade", e.target.value),
+      placeholder: "Plumbing\u2026",
+      style: {
+        ...mini,
+        width: "100%",
+        fontSize: 13,
+        padding: "7px 6px"
+      }
+    }), /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      value: row.desc,
+      onChange: e => upRow(i, "desc", e.target.value),
+      placeholder: "Description & location\u2026",
+      style: {
+        ...mini,
+        width: "100%",
+        fontSize: 13,
+        padding: "7px 6px"
+      }
+    }), /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "0",
+      max: "100",
+      value: row.pct,
+      onChange: e => upRow(i, "pct", e.target.value),
+      style: {
+        width: "100%",
+        height: 38,
+        padding: "0 4px",
+        borderRadius: 6,
+        border: "1.5px solid #DDE3ED",
+        textAlign: "center",
+        fontSize: 15,
+        fontWeight: hasContent ? 700 : 400,
+        outline: "none",
+        background: "white",
+        MozAppearance: "textfield",
+        appearance: "textfield",
+        boxSizing: "border-box"
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: () => delRow(i),
+      style: {
+        background: "none",
+        border: "none",
+        color: "#BDC3C7",
+        cursor: "pointer",
+        fontSize: 18,
+        padding: 0,
+        lineHeight: 1
+      }
+    }, "\xD7"));
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: addRow,
+    style: {
+      marginTop: 10,
+      background: "white",
+      border: "1.5px dashed " + BLUE,
+      color: BLUE,
+      borderRadius: 10,
+      padding: "11px",
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "+ Add Row"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14,
+      background: "white",
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 12,
+      padding: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 10,
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Total Personnel"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#E3F0FF",
+      borderRadius: 8,
+      padding: "9px 4px",
+      fontWeight: 900,
+      color: NAVY,
+      fontSize: 20
+    }
+  }, totalPersonnel)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Total Absent"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: "0",
+    value: absent,
+    onChange: e => setAbsent(e.target.value),
+    style: {
+      ...inp,
+      textAlign: "center",
+      fontWeight: 700,
+      fontSize: 18
+    }
+  }))), /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Comments / Problems"), /*#__PURE__*/React.createElement("textarea", {
+    value: comments,
+    onChange: e => setComments(e.target.value),
+    rows: 4,
+    placeholder: "Any delays, issues, or notes\u2026",
+    style: {
+      ...inp,
+      resize: "vertical",
+      fontFamily: "inherit",
+      minHeight: 80
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12,
+      fontSize: 11,
+      color: "#7F8C9A",
+      background: "#F7F9FC",
+      border: "1px solid #EEF0F5",
+      borderRadius: 8,
+      padding: "8px 12px",
+      lineHeight: 1.5,
+      fontStyle: "italic"
+    }
+  }, "The undersigned agrees that the work being performed by the Subcontractor is not being delayed for any reason unless specifically mentioned above.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 30
     }
   }));
 }
@@ -9315,42 +9926,19 @@ function TimeCard({
       length: NL
     }, mkL));
   };
-  const PhHdr = ({
-    p
-  }) => /*#__PURE__*/React.createElement("th", {
-    style: {
-      ...th0,
-      padding: "5px 2px",
-      minWidth: 38,
-      maxWidth: 44
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 800,
-      fontSize: 11,
-      color: NAVY
-    }
-  }, p.code), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 8,
-      color: "#7F8C9A",
-      lineHeight: 1.2,
-      marginTop: 2,
-      wordBreak: "break-word"
-    }
-  }, p.name));
   return /*#__PURE__*/React.createElement("div", null, preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
     onClose: () => setPreview(null),
     onSend: sendEmail
-  })), /*#__PURE__*/React.createElement("datalist", {
-    id: "job-list"
-  }, PROJECTS.map(p => /*#__PURE__*/React.createElement("option", {
-    key: p.code,
-    value: p.code
-  }, p.code, " - ", p.name)), TC_JOB_SUGGESTIONS.map(s => /*#__PURE__*/React.createElement("option", {
-    key: s,
-    value: s
-  }, s))), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "lsHint",
+    style: {
+      fontSize: 11,
+      color: "#7F8C9A",
+      marginBottom: 8,
+      padding: "0 4px",
+      fontStyle: "italic"
+    }
+  }, "\uD83D\uDCA1 Best viewed in landscape orientation"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 12,
@@ -9448,9 +10036,14 @@ function TimeCard({
       fontWeight: 700,
       cursor: "pointer"
     }
-  }, "Reset")), /*#__PURE__*/React.createElement(Sec, {
-    title: "Phase",
-    color: NAVY
+  }, "Reset")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderRadius: 12,
+      border: "1.5px solid #DDE3ED",
+      overflow: "hidden",
+      marginBottom: 12
+    }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       overflowX: "auto"
@@ -9458,32 +10051,72 @@ function TimeCard({
   }, /*#__PURE__*/React.createElement("table", {
     style: {
       borderCollapse: "collapse",
-      width: "100%",
-      minWidth: 780
+      width: "100%"
     }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
     style: {
-      background: "#F0F4FA"
-    }
-  }, /*#__PURE__*/React.createElement("th", {
-    style: {
-      ...th0,
-      width: 115,
-      minWidth: 115,
+      background: NAVY,
+      color: "white",
+      fontWeight: 700,
+      fontSize: 13,
+      padding: "10px 14px",
       textAlign: "left",
-      paddingLeft: 8
+      width: 100,
+      minWidth: 100
     }
-  }, "Job / Date"), TC_PHASES.map(p => /*#__PURE__*/React.createElement(PhHdr, {
+  }, "Phase"), TC_PHASES.map(p => /*#__PURE__*/React.createElement("th", {
     key: p.code,
-    p: p
-  })), /*#__PURE__*/React.createElement("th", {
     style: {
-      ...th0,
+      background: NAVY,
+      color: "white",
+      fontWeight: 800,
+      fontSize: 13,
+      padding: "10px 0",
+      textAlign: "center",
+      minWidth: 38,
+      borderLeft: "1px solid rgba(255,255,255,0.15)"
+    }
+  }, p.code)), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    style: {
       background: "#E3F0FF",
       color: NAVY,
-      minWidth: 44
+      fontWeight: 800,
+      fontSize: 11,
+      minWidth: 48,
+      textAlign: "center",
+      padding: "7px 4px",
+      borderBottom: "2px solid #DDE3ED"
     }
-  }, "Total"))), /*#__PURE__*/React.createElement("tbody", null, rows.map((row, i) => /*#__PURE__*/React.createElement("tr", {
+  }, "Total")), /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...th0,
+      textAlign: "left",
+      paddingLeft: 8,
+      background: "#F0F4FA",
+      borderBottom: "2px solid #DDE3ED"
+    }
+  }, "Job / Date"), TC_PHASES.map(p => /*#__PURE__*/React.createElement("th", {
+    key: p.code,
+    style: {
+      background: "#F0F4FA",
+      padding: "6px 1px",
+      height: 90,
+      verticalAlign: "middle",
+      textAlign: "center",
+      borderBottom: "2px solid #DDE3ED",
+      borderRight: "1px solid #E0E5ED"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      writingMode: "vertical-lr",
+      fontSize: 10,
+      fontWeight: 600,
+      color: "#5D6D7E",
+      margin: "0 auto",
+      lineHeight: 1.15
+    }
+  }, p.name))))), /*#__PURE__*/React.createElement("tbody", null, rows.map((row, i) => /*#__PURE__*/React.createElement("tr", {
     key: i,
     style: {
       borderBottom: "1px solid #F0F4FA"
@@ -9495,43 +10128,13 @@ function TimeCard({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      position: "relative",
       marginBottom: 3
     }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "text",
-    list: "job-list",
+  }, /*#__PURE__*/React.createElement(JobPicker, {
     value: row.job,
-    onChange: e => upR(i, "job", e.target.value),
-    placeholder: "Job # (or type)",
-    style: {
-      ...mini,
-      width: "100%",
-      fontSize: 11,
-      paddingRight: row.job ? 22 : 5
-    }
-  }), row.job && /*#__PURE__*/React.createElement("button", {
-    onClick: () => upR(i, "job", ""),
-    style: {
-      position: "absolute",
-      right: 3,
-      top: "50%",
-      transform: "translateY(-50%)",
-      background: "none",
-      border: "none",
-      color: "#BDC3C7",
-      cursor: "pointer",
-      fontSize: 16,
-      lineHeight: 1,
-      padding: "0 4px",
-      width: 18,
-      height: 18,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    },
-    "aria-label": "Clear job"
-  }, "\xD7")), /*#__PURE__*/React.createElement(DateCell, {
+    onChange: v => upR(i, "job", v),
+    placeholder: "Job #"
+  })), /*#__PURE__*/React.createElement(DateCell, {
     value: row.date,
     onChange: v => upR(i, "date", v)
   })), TC_PHASES.map(p => /*#__PURE__*/React.createElement("td", {
@@ -9557,9 +10160,15 @@ function TimeCard({
       background: "#F0F4FA",
       fontSize: 12
     }
-  }, rSum(row).toFixed(1)))))))), /*#__PURE__*/React.createElement(Sec, {
-    title: "Laborer Phases",
-    color: "#5D6D7E"
+  }, rSum(row).toFixed(1)))))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderRadius: 12,
+      border: "1.5px solid #DDE3ED",
+      overflow: "hidden",
+      marginBottom: 12,
+      maxWidth: 560
+    }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       overflowX: "auto"
@@ -9567,32 +10176,72 @@ function TimeCard({
   }, /*#__PURE__*/React.createElement("table", {
     style: {
       borderCollapse: "collapse",
-      width: "100%",
-      minWidth: 420
+      width: "100%"
     }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
     style: {
-      background: "#F0F4FA"
-    }
-  }, /*#__PURE__*/React.createElement("th", {
-    style: {
-      ...th0,
-      width: 115,
-      minWidth: 115,
+      background: "#5D6D7E",
+      color: "white",
+      fontWeight: 700,
+      fontSize: 13,
+      padding: "10px 14px",
       textAlign: "left",
-      paddingLeft: 8
+      width: 130,
+      minWidth: 130
     }
-  }, "Job / Date"), LAB_PHASES.map(p => /*#__PURE__*/React.createElement(PhHdr, {
+  }, "Laborer Phases"), LAB_PHASES.map(p => /*#__PURE__*/React.createElement("th", {
     key: p.code,
-    p: p
-  })), /*#__PURE__*/React.createElement("th", {
     style: {
-      ...th0,
+      background: "#5D6D7E",
+      color: "white",
+      fontWeight: 800,
+      fontSize: 13,
+      padding: "10px 0",
+      textAlign: "center",
+      minWidth: 50,
+      borderLeft: "1px solid rgba(255,255,255,0.15)"
+    }
+  }, p.code)), /*#__PURE__*/React.createElement("th", {
+    rowSpan: 2,
+    style: {
       background: "#E3F0FF",
       color: NAVY,
-      minWidth: 44
+      fontWeight: 800,
+      fontSize: 11,
+      minWidth: 48,
+      textAlign: "center",
+      padding: "7px 4px",
+      borderBottom: "2px solid #DDE3ED"
     }
-  }, "Total"))), /*#__PURE__*/React.createElement("tbody", null, labs.map((row, i) => /*#__PURE__*/React.createElement("tr", {
+  }, "Total")), /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...th0,
+      textAlign: "left",
+      paddingLeft: 8,
+      background: "#F0F4FA",
+      borderBottom: "2px solid #DDE3ED"
+    }
+  }, "Job / Date"), LAB_PHASES.map(p => /*#__PURE__*/React.createElement("th", {
+    key: p.code,
+    style: {
+      background: "#F0F4FA",
+      padding: "6px 1px",
+      height: 90,
+      verticalAlign: "middle",
+      textAlign: "center",
+      borderBottom: "2px solid #DDE3ED",
+      borderRight: "1px solid #E0E5ED"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      writingMode: "vertical-lr",
+      fontSize: 10,
+      fontWeight: 600,
+      color: "#5D6D7E",
+      margin: "0 auto",
+      lineHeight: 1.15
+    }
+  }, p.name))))), /*#__PURE__*/React.createElement("tbody", null, labs.map((row, i) => /*#__PURE__*/React.createElement("tr", {
     key: i,
     style: {
       borderBottom: "1px solid #F0F4FA"
@@ -9604,43 +10253,13 @@ function TimeCard({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      position: "relative",
       marginBottom: 3
     }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "text",
-    list: "job-list",
+  }, /*#__PURE__*/React.createElement(JobPicker, {
     value: row.job,
-    onChange: e => upL(i, "job", e.target.value),
-    placeholder: "Job # (or type)",
-    style: {
-      ...mini,
-      width: "100%",
-      fontSize: 11,
-      paddingRight: row.job ? 22 : 5
-    }
-  }), row.job && /*#__PURE__*/React.createElement("button", {
-    onClick: () => upL(i, "job", ""),
-    style: {
-      position: "absolute",
-      right: 3,
-      top: "50%",
-      transform: "translateY(-50%)",
-      background: "none",
-      border: "none",
-      color: "#BDC3C7",
-      cursor: "pointer",
-      fontSize: 16,
-      lineHeight: 1,
-      padding: "0 4px",
-      width: 18,
-      height: 18,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    },
-    "aria-label": "Clear job"
-  }, "\xD7")), /*#__PURE__*/React.createElement(DateCell, {
+    onChange: v => upL(i, "job", v),
+    placeholder: "Job #"
+  })), /*#__PURE__*/React.createElement(DateCell, {
     value: row.date,
     onChange: v => upL(i, "date", v)
   })), LAB_PHASES.map(p => /*#__PURE__*/React.createElement("td", {
@@ -9691,11 +10310,9 @@ function Sec({
     }
   }, title), children);
 }
-
-
 // Mount and dismiss splash
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(/*#__PURE__*/React.createElement(App, null));
+root.render(React.createElement(App));
 requestAnimationFrame(() => {
   const b = document.getElementById("boot");
   if (b) {
@@ -9732,6 +10349,5 @@ requestAnimationFrame(() => {
   }
 })();
 </script>
-
-
-</body></html>
+</body>
+</html>
