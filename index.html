@@ -9129,7 +9129,7 @@ function App() {
         return;
       }
       showToast("Creating job in SharePoint…", true);
-      fetch("https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1", {
+      fetch("https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: newJob.code, name: newJob.name, pm: PMS[newJob.pm]?.name || newJob.pm })
