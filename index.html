@@ -36,7 +36,8 @@
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 const {
   useState,
-  useMemo
+  useMemo,
+  useEffect
 } = React;
 const NAVY = "#1B3A6B",
   BLUE = "#2E6DB4",
@@ -80,6 +81,10 @@ const PMS = {
   steve: {
     name: "Steve",
     email: "steve@hornerplumbing.com"
+  },
+  unassigned: {
+    name: "Unassigned",
+    email: ""
   }
 };
 const CONTACTS = {
@@ -87,7 +92,7 @@ const CONTACTS = {
   timecards: "timecards@hornerplumbing.com",
   reception: "reception@hornerplumbing.com"
 };
-const PROJECTS = [{
+const FALLBACK_PROJECTS = [{
   code: "BRA-25103",
   name: "CI Design Office & Apts",
   pm: "corey"
@@ -100,6 +105,9 @@ const PROJECTS = [{
   name: "The Corliss - Bldg 7L",
   pm: "steve"
 }];
+const PROJECTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aa5cb91c782f4b8b89e06f3441595c68/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=RwoZXivyVk7EY3kRWvPdQumUigq_hsyDWIAvcP4ZsY4";
+const CREATE_JOB_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E";
+const PROJECTS_CACHE_KEY = "horner.projects.cache.v1";
 const FOLDERS = [{
   name: "FORMS",
   icon: "📋",
@@ -8394,6 +8402,42 @@ function App() {
     pm: "corey"
   });
   const [toast, setToast] = useState(null);
+  // Projects state — start with cached list if available, otherwise the hardcoded fallback.
+  // Fetched fresh from SharePoint (via Power Automate) on mount.
+  const [projects, setProjects] = useState(() => {
+    try {
+      const cached = localStorage.getItem(PROJECTS_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return FALLBACK_PROJECTS;
+  });
+  useEffect(() => {
+    let cancelled = false;
+    fetch(PROJECTS_FETCH_URL, { method: "POST" })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (cancelled) return;
+        // Power Automate returns the Select output array directly.
+        const list = Array.isArray(data) ? data : (data && Array.isArray(data.body) ? data.body : null);
+        if (!list) return;
+        const normalized = list
+          .filter(p => p && p.code && p.name)
+          .map(p => ({
+            code: p.code,
+            name: p.name,
+            pm: p.pm && PMS[p.pm] ? p.pm : "unassigned"
+          }))
+          .sort((a, b) => a.code.localeCompare(b.code));
+        if (normalized.length === 0) return;
+        setProjects(normalized);
+        try { localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(normalized)); } catch (e) {}
+      })
+      .catch(() => { /* silent — keep cached/fallback list */ });
+    return () => { cancelled = true; };
+  }, []);
   const showToast = (msg, ok = true) => {
     setToast({
       msg,
@@ -8408,7 +8452,7 @@ function App() {
     if (form !== undefined) setActiveForm(form);
     setSidebar(false);
   };
-  const filtered = useMemo(() => PROJECTS.filter(p => (p.code + " " + p.name).toLowerCase().includes(search.toLowerCase())), [search]);
+  const filtered = useMemo(() => projects.filter(p => (p.code + " " + p.name).toLowerCase().includes(search.toLowerCase())), [search, projects]);
   const getFormView = n => {
     if (n === "Commercial Time Card") return "timecard";
     if (n === "Pipe Insulation Order Sheet") return "insulation";
@@ -8999,6 +9043,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(TimeCard, {
     project: project,
+    projects: projects,
     onToast: showToast
   })), view === "ordersheet" && activeForm && /*#__PURE__*/React.createElement(OrderSheet, {
     project: project,
@@ -9135,12 +9180,41 @@ function App() {
         showToast("Job Code and Name required", false);
         return;
       }
-      showToast("(" + newJob.code + ") created in SharePoint.");
-      setNewJob({
-        code: "",
-        name: "",
-        pm: "corey"
-      });
+      showToast("Creating job in SharePoint…", true);
+      fetch(CREATE_JOB_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: newJob.code,
+          name: newJob.name,
+          pm: PMS[newJob.pm]?.name || newJob.pm
+        })
+      })
+        .then(r => r.ok ? r : Promise.reject(r.status))
+        .then(() => {
+          showToast("(" + newJob.code + ") created in SharePoint!", true);
+          // Optimistically add to local list so it shows up immediately;
+          // next reload will pick it up from SharePoint via the sync.
+          const added = {
+            code: newJob.code,
+            name: newJob.name,
+            pm: newJob.pm
+          };
+          setProjects(prev => {
+            if (prev.some(p => p.code === added.code)) return prev;
+            const next = [...prev, added].sort((a, b) => a.code.localeCompare(b.code));
+            try { localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(next)); } catch (e) {}
+            return next;
+          });
+          setNewJob({
+            code: "",
+            name: "",
+            pm: "corey"
+          });
+        })
+        .catch(() => {
+          showToast("SharePoint error — please try again", false);
+        });
     },
     style: {
       background: NAVY,
@@ -9204,13 +9278,15 @@ function App() {
 function JobPicker({
   value,
   onChange,
-  placeholder
+  placeholder,
+  projects
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const ql = q.toLowerCase().trim();
+  const list = projects || FALLBACK_PROJECTS;
   const fStaples = ql ? TC_JOB_SUGGESTIONS.filter(s => s.toLowerCase().includes(ql)) : TC_JOB_SUGGESTIONS;
-  const fProjects = ql ? PROJECTS.filter(p => p.code.toLowerCase().includes(ql) || p.name.toLowerCase().includes(ql)) : PROJECTS;
+  const fProjects = ql ? list.filter(p => p.code.toLowerCase().includes(ql) || p.name.toLowerCase().includes(ql)) : list;
   const choose = v => {
     onChange(v);
     setOpen(false);
@@ -9816,6 +9892,7 @@ function DailyLog({
 }
 function TimeCard({
   project,
+  projects,
   onToast
 }) {
   const NR = 8,
@@ -10133,7 +10210,8 @@ function TimeCard({
   }, /*#__PURE__*/React.createElement(JobPicker, {
     value: row.job,
     onChange: v => upR(i, "job", v),
-    placeholder: "Job #"
+    placeholder: "Job #",
+    projects: projects
   })), /*#__PURE__*/React.createElement(DateCell, {
     value: row.date,
     onChange: v => upR(i, "date", v)
@@ -10258,7 +10336,8 @@ function TimeCard({
   }, /*#__PURE__*/React.createElement(JobPicker, {
     value: row.job,
     onChange: v => upL(i, "job", v),
-    placeholder: "Job #"
+    placeholder: "Job #",
+    projects: projects
   })), /*#__PURE__*/React.createElement(DateCell, {
     value: row.date,
     onChange: v => upL(i, "date", v)
