@@ -107,7 +107,7 @@ const FALLBACK_PROJECTS = [{
 }];
 const PROJECTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aa5cb91c782f4b8b89e06f3441595c68/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=RwoZXivyVk7EY3kRWvPdQumUigq_hsyDWIAvcP4ZsY4";
 const CREATE_JOB_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E";
-const UPDATE_PM_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4f704ea9da2f4eeda6518a676ac2bb0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gS73UO7R4CbO13dGN1sKBICk3bog6_ZCDQjThKPHDDY";
+const UPDATE_PM_URL = "PASTE_UPDATE_PM_FLOW_URL_HERE";
 const PROJECTS_CACHE_KEY = "horner.projects.cache.v1";
 const FOLDERS = [{
   name: "FORMS",
@@ -8440,6 +8440,9 @@ function App() {
       .catch(() => { /* silent — keep cached/fallback list */ });
     return () => { cancelled = true; };
   }, []);
+  useEffect(() => {
+    if (view === "admin") setEditPm({ code: "", pm: "" });
+  }, [view]);
   const showToast = (msg, ok = true) => {
     setToast({
       msg,
@@ -9287,7 +9290,7 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: editPm.code,
+          path: "(" + proj.code + ") " + proj.name,
           pm: newPmName
         })
       })
