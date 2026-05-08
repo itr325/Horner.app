@@ -44,31 +44,62 @@ const NAVY = "#1B3A6B",
   RED = "#C0392B",
   GREEN = "#27AE60",
   ORANGE = "#E67E22";
-const EMPLOYEES = [{
-  id: 1,
-  name: "Brad Perkins",
-  phone: "(414) 810-8269"
-}, {
-  id: 2,
-  name: "Justin McClelland",
-  phone: "(262) 823-9703"
-}, {
-  id: 3,
-  name: "Aaron Cramer",
-  phone: "(262) 555-0101"
-}, {
-  id: 4,
-  name: "Jeff Smith",
-  phone: "(414) 555-0202"
-}, {
-  id: 5,
-  name: "Mike Johnson",
-  phone: "(262) 555-0303"
-}, {
-  id: 6,
-  name: "Tom Wilson",
-  phone: "(414) 555-0404"
-}];
+// Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
+// Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
+// FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
+const EMPLOYEES = [
+  {id: 1, name: "Zachary Adams", position: "Laborer"},
+  {id: 2, name: "Mark Aviles", position: "3rd Year"},
+  {id: 3, name: "Austin Banks", position: "2nd Year"},
+  {id: 4, name: "David Bansemer", position: "4th Year"},
+  {id: 5, name: "William Barth", phone: "(414) 810-5027", email: "WBarth@hornerplumbing.com", position: "Journeymen"},
+  {id: 6, name: "Steven Castro", position: "4th Year"},
+  {id: 7, name: "Liam Christophersen", position: "Laborer"},
+  {id: 8, name: "Kevin Contreras", position: "Laborer"},
+  {id: 9, name: "Malachi Cooley", position: "1st Year"},
+  {id: 10, name: "Brandon Deden", position: "Journeymen"},
+  {id: 11, name: "Gage Everson", position: "Laborer"},
+  {id: 12, name: "Isaiah Garries-Gutierrez", position: "2nd Year"},
+  {id: 13, name: "Blake Gerrits", position: "Laborer"},
+  {id: 14, name: "Emanuel Gonzalez", position: "Laborer"},
+  {id: 15, name: "Andrew Grover", phone: "(262) 271-3759", email: "AGrover@hornerplumbing.com", position: "Foreman"},
+  {id: 16, name: "Adam Hellrung", phone: "(414) 406-2693", email: "AHellrung@hornerplumbing.com", position: "Foreman"},
+  {id: 17, name: "Bradley Jeske", phone: "(414) 406-2729", email: "BJeske@hornerplumbing.com", position: "Foreman"},
+  {id: 18, name: "Mitch Jurecki", phone: "(414) 406-2706", email: "MJurecki@hornerplumbing.com", position: "Foreman"},
+  {id: 19, name: "Nicholas Kirby", position: "4th Year"},
+  {id: 20, name: "Aaron Knier", phone: "(414) 810-5042", email: "AKnier@hornerplumbing.com", position: "Journeymen"},
+  {id: 21, name: "Josh Krushas", position: "Laborer"},
+  {id: 22, name: "Jason Laatsch", position: "2nd Year"},
+  {id: 23, name: "Edwin Mamahua", position: "Journeymen"},
+  {id: 24, name: "Erik Mamahua", position: "Laborer"},
+  {id: 25, name: "Justin McClelland", phone: "(414) 810-8269", email: "JMcClelland@hornerplumbing.com", position: "Foreman"},
+  {id: 26, name: "Ryan McCormick", position: "3rd Year"},
+  {id: 27, name: "Derek Meier", position: "Laborer"},
+  {id: 28, name: "Jared Motiff", position: "4th Year"},
+  {id: 29, name: "Justin Nick", phone: "(414) 788-1545", email: "JNick@hornerplumbing.com", position: "Foreman"},
+  {id: 30, name: "Scott Olley", phone: "(262) 370-5265", email: "SOlley@hornerplumbing.com", position: "Foreman"},
+  {id: 31, name: "Joshua Olsen", phone: "(414) 416-8708", email: "JOlsen@hornerplumbing.com", position: "Journeymen"},
+  {id: 32, name: "Bradley Perkins", phone: "(262) 822-9703", email: "BPerkins@hornerplumbing.com", position: "Journeymen"},
+  {id: 33, name: "Parker Peterson", email: "PPeterson@hornerplumbing.com", position: "4th Year"},
+  {id: 34, name: "Cyrus Quinton", phone: "(414) 810-5009", email: "CQuinton@hornerplumbing.com", position: "Journeymen"},
+  {id: 35, name: "Joshua Ranic", position: "1st Year"},
+  {id: 36, name: "Kristopher (Kris) Riese", phone: "(414) 406-2694", email: "KRiese@hornerplumbing.com", position: "Foreman"},
+  {id: 37, name: "Connor Robinson", position: "Pre-Apprentice"},
+  {id: 38, name: "Bret Rockenbach", phone: "(414) 810-5065", email: "BRockenbach@hornerplumbing.com", position: "Journeymen"},
+  {id: 39, name: "Jacob Roso", position: "Journeymen"},
+  {id: 40, name: "Kory Schlender", phone: "(262) 894-1493", email: "KSchlender@hornerplumbing.com", position: "4th Year"},
+  {id: 41, name: "Nicholas Schulz", phone: "(414) 406-2692", email: "NSchulz@hornerplumbing.com", position: "Journeymen"},
+  {id: 42, name: "Alex Sterlavage", position: "2nd Year"},
+  {id: 43, name: "Austin Stoltenburg", position: "1st Year"},
+  {id: 44, name: "Owen Wozniak", phone: "(414) 519-1323", email: "OWozniak@hornerplumbing.com", position: "Journeymen"},
+  {id: 45, name: "Lewis Wozniak", position: "Laborer"},
+  {id: 46, name: "Joseph Zaczek", phone: "(414) 659-9102", email: "JZaczek@hornerplumbing.com", position: "Foreman"},
+  {id: 47, name: "Joseph Zawikowski", phone: "(262) 364-8581", email: "JZawikowski@hornerplumbing.com", position: "Journeymen"}
+];
+// BILLING_EMPLOYEES = subset who fill out billing-grade forms (T&M, order sheets, blank order sheet, daily log).
+// TimeCard uses full EMPLOYEES because apprentices and laborers track time too.
+const BILLING_POSITIONS = ["Foreman", "Journeymen", "4th Year"];
+const BILLING_EMPLOYEES = EMPLOYEES.filter(e => BILLING_POSITIONS.includes(e.position));
 const PMS = {
   corey: {
     name: "Corey",
@@ -96,9 +127,9 @@ const CONTACTS = {
   returns: "returns@hornerplumbing.com",
   craig: "cscharmer@hornerplumbing.com"
 };
-// FORM ROUTING REFERENCE (Patrick, 2026-05-07):
+// FORM ROUTING REFERENCE (Patrick, last updated 2026-05-08):
 //   dailyLog: TO project's PM only, no CC
-//   tmLog: TO Corey (cmcintyre), CC Craig (cscharmer) — always
+//   tmLog: TO Craig (cscharmer), CC the foreman who filled it out (only if they have a Horner email — silent fallback if not)
 //   valveTagList: TO project's PM, CC commercialadmin
 //   orderSheets: TO purchasing, CC project's PM (existing)
 //   timeCard: TO timecards, CC project's PM (existing)
@@ -185,7 +216,7 @@ const FOLDERS = [{
 const FORM_FOLDERS = {
   "ORDER SHEETS": ['2" Water Meter Order Sheet', '3" Water Meter Order Sheet', '4" Water Meter Order Sheet', "Blank Order Sheet", "BLK-GAL-BRA Order Sheet", "Case Quantity Reference Sheet", "CPVC Order Sheet", "Finish Order Sheet", "MISC Order Sheet", "PEX Order Sheet", "Pipe Insulation Order Sheet", "PVC Order Sheet", "SCH80 Corzan Order Sheet", "Shop Order Sheet"],
   "RETURNS": ["BLK-GAL-BRA Return Sheet", "CPVC Return Sheet", "PEX Return Sheet", "Finish Return Sheet", "MISC Return Sheet"],
-  "TIME CARDS": ["Commercial Time Card"],
+  "TIME CARDS": ["Commercial Time Card", "T&M Log"],
   "FORMS": ["Daily Field Report", "Site Safety Inspection", "Tool Box Talk", "RFI Form", "RFC Form"]
 };
 const SAMPLE_PDFS = {
@@ -7433,7 +7464,7 @@ function OrderSheet({
     style: inp
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, "Select name\u2026"), EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
+  }, "Select name\u2026"), BILLING_EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
     key: e.id,
     value: e.id
   }, e.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -7954,7 +7985,7 @@ function BlankOrderSheet({
     style: inp
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, "Select name\u2026"), EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
+  }, "Select name\u2026"), BILLING_EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
     key: e.id,
     value: e.id
   }, e.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -8486,6 +8517,7 @@ function App() {
     if (n === '4" Water Meter Order Sheet') return "wm4";
     if (n === "Case Quantity Reference Sheet") return "case_qty";
     if (n === "Daily Field Report") return "dailylog";
+    if (n === "T&M Log") return "tmlog";
     return "ordersheet";
   };
   const Crumb = () => {
@@ -8569,7 +8601,7 @@ function App() {
       }
     }, cr) : null;
   };
-  const formViews = ["ordersheet", "insulation", "cpvc", "pvc", "blank", "shop", "pex", "finish", "misc_os", "sch80", "wm2", "wm3", "wm4", "timecard", "case_qty", "dailylog"];
+  const formViews = ["ordersheet", "insulation", "cpvc", "pvc", "blank", "shop", "pex", "finish", "misc_os", "sch80", "wm2", "wm3", "wm4", "timecard", "case_qty", "dailylog", "tmlog"];
   return /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "system-ui,sans-serif",
@@ -9129,6 +9161,9 @@ function App() {
   }), view === "case_qty" && activeForm && /*#__PURE__*/React.createElement(CaseQuantityReference, {
     onToast: showToast
   }), view === "dailylog" && activeForm && /*#__PURE__*/React.createElement(DailyLog, {
+    project: project,
+    onToast: showToast
+  }), view === "tmlog" && activeForm && /*#__PURE__*/React.createElement(TMLog, {
     project: project,
     onToast: showToast
   }), view === "admin" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
@@ -9722,7 +9757,7 @@ function DailyLog({
     style: inp
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, "Select name\u2026"), EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
+  }, "Select name\u2026"), BILLING_EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
     key: e.id,
     value: e.id
   }, e.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -10001,6 +10036,500 @@ function DailyLog({
       fontStyle: "italic"
     }
   }, "The undersigned agrees that the work being performed by the Subcontractor is not being delayed for any reason unless specifically mentioned above.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 30
+    }
+  }));
+}
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+function TMLog({
+  project,
+  onToast
+}) {
+  const mkRow = () => ({
+    start: "",
+    end: "",
+    totalHrs: "",
+    date: "",
+    material: "",
+    work: "",
+    _lastComputed: ""
+  });
+  const isoToday = () => {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  };
+  // Parse "8:00am", "8am", "8", "16:30", "12pm", "12am", etc. -> minutes since midnight, or null
+  const parseTime = s => {
+    if (!s) return null;
+    let str = String(s).toLowerCase().replace(/\s+/g, "").trim();
+    let isPM = false,
+      isAM = false;
+    if (str.endsWith("pm")) {
+      isPM = true;
+      str = str.slice(0, -2);
+    } else if (str.endsWith("am")) {
+      isAM = true;
+      str = str.slice(0, -2);
+    } else if (str.endsWith("p")) {
+      isPM = true;
+      str = str.slice(0, -1);
+    } else if (str.endsWith("a")) {
+      isAM = true;
+      str = str.slice(0, -1);
+    }
+    let h, m;
+    if (str.includes(":")) {
+      const parts = str.split(":");
+      h = parseInt(parts[0], 10);
+      m = parseInt(parts[1], 10);
+    } else {
+      h = parseInt(str, 10);
+      m = 0;
+    }
+    if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+    if (isPM && h < 12) h += 12;
+    if (isAM && h === 12) h = 0;
+    return h * 60 + m;
+  };
+  const calcHours = (start, end) => {
+    const s = parseTime(start),
+      e = parseTime(end);
+    if (s == null || e == null) return "";
+    let diff = e - s;
+    if (diff < 0) diff += 24 * 60;
+    let hrs = diff / 60;
+    return hrs.toFixed(2).replace(/\.?0+$/, "");
+  };
+  const [empId, setEmpId] = useState("");
+  const [headerDate, setHeaderDate] = useState(isoToday());
+  const [notes, setNotes] = useState("");
+  const [rows, setRows] = useState(Array.from({
+    length: 8
+  }, mkRow));
+  const [preview, setPreview] = useState(null);
+  const emp = EMPLOYEES.find(e => e.id === parseInt(empId));
+  const filled = rows.filter(r => r.start.trim() || r.end.trim() || r.totalHrs.trim() || r.date || r.material.trim() || r.work.trim());
+  const totalHrsSum = filled.reduce((sum, r) => {
+    const v = parseFloat(r.totalHrs);
+    return isNaN(v) ? sum : sum + v;
+  }, 0);
+  const canSub = emp && project?.code && filled.length > 0;
+  const upRow = (i, f, v) => setRows(rs => rs.map((r, x) => {
+    if (x !== i) return r;
+    const updated = {
+      ...r,
+      [f]: v
+    };
+    if (f === "start" || f === "end") {
+      const computed = calcHours(updated.start, updated.end);
+      // Auto-fill totalHrs if currently empty, or matches the previously auto-computed value (so user manual edits stick)
+      if (!r.totalHrs || r.totalHrs === r._lastComputed) {
+        updated.totalHrs = computed;
+      }
+      updated._lastComputed = computed;
+      // Auto-fill date from previous row when entering a start time on a row with blank date
+      if (f === "start" && v && !updated.date && i > 0 && rs[i - 1].date) {
+        updated.date = rs[i - 1].date;
+      }
+    }
+    return updated;
+  }));
+  const addRow = () => setRows(rs => [...rs, mkRow()]);
+  const delRow = i => setRows(rs => rs.filter((_, x) => x !== i));
+  const fmtDate = iso => iso ? iso.slice(5, 7) + "/" + iso.slice(8, 10) + "/" + iso.slice(2, 4) : "";
+  const submit = () => {
+    if (!canSub) {
+      onToast("Plumber, job, and at least one entry required", false);
+      return;
+    }
+    const subj = project.code + " T&M Log - " + fmtDate(headerDate);
+    let body = "TIME AND MATERIAL LOG SHEET\n";
+    body += "Plumber: " + emp.name + (emp.phone ? " · " + emp.phone : "") + "\n";
+    body += "Job: " + project.code + " - " + project.name + "\n";
+    body += "Date Submitted: " + fmtDate(headerDate) + "\n";
+    if (notes.trim()) body += "\nNotes: " + notes.trim() + "\n";
+    body += "\nENTRIES (" + filled.length + "):\n";
+    filled.forEach(r => {
+      const timeStr = r.start || r.end ? (r.start || "—") + " - " + (r.end || "—") : "—";
+      const hrsStr = r.totalHrs ? r.totalHrs + " hrs" : "—";
+      body += "  " + timeStr + " · " + (r.date ? fmtDate(r.date) : "—") + " · " + hrsStr + "\n";
+      body += "    Material: " + (r.material || "—") + "\n";
+      body += "    Work:     " + (r.work || "—") + "\n";
+    });
+    if (totalHrsSum > 0) body += "\nTOTAL HOURS: " + totalHrsSum.toFixed(2).replace(/\.?0+$/, "") + "\n";
+    body += "\nSent from Horner Field App";
+    // Routing per Patrick (corrected 2026-05-08): TO Craig (cscharmer), CC the foreman who filled out the form (only if they have a Horner email).
+    setPreview({
+      to: CONTACTS.craig,
+      cc: emp.email || "",
+      subject: subj,
+      body
+    });
+  };
+  const sendEmail = () => {
+    if (!preview) return;
+    const url = "mailto:" + preview.to + "?cc=" + encodeURIComponent(preview.cc) + "&subject=" + encodeURIComponent(preview.subject) + "&body=" + encodeURIComponent(preview.body);
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => setPreview(null), 150);
+  };
+  const reset = () => {
+    setEmpId("");
+    setHeaderDate(isoToday());
+    setNotes("");
+    setRows(Array.from({
+      length: 8
+    }, mkRow));
+  };
+  // Compact inline styles
+  const tinyInp = {
+    width: "100%",
+    height: 34,
+    padding: "0 4px",
+    borderRadius: 6,
+    border: "1.5px solid #DDE3ED",
+    textAlign: "center",
+    fontSize: 13,
+    outline: "none",
+    background: "white",
+    boxSizing: "border-box"
+  };
+  const totalInp = {
+    ...tinyInp,
+    background: "#F0F4FA",
+    color: NAVY,
+    fontWeight: 700
+  };
+  const cellTA = {
+    width: "100%",
+    padding: "6px 8px",
+    borderRadius: 6,
+    border: "1.5px solid #DDE3ED",
+    fontSize: 13,
+    outline: "none",
+    resize: "vertical",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    lineHeight: 1.4,
+    minHeight: 38
+  };
+  // Dropdown filtered to billing roles only — Foreman, Journeymen, 4th Year
+  const dropdownEmployees = BILLING_EMPLOYEES;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
+    onClose: () => setPreview(null),
+    onSend: sendEmail
+  })), /*#__PURE__*/React.createElement("button", {
+    className: "fab",
+    onClick: () => window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    }),
+    style: {
+      position: "fixed",
+      bottom: 24,
+      left: 20,
+      zIndex: 90,
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: "50%",
+      width: 60,
+      height: 60,
+      fontSize: 22,
+      cursor: "pointer",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.28)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      lineHeight: 1
+    }
+  }, "\u2191", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5,
+      marginTop: 1
+    }
+  }, "TOP")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderBottom: "1.5px solid #DDE3ED",
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      color: NAVY,
+      fontSize: 14,
+      textAlign: "center",
+      marginBottom: 10
+    }
+  }, "TIME & MATERIAL LOG SHEET"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Plumber *"), /*#__PURE__*/React.createElement("select", {
+    value: empId,
+    onChange: e => setEmpId(e.target.value),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Select name\u2026"), dropdownEmployees.map(e => /*#__PURE__*/React.createElement("option", {
+    key: e.id,
+    value: e.id
+  }, e.name, e.position !== "Journeymen" ? " · " + e.position : "")))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Date Submitted"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: headerDate,
+    onChange: e => setHeaderDate(e.target.value),
+    style: inp
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: "1 / -1"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Job"), /*#__PURE__*/React.createElement("input", {
+    value: project ? project.code + " - " + project.name : "",
+    readOnly: true,
+    style: {
+      ...inp,
+      background: "#F0F4FA",
+      color: "#7F8C9A"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: "1 / -1"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Header Notes"), /*#__PURE__*/React.createElement("textarea", {
+    value: notes,
+    onChange: e => setNotes(e.target.value),
+    rows: 2,
+    placeholder: "Optional notes for the whole log\u2026",
+    style: {
+      ...inp,
+      resize: "vertical",
+      fontFamily: "inherit",
+      minHeight: 48
+    }
+  })))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      padding: "10px 14px",
+      background: "white",
+      borderBottom: "1.5px solid #DDE3ED"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    style: {
+      flex: 2,
+      background: canSub ? RED : "#bbb",
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: 12,
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: canSub ? "pointer" : "not-allowed"
+    }
+  }, "\u2709\uFE0F Submit T&M", filled.length > 0 ? " (" + filled.length + " entries)" : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: reset,
+    style: {
+      flex: 1,
+      background: BLUE,
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: 12,
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "Reset")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "8px 14px 0 14px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: NAVY,
+      background: "#E3F0FF",
+      borderRadius: 6,
+      padding: "7px 10px",
+      fontWeight: 600
+    }
+  }, "\uD83D\uDCE7 Routes to: Craig (cscharmer)", emp && emp.email ? " · cc " + emp.name : emp ? " · cc (foreman has no Horner email)" : "")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: NAVY,
+      color: "white",
+      padding: "8px 8px",
+      borderRadius: "12px 12px 0 0",
+      display: "grid",
+      gridTemplateColumns: "64px 64px 56px 80px 1fr 1.2fr 28px",
+      gap: 5,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5,
+      textAlign: "center"
+    }
+  }, "START"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5,
+      textAlign: "center"
+    }
+  }, "END"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5,
+      textAlign: "center"
+    }
+  }, "HRS"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5,
+      textAlign: "center"
+    }
+  }, "DATE"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5
+    }
+  }, "MATERIAL USED"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5
+    }
+  }, "WORK PERFORMED / NOTES"), /*#__PURE__*/React.createElement("div", null)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      border: "1.5px solid #DDE3ED",
+      borderTop: "none",
+      borderRadius: "0 0 12px 12px",
+      overflow: "hidden"
+    }
+  }, rows.map((row, i) => {
+    const hasContent = row.start.trim() || row.end.trim() || row.totalHrs.trim() || row.date || row.material.trim() || row.work.trim();
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        display: "grid",
+        gridTemplateColumns: "64px 64px 56px 80px 1fr 1.2fr 28px",
+        gap: 5,
+        alignItems: "start",
+        padding: "7px 8px",
+        borderBottom: i < rows.length - 1 ? "1px solid #F0F4FA" : "none",
+        background: hasContent ? "#FFFBEA" : "white"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      value: row.start,
+      onChange: e => upRow(i, "start", e.target.value),
+      placeholder: "7:00am",
+      style: tinyInp
+    }), /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      value: row.end,
+      onChange: e => upRow(i, "end", e.target.value),
+      placeholder: "3:30pm",
+      style: tinyInp
+    }), /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      value: row.totalHrs,
+      onChange: e => upRow(i, "totalHrs", e.target.value),
+      placeholder: "\u2014",
+      style: totalInp
+    }), /*#__PURE__*/React.createElement(DateCell, {
+      value: row.date,
+      onChange: v => upRow(i, "date", v)
+    }), /*#__PURE__*/React.createElement("textarea", {
+      value: row.material,
+      onChange: e => upRow(i, "material", e.target.value),
+      rows: 2,
+      placeholder: "Material\u2026",
+      style: cellTA
+    }), /*#__PURE__*/React.createElement("textarea", {
+      value: row.work,
+      onChange: e => upRow(i, "work", e.target.value),
+      rows: 2,
+      placeholder: "Work performed\u2026",
+      style: cellTA
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: () => delRow(i),
+      style: {
+        background: "none",
+        border: "none",
+        color: "#BDC3C7",
+        cursor: "pointer",
+        fontSize: 18,
+        padding: 0,
+        lineHeight: 1,
+        marginTop: 8
+      }
+    }, "\xD7"));
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: addRow,
+    style: {
+      marginTop: 10,
+      background: "white",
+      border: "1.5px dashed " + BLUE,
+      color: BLUE,
+      borderRadius: 10,
+      padding: "11px",
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "+ Add Row"), totalHrsSum > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14,
+      background: "#E3F0FF",
+      borderRadius: 8,
+      padding: "10px 14px",
+      textAlign: "right",
+      fontWeight: 800,
+      color: NAVY,
+      fontSize: 15
+    }
+  }, "Total Hours: ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 18,
+      marginLeft: 8
+    }
+  }, totalHrsSum.toFixed(2).replace(/\.?0+$/, "")))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 30
     }
