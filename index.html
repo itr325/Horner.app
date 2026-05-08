@@ -72,15 +72,15 @@ const EMPLOYEES = [{
 const PMS = {
   corey: {
     name: "Corey",
-    email: "corey@hornerplumbing.com"
+    email: "cmcintyre@hornerplumbing.com"
   },
   jeremy: {
     name: "Jeremy",
-    email: "jeremy@hornerplumbing.com"
+    email: "jgruber@hornerplumbing.com"
   },
   steve: {
     name: "Steve",
-    email: "steve@hornerplumbing.com"
+    email: "sklugiewicz@hornerplumbing.com"
   },
   unassigned: {
     name: "Unassigned",
@@ -90,8 +90,20 @@ const PMS = {
 const CONTACTS = {
   purchasing: "purchasing@hornerplumbing.com",
   timecards: "timecards@hornerplumbing.com",
-  reception: "reception@hornerplumbing.com"
+  reception: "reception@hornerplumbing.com",
+  admin: "commercialadmin@hornerplumbing.com",
+  safety: "safety@hornerplumbing.com",
+  returns: "returns@hornerplumbing.com",
+  craig: "cscharmer@hornerplumbing.com"
 };
+// FORM ROUTING REFERENCE (Patrick, 2026-05-07):
+//   dailyLog: TO project's PM only, no CC
+//   tmLog: TO Corey (cmcintyre), CC Craig (cscharmer) — always
+//   valveTagList: TO project's PM, CC commercialadmin
+//   orderSheets: TO purchasing, CC project's PM (existing)
+//   timeCard: TO timecards, CC project's PM (existing)
+//   returns: TO returns, CC project's PM (when wired)
+//   safety / pre-fab / testing / RFC / RFI: TBD
 const FALLBACK_PROJECTS = [{
   code: "BRA-25103",
   name: "CI Design Office & Apts",
@@ -9334,11 +9346,23 @@ function App() {
     }
   }, "\uD83D\uDC65 Team Email Routing"), [{
     role: "Time Cards / HR",
-    email: "timecards@hornerplumbing.com"
+    email: CONTACTS.timecards
   }, {
     role: "Purchasing",
-    email: "purchasing@hornerplumbing.com"
-  }, ...Object.values(PMS).map(pm => ({
+    email: CONTACTS.purchasing
+  }, {
+    role: "Returns",
+    email: CONTACTS.returns
+  }, {
+    role: "Safety",
+    email: CONTACTS.safety
+  }, {
+    role: "Admin",
+    email: CONTACTS.admin
+  }, {
+    role: "Dpt. Head - Craig",
+    email: CONTACTS.craig
+  }, ...Object.values(PMS).filter(pm => pm.email).map(pm => ({
     role: "PM - " + pm.name,
     email: pm.email
   }))].map(c => /*#__PURE__*/React.createElement("div", {
@@ -9600,10 +9624,10 @@ function DailyLog({
     body += "\nTotal Personnel: " + totalPersonnel + "\nTotal Absent: " + (absent || "0");
     if (comments.trim()) body += "\n\nComments / Problems:\n" + comments.trim();
     body += "\n\nSignature/Title: " + emp.name + (emp.phone ? " · " + emp.phone : "") + "\n\nThe undersigned agrees that the work being performed by the Subcontractor is not being delayed for any reason unless specifically mentioned above.\n\nSent from Horner Field App";
-    // BETA recipient: matches order-sheet convention. Production: revisit (likely PM-only or field-reports@).
+    // Routing per Patrick: PM only, no CC.
     setPreview({
-      to: CONTACTS.purchasing,
-      cc: pm?.email || "",
+      to: pm?.email || "",
+      cc: "",
       subject: subj,
       body
     });
