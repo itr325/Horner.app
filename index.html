@@ -10053,8 +10053,7 @@ function TMLog({
     totalHrs: "",
     date: "",
     material: "",
-    work: "",
-    _lastComputed: ""
+    work: ""
   });
   const isoToday = () => {
     const d = new Date();
@@ -10123,12 +10122,8 @@ function TMLog({
       [f]: v
     };
     if (f === "start" || f === "end") {
-      const computed = calcHours(updated.start, updated.end);
-      // Auto-fill totalHrs if currently empty, or matches the previously auto-computed value (so user manual edits stick)
-      if (!r.totalHrs || r.totalHrs === r._lastComputed) {
-        updated.totalHrs = computed;
-      }
-      updated._lastComputed = computed;
+      // Hrs cell is locked/read-only — always reflects the latest computation.
+      updated.totalHrs = calcHours(updated.start, updated.end);
       // Auto-fill date from previous row when entering a start time on a row with blank date
       if (f === "start" && v && !updated.date && i > 0 && rs[i - 1].date) {
         updated.date = rs[i - 1].date;
@@ -10139,6 +10134,18 @@ function TMLog({
   const addRow = () => setRows(rs => [...rs, mkRow()]);
   const delRow = i => setRows(rs => rs.filter((_, x) => x !== i));
   const fmtDate = iso => iso ? iso.slice(5, 7) + "/" + iso.slice(8, 10) + "/" + iso.slice(2, 4) : "";
+  // Convert "06:30" (24h, from type="time") to "6:30 AM" for human-readable email body.
+  const fmt12 = t => {
+    if (!t) return "";
+    const parts = t.split(":");
+    let h = parseInt(parts[0], 10);
+    const m = parts[1] || "00";
+    if (isNaN(h)) return t;
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    if (h === 0) h = 12;
+    return h + ":" + m + " " + ampm;
+  };
   const submit = () => {
     if (!canSub) {
       onToast("Plumber, job, and at least one entry required", false);
@@ -10152,7 +10159,7 @@ function TMLog({
     if (notes.trim()) body += "\nNotes: " + notes.trim() + "\n";
     body += "\nENTRIES (" + filled.length + "):\n";
     filled.forEach(r => {
-      const timeStr = r.start || r.end ? (r.start || "—") + " - " + (r.end || "—") : "—";
+      const timeStr = r.start || r.end ? (r.start ? fmt12(r.start) : "—") + " - " + (r.end ? fmt12(r.end) : "—") : "—";
       const hrsStr = r.totalHrs ? r.totalHrs + " hrs" : "—";
       body += "  " + timeStr + " · " + (r.date ? fmtDate(r.date) : "—") + " · " + hrsStr + "\n";
       body += "    Material: " + (r.material || "—") + "\n";
@@ -10201,14 +10208,21 @@ function TMLog({
     background: "white",
     boxSizing: "border-box"
   };
-  // totalInp = Hrs cell. Keeps 13px since it's mostly auto-filled and rarely focused; if it does get focused iOS will zoom slightly but that's acceptable for this cell.
+  // totalInp = Hrs cell. Read-only display only (rendered as a div, not an input). Auto-calculated from Start/End.
   const totalInp = {
-    ...tinyInp,
-    fontSize: 13,
-    height: 34,
+    width: "100%",
+    height: 40,
+    padding: "0 4px",
+    borderRadius: 6,
+    border: "1.5px solid #DDE3ED",
+    fontSize: 14,
+    fontWeight: 700,
     background: "#F0F4FA",
     color: NAVY,
-    fontWeight: 700
+    boxSizing: "border-box",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
   };
   const cellTA = {
     width: "100%",
@@ -10459,32 +10473,18 @@ function TMLog({
         background: hasContent ? "#FFFBEA" : "white"
       }
     }, /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      inputMode: "text",
-      autoCapitalize: "none",
-      autoCorrect: "off",
-      spellCheck: false,
+      type: "time",
       value: row.start,
       onChange: e => upRow(i, "start", e.target.value),
-      placeholder: "7:00am",
       style: tinyInp
     }), /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      inputMode: "text",
-      autoCapitalize: "none",
-      autoCorrect: "off",
-      spellCheck: false,
+      type: "time",
       value: row.end,
       onChange: e => upRow(i, "end", e.target.value),
-      placeholder: "3:30pm",
       style: tinyInp
-    }), /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      value: row.totalHrs,
-      onChange: e => upRow(i, "totalHrs", e.target.value),
-      placeholder: "\u2014",
+    }), /*#__PURE__*/React.createElement("div", {
       style: totalInp
-    }), /*#__PURE__*/React.createElement(DateCell, {
+    }, row.totalHrs || "\u2014"), /*#__PURE__*/React.createElement(DateCell, {
       value: row.date,
       onChange: v => upRow(i, "date", v)
     }), /*#__PURE__*/React.createElement("textarea", {
