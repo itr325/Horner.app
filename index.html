@@ -129,7 +129,7 @@ const CONTACTS = {
 };
 // FORM ROUTING REFERENCE (Patrick, last updated 2026-05-08):
 //   dailyLog: TO project's PM only, no CC
-//   tmLog: TO Craig (cscharmer), CC the foreman who filled it out (only if they have a Horner email — silent fallback if not)
+//   tmLog: TO Craig (cscharmer), CC the project's PM
 //   valveTagList: TO project's PM, CC commercialadmin
 //   orderSheets: TO purchasing, CC project's PM (existing)
 //   timeCard: TO timecards, CC project's PM (existing)
@@ -10114,6 +10114,7 @@ function TMLog({
     const v = parseFloat(r.totalHrs);
     return isNaN(v) ? sum : sum + v;
   }, 0);
+  const pm = project ? PMS[project.pm] : null;
   const canSub = emp && project?.code && filled.length > 0;
   const upRow = (i, f, v) => setRows(rs => rs.map((r, x) => {
     if (x !== i) return r;
@@ -10167,10 +10168,10 @@ function TMLog({
     });
     if (totalHrsSum > 0) body += "\nTOTAL HOURS: " + totalHrsSum.toFixed(2).replace(/\.?0+$/, "") + "\n";
     body += "\nSent from Horner Field App";
-    // Routing per Patrick (corrected 2026-05-08): TO Craig (cscharmer), CC the foreman who filled out the form (only if they have a Horner email).
+    // Routing per Patrick (corrected 2026-05-11): TO Craig (cscharmer), CC the project's PM (not the foreman who filled it out).
     setPreview({
       to: CONTACTS.craig,
-      cc: emp.email || "",
+      cc: pm?.email || "",
       subject: subj,
       body
     });
@@ -10396,7 +10397,7 @@ function TMLog({
       padding: "7px 10px",
       fontWeight: 600
     }
-  }, "\uD83D\uDCE7 Routes to: Craig (cscharmer)", emp && emp.email ? " · cc " + emp.name : emp ? " · cc (foreman has no Horner email)" : "")), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCE7 Routes to: Craig (cscharmer)", pm && pm.email ? " · cc " + pm.name + " (PM)" : pm ? " · cc (PM has no email on file)" : " · cc (project has no PM assigned)")), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 14
     }
