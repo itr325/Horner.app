@@ -10188,20 +10188,24 @@ function TMLog({
     }, mkRow));
   };
   // Compact inline styles
+  // tinyInp = Start/End cells. fontSize 16 prevents iOS Safari auto-zoom on focus; height 40 is a comfortable tap target.
   const tinyInp = {
     width: "100%",
-    height: 34,
+    height: 40,
     padding: "0 4px",
     borderRadius: 6,
     border: "1.5px solid #DDE3ED",
     textAlign: "center",
-    fontSize: 13,
+    fontSize: 16,
     outline: "none",
     background: "white",
     boxSizing: "border-box"
   };
+  // totalInp = Hrs cell. Keeps 13px since it's mostly auto-filled and rarely focused; if it does get focused iOS will zoom slightly but that's acceptable for this cell.
   const totalInp = {
     ...tinyInp,
+    fontSize: 13,
+    height: 34,
     background: "#F0F4FA",
     color: NAVY,
     fontWeight: 700
@@ -10293,7 +10297,7 @@ function TMLog({
   }, "Select name\u2026"), dropdownEmployees.map(e => /*#__PURE__*/React.createElement("option", {
     key: e.id,
     value: e.id
-  }, e.name, e.position !== "Journeymen" ? " · " + e.position : "")))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  }, e.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     style: lbl
   }, "Date Submitted"), /*#__PURE__*/React.createElement("input", {
     type: "date",
@@ -10389,7 +10393,7 @@ function TMLog({
       padding: "8px 8px",
       borderRadius: "12px 12px 0 0",
       display: "grid",
-      gridTemplateColumns: "64px 64px 56px 80px 1fr 1.2fr 28px",
+      gridTemplateColumns: "78px 78px 56px 80px 1fr 1.2fr 28px",
       gap: 5,
       alignItems: "center"
     }
@@ -10447,7 +10451,7 @@ function TMLog({
       key: i,
       style: {
         display: "grid",
-        gridTemplateColumns: "64px 64px 56px 80px 1fr 1.2fr 28px",
+        gridTemplateColumns: "78px 78px 56px 80px 1fr 1.2fr 28px",
         gap: 5,
         alignItems: "start",
         padding: "7px 8px",
@@ -10456,12 +10460,20 @@ function TMLog({
       }
     }, /*#__PURE__*/React.createElement("input", {
       type: "text",
+      inputMode: "text",
+      autoCapitalize: "none",
+      autoCorrect: "off",
+      spellCheck: false,
       value: row.start,
       onChange: e => upRow(i, "start", e.target.value),
       placeholder: "7:00am",
       style: tinyInp
     }), /*#__PURE__*/React.createElement("input", {
       type: "text",
+      inputMode: "text",
+      autoCapitalize: "none",
+      autoCorrect: "off",
+      spellCheck: false,
       value: row.end,
       onChange: e => upRow(i, "end", e.target.value),
       placeholder: "3:30pm",
