@@ -8472,11 +8472,47 @@ function App() {
   const pathKey = folder ? (subPath.length === 0 ? folder : folder + " > " + subPath.join(" > ")) : null;
   // Form-tile overlay: only on app-created projects (App=X), only at folder paths listed in FORM_FOLDERS.
   const currentForms = (pathKey && project && project.app) ? FORM_FOLDERS[pathKey] : null;
+  // Synthetic top-level form folders. For app-managed projects (App=X), any FORM_FOLDERS key
+  // that doesn't physically exist in SharePoint is surfaced as a tile at the project root anyway.
+  // Tap → routes to folder-contents view, fetchCurrentFolder below short-circuits the SharePoint call,
+  // and the currentForms overlay handles the rendering. This is how new jobs get FORMS / ORDER SHEETS /
+  // RETURNS / T&M / TIME CARDS without those folders existing in SharePoint. SAFETY is a real
+  // SharePoint folder (in the Create New Project Folder template) so it's not duplicated here.
+  // Imported folders (project.app === false) get no synthetics — pure SharePoint mirror.
+  const rootRealFolderNames = (folderContents && folderContents.folders)
+    ? folderContents.folders.map(f => (f.name || "").toUpperCase())
+    : [];
+  const rootSyntheticFolders = (project && project.app)
+    ? Object.keys(FORM_FOLDERS)
+        .filter(k => !rootRealFolderNames.includes(k.toUpperCase()))
+        .map(name => ({ name: name, synthetic: true }))
+    : [];
+  const rootDisplayFolders = (() => {
+    const real = (folderContents && folderContents.folders) ? folderContents.folders.slice() : [];
+    const combined = real.concat(rootSyntheticFolders);
+    combined.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+    return combined;
+  })();
   // Fetch folder contents on entry into a project or any folder navigation.
   // Runs whenever project, view, or path changes. Uses cache when available.
   const fetchCurrentFolder = (force) => {
     if (!project) return;
     if (view !== "folders" && view !== "folder-contents") return;
+    // Synthetic top-level form folder: project is app-managed, we're at depth 1 (a top-level folder, no subPath),
+    // folder name is a FORM_FOLDERS key, and the project-root cache shows it doesn't exist in SharePoint.
+    // Short-circuit the SharePoint call — render an empty {folders, files} so the currentForms overlay
+    // owns the screen. The root cache will always be populated here because you can't see the tile to tap
+    // unless the project-root view rendered first, which means root was fetched and cached.
+    if (view === "folder-contents" && subPath.length === 0 && folder && project.app && FORM_FOLDERS[folder]) {
+      const rootCache = folderCacheRef.current[project.code + ":"];
+      const existsInSharePoint = rootCache && rootCache.folders.some(f => (f.name || "").toUpperCase() === folder.toUpperCase());
+      if (!existsInSharePoint) {
+        setFolderContents({ folders: [], files: [] });
+        setFolderError(null);
+        setFolderLoading(false);
+        return;
+      }
+    }
     const cacheKey = project.code + ":" + sharePointPath;
     if (!force && folderCacheRef.current[cacheKey]) {
       setFolderContents(folderCacheRef.current[cacheKey]);
@@ -9105,7 +9141,7 @@ function App() {
       marginLeft: 8
     }
   }, "\u21BB Retry")),
-  !folderLoading && !folderError && folderContents && folderContents.folders.length === 0 && folderContents.files.length === 0 && /*#__PURE__*/React.createElement("div", {
+  !folderLoading && !folderError && folderContents && rootDisplayFolders.length === 0 && folderContents.files.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "40px 20px",
@@ -9116,13 +9152,13 @@ function App() {
       fontSize: 13
     }
   }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCC2"), "This project folder is empty in SharePoint."),
-  !folderLoading && !folderError && folderContents && folderContents.folders.length > 0 && /*#__PURE__*/React.createElement("div", {
+  !folderLoading && !folderError && folderContents && rootDisplayFolders.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))",
       gap: 10
     }
-  }, folderContents.folders.map(f => {
+  }, rootDisplayFolders.map(f => {
     const fs = getFolderStyle(f.name);
     const hF = project.app && !!FORM_FOLDERS[f.name];
     return /*#__PURE__*/React.createElement("button", {
@@ -9174,7 +9210,7 @@ function App() {
   })),
   !folderLoading && !folderError && folderContents && folderContents.files.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
-      marginTop: folderContents.folders.length > 0 ? 16 : 0
+      marginTop: rootDisplayFolders.length > 0 ? 16 : 0
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
