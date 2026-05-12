@@ -149,6 +149,17 @@ const FETCH_FOLDER_CONTENTS_URL = "https://defaultef466c747a134920854c210669ea3c
 // SharePoint URLs returned by the flow are server-relative (e.g. "/Active Projects/.../file.pdf").
 // Prepend this host to get a clickable URL.
 const SHAREPOINT_HOST = "https://hornerplumbing.sharepoint.com";
+// Upload File flow — POST body { code, name, folder, filename, contentBase64 }.
+// Flow ensures both the SITE PHOTOS & VIDEO parent and the date subfolder exist before creating the file.
+// Response { url, filename }.
+const UPLOAD_FILE_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fc79fb60c1624dd4b6a29d632f69aeee/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=k33RtgYpAwr_8dWpz-9qXvVN7dpF8y2vFCaKCQTIyhA";
+// Soft size cap for uploads. Power Automate HTTP triggers handle roughly 100MB encoded;
+// base64 inflates by ~33%, so 70MB raw → ~93MB encoded leaves headroom. iPads aren't 4K capable,
+// so realistic 1080p clips at site-work length land comfortably under this.
+const MAX_UPLOAD_BYTES = 70 * 1024 * 1024;
+// The SharePoint folder where capture/library uploads land. Capture buttons surface anywhere
+// inside this folder (any depth). Stays in sync with the FOLDER_STYLES key for the photo tile.
+const SITE_PHOTOS_FOLDER = "SITE PHOTOS & VIDEO";
 // Icon + color styling for known top-level folder names. Unknown folders fall back to DEFAULT_FOLDER_STYLE.
 // Match is case-insensitive at lookup time. Used only for visual decoration; folder existence comes from SharePoint.
 const FOLDER_STYLES = {
@@ -8381,6 +8392,53 @@ function CaseQuantityReference({
     }, it.q || "—"))))));
   })));
 }
+// ---- Upload helpers (pure functions, no React state) -----------------------
+// Read a File/Blob and resolve to its base64 string (no data URI prefix).
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const r = reader.result || "";
+      const i = String(r).indexOf(",");
+      resolve(i >= 0 ? String(r).slice(i + 1) : String(r));
+    };
+    reader.onerror = () => reject(reader.error || new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+// Today's date as YYYY-MM-DD using local time (so a foreman's "today" matches what they expect).
+function todayDateFolder() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+}
+// Whether a folder-segment name looks like a YYYY-MM-DD date folder.
+function isDateFolderName(name) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(name || "");
+}
+// Generate a collision-resistant filename. photo-YYYYMMDD-HHMMSS.<ext> or video-... preserving extension when available.
+function generateUploadFilename(file) {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+  const type = (file.type || "").toLowerCase();
+  const isVideo = type.indexOf("video/") === 0;
+  const prefix = isVideo ? "video" : "photo";
+  let ext = "";
+  if (file.name) {
+    const dotIdx = file.name.lastIndexOf(".");
+    if (dotIdx > 0) ext = file.name.slice(dotIdx).toLowerCase();
+  }
+  if (!ext) {
+    if (type === "image/jpeg" || type === "image/jpg") ext = ".jpg";
+    else if (type === "image/png") ext = ".png";
+    else if (type === "image/heic" || type === "image/heif") ext = ".heic";
+    else if (type === "video/mp4") ext = ".mp4";
+    else if (type === "video/quicktime") ext = ".mov";
+    else ext = isVideo ? ".mov" : ".jpg";
+  }
+  return prefix + "-" + stamp + ext;
+}
 function App() {
   const [view, setView] = useState("projects");
   const [project, setProject] = useState(null);
@@ -8574,6 +8632,88 @@ function App() {
     const full = url.indexOf("http") === 0 ? url : SHAREPOINT_HOST + url;
     window.open(full, "_blank", "noopener");
   };
+  // ---- Site Photos & Video upload ------------------------------------------
+  // Two hidden <input> elements wired to refs — the Capture / Library buttons trigger these.
+  // Capture: native camera, one file per tap. Library: device picker, multi-select.
+  // uploading flag disables the buttons during in-flight work to prevent double-tap.
+  const captureInputRef = useRef(null);
+  const libraryInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  // POST a single file to the Upload File flow. Resolves to { url, filename } on success.
+  const uploadFile = (file, targetFolder) => {
+    return fileToBase64(file).then(base64 => {
+      return fetch(UPLOAD_FILE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: project.code,
+          name: project.name,
+          folder: targetFolder,
+          filename: generateUploadFilename(file),
+          contentBase64: base64
+        })
+      }).then(r => r.ok ? r.json() : Promise.reject(r.status));
+    });
+  };
+  // Handle a FileList from either the capture or library input. Sequential uploads with
+  // progress toasts, size-cap rejection, and a single cache invalidation + refetch at the end.
+  // target is the SharePoint-relative folder path under the project root (e.g.
+  // "SITE PHOTOS & VIDEO/2026-05-12"). Capture always passes today's date folder; library
+  // passes the current path if already inside a date folder, else today's.
+  const handleFilesPicked = (files, target) => {
+    if (!files || files.length === 0) return;
+    const all = Array.from(files);
+    const oversized = all.filter(f => f.size > MAX_UPLOAD_BYTES);
+    const eligible = all.filter(f => f.size <= MAX_UPLOAD_BYTES);
+    if (oversized.length > 0) {
+      showToast(oversized.length + " file(s) over 70MB — skipped. Smaller files will still upload.", false);
+    }
+    if (eligible.length === 0) return;
+    setUploading(true);
+    let completed = 0;
+    let errored = 0;
+    const targetCacheKey = project.code + ":" + target;
+    const lastSlash = target.lastIndexOf("/");
+    const parentPath = lastSlash > 0 ? target.slice(0, lastSlash) : "";
+    const parentCacheKey = project.code + ":" + parentPath;
+    const finish = () => {
+      // Drop the target and parent caches — new files exist and the parent may now contain a
+      // newly-created date folder. The refetch below repopulates whichever the user is viewing.
+      delete folderCacheRef.current[targetCacheKey];
+      delete folderCacheRef.current[parentCacheKey];
+      if (sharePointPath === target || sharePointPath === parentPath) {
+        fetchCurrentFolder(true);
+      }
+      setUploading(false);
+      if (errored === 0 && completed > 0) {
+        showToast("Uploaded " + completed + " file" + (completed === 1 ? "" : "s"), true);
+      } else if (completed > 0) {
+        showToast("Uploaded " + completed + " of " + eligible.length + ", " + errored + " failed", false);
+      } else {
+        showToast("Upload failed", false);
+      }
+    };
+    const next = (idx) => {
+      if (idx >= eligible.length) { finish(); return; }
+      showToast("Uploading " + (idx + 1) + " of " + eligible.length + "\u2026", true);
+      uploadFile(eligible[idx], target)
+        .then(() => { completed++; next(idx + 1); })
+        .catch(() => { errored++; next(idx + 1); });
+    };
+    next(0);
+  };
+  // Compute the upload target folder for the current view.
+  // Capture: always today's date folder under SITE PHOTOS & VIDEO.
+  // Library: today's, unless the user is already deep inside a date folder.
+  const captureTargetPath = () => SITE_PHOTOS_FOLDER + "/" + todayDateFolder();
+  const libraryTargetPath = () => {
+    if (subPath.length > 0 && isDateFolderName(subPath[subPath.length - 1])) {
+      return sharePointPath;
+    }
+    return SITE_PHOTOS_FOLDER + "/" + todayDateFolder();
+  };
+  // Buttons surface when the current folder is SITE PHOTOS & VIDEO at any depth.
+  const showUploadButtons = folder === SITE_PHOTOS_FOLDER;
   const showToast = (msg, ok = true) => {
     setToast({
       msg,
@@ -9308,6 +9448,80 @@ function App() {
       fontSize: 18
     }
   }, "\u203A")))) ), view === "folder-contents" && folder && /*#__PURE__*/React.createElement(React.Fragment, null,
+  // Site Photos & Video: capture + library buttons + hidden inputs. Renders only inside the
+  // SITE PHOTOS & VIDEO folder (any depth). Capture is one-shot from native camera; Library is
+  // multi-select from the device picker. Both upload via the Upload File flow.
+  showUploadButtons && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", gap: 10, marginBottom: 12 }
+    },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => { if (captureInputRef.current) captureInputRef.current.click(); },
+        disabled: uploading,
+        style: {
+          flex: 1,
+          background: "#D35400",
+          color: "white",
+          border: "none",
+          borderRadius: 12,
+          padding: "16px 12px",
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: uploading ? "default" : "pointer",
+          opacity: uploading ? 0.6 : 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          boxShadow: "0 2px 6px rgba(211,84,0,0.25)"
+        }
+      }, "\uD83D\uDCF8 Capture"),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => { if (libraryInputRef.current) libraryInputRef.current.click(); },
+        disabled: uploading,
+        style: {
+          flex: 1,
+          background: "white",
+          color: "#D35400",
+          border: "1.5px solid #D35400",
+          borderRadius: 12,
+          padding: "16px 12px",
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: uploading ? "default" : "pointer",
+          opacity: uploading ? 0.6 : 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8
+        }
+      }, "\uD83D\uDDBC\uFE0F From Library")
+    ),
+    /*#__PURE__*/React.createElement("input", {
+      ref: captureInputRef,
+      type: "file",
+      accept: "image/*,video/*",
+      capture: "environment",
+      style: { display: "none" },
+      onChange: (e) => {
+        const files = e.target.files;
+        handleFilesPicked(files, captureTargetPath());
+        e.target.value = "";
+      }
+    }),
+    /*#__PURE__*/React.createElement("input", {
+      ref: libraryInputRef,
+      type: "file",
+      accept: "image/*,video/*",
+      multiple: true,
+      style: { display: "none" },
+      onChange: (e) => {
+        const files = e.target.files;
+        handleFilesPicked(files, libraryTargetPath());
+        e.target.value = "";
+      }
+    })
+  ),
   // User-initiated cache invalidation + refetch for the current project.
   /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", justifyContent: "flex-end", marginBottom: 10 }
