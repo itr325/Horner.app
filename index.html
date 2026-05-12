@@ -8486,7 +8486,10 @@ function App() {
           .map(p => ({
             code: p.code,
             name: p.name,
-            pm: p.pm && PMS[p.pm] ? p.pm : "unassigned"
+            pm: p.pm && PMS[p.pm] ? p.pm : "unassigned",
+            // app=true → created by this app (App column = "X" in SharePoint), form tiles shown.
+            // app=false → folder was dragged in / imported, app shows only real SharePoint contents.
+            app: p.app === "X"
           }))
           .sort((a, b) => a.code.localeCompare(b.code));
         // 1-to-1 sync: even an empty result is committed (replaces cache).
@@ -8536,7 +8539,9 @@ function App() {
   // At folder root: key = folder name. With sub-path: "FOLDER > Seg1 > Seg2".
   const pathKey = folder ? (subPath.length === 0 ? folder : folder + " > " + subPath.join(" > ")) : null;
   const currentSubFolders = pathKey ? SUB_FOLDERS[pathKey] : null;
-  const currentForms = pathKey ? FORM_FOLDERS[pathKey] : null;
+  // Form tiles only render on app-created projects (App column = "X" in SharePoint).
+  // Imported projects (dragged into Active Projects manually) show only real SharePoint contents.
+  const currentForms = (pathKey && project && project.app) ? FORM_FOLDERS[pathKey] : null;
   const currentPdfs = pathKey ? SAMPLE_PDFS[pathKey] : null;
   const getFormView = n => {
     if (n === "Commercial Time Card") return "timecard";
@@ -8942,15 +8947,33 @@ function App() {
     }
   }, p.name)), /*#__PURE__*/React.createElement("div", {
     style: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-end",
+      gap: 4,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
       background: NAVY + "18",
       color: NAVY,
       borderRadius: 6,
       padding: "3px 9px",
       fontSize: 11,
-      fontWeight: 700,
-      flexShrink: 0
+      fontWeight: 700
     }
-  }, PMS[p.pm].name))))), projects.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, PMS[p.pm].name), !p.app && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#E8ECF1",
+      color: "#7F8C9A",
+      borderRadius: 6,
+      padding: "2px 7px",
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: 0.3,
+      textTransform: "uppercase"
+    }
+  }, "Imported")))))), projects.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "48px 24px",
@@ -9419,7 +9442,10 @@ function App() {
           const added = {
             code: newJob.code,
             name: newJob.name,
-            pm: newJob.pm
+            pm: newJob.pm,
+            // Create Job sets App=X in SharePoint, so optimistically mark this project as app-managed
+            // to avoid a brief flash of the "Imported" badge before the next refresh.
+            app: true
           };
           setProjects(prev => {
             if (prev.some(p => p.code === added.code)) return prev;
