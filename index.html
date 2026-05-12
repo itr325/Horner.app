@@ -37,7 +37,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
 const {
   useState,
   useMemo,
-  useEffect
+  useEffect,
+  useRef
 } = React;
 const NAVY = "#1B3A6B",
   BLUE = "#2E6DB4",
@@ -141,101 +142,43 @@ const PROJECTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.env
 const CREATE_JOB_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E";
 const UPDATE_PM_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4f704ea9da2f4eeda6518a676ac2bb0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gS73UO7R4CbO13dGN1sKBICk3bog6_ZCDQjThKPHDDY";
 const PROJECTS_CACHE_KEY = "horner.projects.cache.v1";
-const FOLDERS = [{
-  name: "FORMS",
-  icon: "📋",
-  color: "#2E6DB4"
-}, {
-  name: "ORDER SHEETS",
-  icon: "🛒",
-  color: "#E67E22"
-}, {
-  name: "PLANS",
-  icon: "📐",
-  color: "#27AE60"
-}, {
-  name: "PRE-FAB",
-  icon: "🔧",
-  color: "#8E44AD"
-}, {
-  name: "QC DOCUMENTS",
-  icon: "✅",
-  color: "#16A085"
-}, {
-  name: "RETURNS",
-  icon: "↩️",
-  color: "#C0392B"
-}, {
-  name: "SAFETY",
-  icon: "🦺",
-  color: "#F39C12"
-}, {
-  name: "SITE PHOTOS & VIDEO",
-  icon: "📸",
-  color: "#D35400"
-}, {
-  name: "SPECS",
-  icon: "📄",
-  color: "#7F8C8D"
-}, {
-  name: "SUBMITTALS",
-  icon: "📤",
-  color: "#1ABC9C"
-}, {
-  name: "TESTING",
-  icon: "🧪",
-  color: "#9B59B6"
-}, {
-  name: "T&M",
-  icon: "💰",
-  color: "#E74C3C"
-}, {
-  name: "TIME CARDS",
-  icon: "⏱️",
-  color: "#2ECC71"
-}, {
-  name: "VALVE TAG",
-  icon: "🔖",
-  color: "#3498DB"
-}];
-// SUB_FOLDERS: structural nesting under a parent folder.
-// "list" style = plain bulleted names (no icons, for PLANS disciplines).
-// "tiles" style = icon tile look (like top-level folders, for TOOLBOX TALKS year tiles).
-const SUB_FOLDERS = {
-  "PLANS": {
-    style: "list",
-    items: ["Architectural", "CB's & Addendums", "Civil", "Electrical", "FIELD Changes", "Fire Protection", "Landscaping", "Mechanical", "Plumbing", "Structural", "Title Pages (General)"]
-  },
-  "SAFETY": {
-    style: "list",
-    items: ["Toolbox Talks"]
-  },
-  // Nested under SAFETY > Toolbox Talks. Year tiles.
-  "SAFETY > Toolbox Talks": {
-    style: "tiles",
-    items: ["2026", "2025", "2024", "2022", "2021"]
-  }
+// Fetch Folder Contents flow — called every time the user navigates into a project or folder.
+// Body: { code, path }. Response: { folders: [{name}], files: [{name, url}] }.
+// All folder/file data is sourced from SharePoint; the HTML no longer hardcodes any folder structure.
+const FETCH_FOLDER_CONTENTS_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/099f491fc4a0463cb80cb61e5178c3ed/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=tU4HocqiRSysY29VLe67wAmpdCOfgq1gTQfQSOK8KaM";
+// SharePoint URLs returned by the flow are server-relative (e.g. "/Active Projects/.../file.pdf").
+// Prepend this host to get a clickable URL.
+const SHAREPOINT_HOST = "https://hornerplumbing.sharepoint.com";
+// Icon + color styling for known top-level folder names. Unknown folders fall back to DEFAULT_FOLDER_STYLE.
+// Match is case-insensitive at lookup time. Used only for visual decoration; folder existence comes from SharePoint.
+const FOLDER_STYLES = {
+  "FORMS":               { icon: "📋", color: "#2E6DB4" },
+  "ORDER SHEETS":        { icon: "🛒", color: "#E67E22" },
+  "PLANS":               { icon: "📐", color: "#27AE60" },
+  "PRE-FAB":             { icon: "🔧", color: "#8E44AD" },
+  "QC DOCUMENTS":        { icon: "✅", color: "#16A085" },
+  "RETURNS":             { icon: "↩️", color: "#C0392B" },
+  "SAFETY":              { icon: "🦺", color: "#F39C12" },
+  "SITE PHOTOS & VIDEO": { icon: "📸", color: "#D35400" },
+  "SPECS":               { icon: "📄", color: "#7F8C8D" },
+  "SUBMITTALS":          { icon: "📤", color: "#1ABC9C" },
+  "TESTING":             { icon: "🧪", color: "#9B59B6" },
+  "T&M":                 { icon: "💰", color: "#E74C3C" },
+  "TIME CARDS":          { icon: "⏱️", color: "#2ECC71" },
+  "VALVE TAG":           { icon: "🔖", color: "#3498DB" }
 };
+const DEFAULT_FOLDER_STYLE = { icon: "📁", color: "#5A6B7E" };
+const getFolderStyle = (name) => FOLDER_STYLES[(name || "").toUpperCase()] || DEFAULT_FOLDER_STYLE;
+// FORM_FOLDERS: which fillable forms overlay inside which folder (only shown on app-created projects).
+// Keys match top-level folder names; forms appear at the immediate first level inside that folder.
 const FORM_FOLDERS = {
   "ORDER SHEETS": ['2" Water Meter Order Sheet', '3" Water Meter Order Sheet', '4" Water Meter Order Sheet', "Blank Order Sheet", "BLK-GAL-BRA Order Sheet", "Case Quantity Reference Sheet", "CPVC Order Sheet", "Finish Order Sheet", "MISC Order Sheet", "PEX Order Sheet", "Pipe Insulation Order Sheet", "PVC Order Sheet", "SCH80 Corzan Order Sheet", "Shop Order Sheet"],
   "RETURNS": ["BLK-GAL-BRA Return Sheet", "CPVC Return Sheet", "PEX Return Sheet", "Finish Return Sheet", "MISC Return Sheet"],
   "TIME CARDS": ["Commercial Time Card"],
   "T&M": ["T&M Log"],
   "FORMS": ["Daily Field Report", "RFI Form", "RFC Form"],
-  // Site Safety Inspection is a fillable form inside the SAFETY folder.
   "SAFETY": ["Site Safety Inspection"]
   // VALVE TAG folder intentionally has no FORM_FOLDERS entry — Valve Tag List form is built in a future session
-};
-const SAMPLE_PDFS = {
-  "PLANS": ["Sheet A1.0 - Site Plan.pdf", "Sheet P1.0 - Ground Floor Plumbing.pdf"],
-  "SPECS": ["Section 22 10 00 - Plumbing Piping.pdf"],
-  "SUBMITTALS": ["Submittal Log.pdf"],
-  "PRE-FAB": ["Pre-Fab Drawing Set.pdf"],
-  "QC DOCUMENTS": ["QC Checklist.pdf"],
-  "SITE PHOTOS & VIDEO": ["Site Photos Week 1.pdf"],
-  "TESTING": ["Pressure Test Report.pdf"],
-  // Sample year contents for the SAFETY > Toolbox Talks > 2026 path. Keys for nested paths are joined by " > ".
-  "SAFETY > Toolbox Talks > 2026": ["TBT-01 Metabolic Syndrome.pdf", "TBT-02 Managing Workplace Stress.pdf", "TBT-03 You Can Save A Life.pdf", "TBT-04 AEDs and the Law.pdf", "TBT-05 Tips to Reduce Repetitive Stress Injuries.pdf"]
 };
 const MAT_BGB = [{
   v: "BLACK",
@@ -8514,6 +8457,67 @@ function App() {
   useEffect(() => {
     if (view === "admin") setEditPm({ code: "", pm: "" });
   }, [view]);
+  // ---- Folder contents (SharePoint) ----------------------------------------
+  // folderContents: latest fetched { folders, files } for the current project + path.
+  // folderLoading / folderError: UI states while fetching / on error.
+  // folderCacheRef: in-memory cache keyed by "CODE:path" so re-entering a folder is instant within a session.
+  const [folderContents, setFolderContents] = useState(null);
+  const [folderLoading, setFolderLoading] = useState(false);
+  const [folderError, setFolderError] = useState(null);
+  const folderCacheRef = useRef({});
+  // SharePoint-style path for the current location below the project root.
+  // "" at the project root, "PLANS" inside PLANS, "PLANS/Architectural" deeper, etc.
+  const sharePointPath = !folder ? "" : (subPath.length === 0 ? folder : folder + "/" + subPath.join("/"));
+  // pathKey is the same path but with " > " separators — used for FORM_FOLDERS lookup since those keys are flat.
+  const pathKey = folder ? (subPath.length === 0 ? folder : folder + " > " + subPath.join(" > ")) : null;
+  // Form-tile overlay: only on app-created projects (App=X), only at folder paths listed in FORM_FOLDERS.
+  const currentForms = (pathKey && project && project.app) ? FORM_FOLDERS[pathKey] : null;
+  // Fetch folder contents on entry into a project or any folder navigation.
+  // Runs whenever project, view, or path changes. Uses cache when available.
+  const fetchCurrentFolder = (force) => {
+    if (!project) return;
+    if (view !== "folders" && view !== "folder-contents") return;
+    const cacheKey = project.code + ":" + sharePointPath;
+    if (!force && folderCacheRef.current[cacheKey]) {
+      setFolderContents(folderCacheRef.current[cacheKey]);
+      setFolderError(null);
+      setFolderLoading(false);
+      return;
+    }
+    setFolderLoading(true);
+    setFolderError(null);
+    fetch(FETCH_FOLDER_CONTENTS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: project.code, path: sharePointPath })
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        const folders = Array.isArray(data && data.folders) ? data.folders.slice() : [];
+        const files = Array.isArray(data && data.files) ? data.files.slice() : [];
+        folders.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+        files.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+        const result = { folders, files };
+        folderCacheRef.current[cacheKey] = result;
+        setFolderContents(result);
+        setFolderLoading(false);
+      })
+      .catch(() => {
+        setFolderError("Couldn't load folder contents from SharePoint.");
+        setFolderContents(null);
+        setFolderLoading(false);
+      });
+  };
+  useEffect(() => {
+    fetchCurrentFolder(false);
+    // eslint-disable-next-line
+  }, [project && project.code, view, sharePointPath]);
+  // Open a file in a new tab. URLs from the flow are server-relative; prepend SHAREPOINT_HOST.
+  const openFile = (url) => {
+    if (!url) return;
+    const full = url.indexOf("http") === 0 ? url : SHAREPOINT_HOST + url;
+    window.open(full, "_blank", "noopener");
+  };
   const showToast = (msg, ok = true) => {
     setToast({
       msg,
@@ -8535,14 +8539,6 @@ function App() {
     setSidebar(false);
   };
   const filtered = useMemo(() => projects.filter(p => (p.code + " " + p.name).toLowerCase().includes(search.toLowerCase())), [search, projects]);
-  // Build the path key used to look up SUB_FOLDERS / FORM_FOLDERS / SAMPLE_PDFS at the current location.
-  // At folder root: key = folder name. With sub-path: "FOLDER > Seg1 > Seg2".
-  const pathKey = folder ? (subPath.length === 0 ? folder : folder + " > " + subPath.join(" > ")) : null;
-  const currentSubFolders = pathKey ? SUB_FOLDERS[pathKey] : null;
-  // Form tiles only render on app-created projects (App column = "X" in SharePoint).
-  // Imported projects (dragged into Active Projects manually) show only real SharePoint contents.
-  const currentForms = (pathKey && project && project.app) ? FORM_FOLDERS[pathKey] : null;
-  const currentPdfs = pathKey ? SAMPLE_PDFS[pathKey] : null;
   const getFormView = n => {
     if (n === "Commercial Time Card") return "timecard";
     if (n === "Pipe Insulation Order Sheet") return "insulation";
@@ -9038,7 +9034,8 @@ function App() {
     style: {
       marginTop: 8,
       display: "flex",
-      gap: 6
+      gap: 6,
+      flexWrap: "wrap"
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -9058,20 +9055,76 @@ function App() {
       fontSize: 12,
       fontWeight: 700
     }
-  }, "\u25CF Active"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u25CF Active"), !project.app && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: "#E8ECF1",
+      color: "#7F8C9A",
+      borderRadius: 6,
+      padding: "3px 10px",
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: 0.3,
+      textTransform: "uppercase"
+    }
+  }, "Imported"))), project.app && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#7F8C9A",
       marginBottom: 8
     }
-  }, "\u25CF Blue dot = fillable forms available"), /*#__PURE__*/React.createElement("div", {
+  }, "\u25CF Blue dot = fillable forms available"),
+  // Folder contents — fetched dynamically from SharePoint via FETCH_FOLDER_CONTENTS_URL.
+  folderLoading && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "40px 20px",
+      color: "#7F8C9A",
+      fontSize: 13
+    }
+  }, "Loading folders\u2026"),
+  folderError && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#FFF4E5",
+      border: "1.5px solid #F5C77D",
+      borderRadius: 12,
+      padding: 14,
+      color: "#8A5A00",
+      fontSize: 13
+    }
+  }, folderError, " ", /*#__PURE__*/React.createElement("button", {
+    onClick: () => fetchCurrentFolder(true),
+    style: {
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: 8,
+      padding: "6px 12px",
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: "pointer",
+      marginLeft: 8
+    }
+  }, "\u21BB Retry")),
+  !folderLoading && !folderError && folderContents && folderContents.folders.length === 0 && folderContents.files.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "40px 20px",
+      background: "white",
+      border: "1.5px dashed #DDE3ED",
+      borderRadius: 14,
+      color: "#7F8C9A",
+      fontSize: 13
+    }
+  }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCC2"), "This project folder is empty in SharePoint."),
+  !folderLoading && !folderError && folderContents && folderContents.folders.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))",
       gap: 10
     }
-  }, FOLDERS.map(f => {
-    const hF = !!FORM_FOLDERS[f.name];
+  }, folderContents.folders.map(f => {
+    const fs = getFolderStyle(f.name);
+    const hF = project.app && !!FORM_FOLDERS[f.name];
     return /*#__PURE__*/React.createElement("button", {
       key: f.name,
       onClick: () => go("folder-contents", undefined, f.name),
@@ -9102,14 +9155,14 @@ function App() {
       style: {
         width: 46,
         height: 46,
-        background: f.color + "20",
+        background: fs.color + "20",
         borderRadius: 12,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         fontSize: 22
       }
-    }, f.icon), /*#__PURE__*/React.createElement("div", {
+    }, fs.icon), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 10,
         fontWeight: 700,
@@ -9118,50 +9171,71 @@ function App() {
         textAlign: "center"
       }
     }, f.name));
-  }))), view === "folder-contents" && folder && /*#__PURE__*/React.createElement(React.Fragment, null,
-  // Sub-folder render: if the current location has child folders defined in SUB_FOLDERS, render them and skip the forms/PDFs section.
-  currentSubFolders && currentSubFolders.style === "list" && /*#__PURE__*/React.createElement("div", {
-    style: { display: "flex", flexDirection: "column", gap: 6 }
-  }, currentSubFolders.items.map(name => /*#__PURE__*/React.createElement("button", {
-    key: name,
-    onClick: () => go("folder-contents", undefined, undefined, null, [...subPath, name]),
+  })),
+  !folderLoading && !folderError && folderContents && folderContents.files.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
-      background: "white",
-      border: "1.5px solid #DDE3ED",
-      borderRadius: 10,
-      padding: "13px 16px",
-      textAlign: "left",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      fontSize: 14,
-      fontWeight: 600,
-      color: "#2C3E50"
+      marginTop: folderContents.folders.length > 0 ? 16 : 0
     }
-  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCC1 ", name), /*#__PURE__*/React.createElement("span", { style: { color: BLUE, fontSize: 18 } }, "\u203A")))),
-  currentSubFolders && currentSubFolders.style === "tiles" && /*#__PURE__*/React.createElement("div", {
-    style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }
-  }, currentSubFolders.items.map(name => /*#__PURE__*/React.createElement("button", {
-    key: name,
-    onClick: () => go("folder-contents", undefined, undefined, null, [...subPath, name]),
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: NAVY,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 8
+    }
+  }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement("button", {
+    key: f.name + (f.url || ""),
+    onClick: () => openFile(f.url),
     style: {
       background: "white",
       border: "1.5px solid #DDE3ED",
       borderRadius: 12,
-      padding: "16px 8px",
+      padding: "13px 14px",
+      marginBottom: 8,
+      width: "100%",
+      textAlign: "left",
       cursor: "pointer",
       display: "flex",
-      flexDirection: "column",
       alignItems: "center",
-      gap: 8
+      gap: 12
     }
   }, /*#__PURE__*/React.createElement("div", {
-    style: { width: 46, height: 46, background: "#3498DB20", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }
-  }, "\uD83D\uDDC2\uFE0F"), /*#__PURE__*/React.createElement("div", {
-    style: { fontSize: 13, fontWeight: 700, color: "#2C3E50" }
-  }, name)))),
-  // Forms render: independent of sub-folders, so SAFETY can show both its inspection form AND its Toolbox Talks sub-folder.
+    style: {
+      width: 38,
+      height: 38,
+      background: "#FFEAEA",
+      borderRadius: 9,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 18
+    }
+  }, "\uD83D\uDCC4"), /*#__PURE__*/React.createElement("div", {
+    style: { flex: 1, minWidth: 0 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 600,
+      color: "#2C3E50",
+      fontSize: 13,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, f.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: "#7F8C9A",
+      fontSize: 11
+    }
+  }, "Opens in SharePoint")), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#BDC3C7",
+      fontSize: 18
+    }
+  }, "\u203A")))) ), view === "folder-contents" && folder && /*#__PURE__*/React.createElement(React.Fragment, null,
+  // Sub-folders, files, and form-tile overlay — all rendered from dynamic SharePoint fetch.
+  // Form tiles only show on app-created projects (project.app === true) where pathKey matches FORM_FOLDERS.
   currentForms && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 8,
@@ -9226,7 +9300,68 @@ function App() {
       color: BLUE,
       fontSize: 18
     }
-  }, "\u203A"))))), (currentPdfs || (!currentSubFolders && !currentForms)) && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "\u203A"))))),
+  // Loading
+  folderLoading && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "40px 20px",
+      color: "#7F8C9A",
+      fontSize: 13
+    }
+  }, "Loading folder\u2026"),
+  // Error + retry
+  folderError && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#FFF4E5",
+      border: "1.5px solid #F5C77D",
+      borderRadius: 12,
+      padding: 14,
+      color: "#8A5A00",
+      fontSize: 13
+    }
+  }, folderError, " ", /*#__PURE__*/React.createElement("button", {
+    onClick: () => fetchCurrentFolder(true),
+    style: {
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: 8,
+      padding: "6px 12px",
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: "pointer",
+      marginLeft: 8
+    }
+  }, "\u21BB Retry")),
+  // Sub-folders from SharePoint (list style for nested navigation)
+  !folderLoading && !folderError && folderContents && folderContents.folders.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+      marginBottom: folderContents.files.length > 0 ? 16 : 0
+    }
+  }, folderContents.folders.map(f => /*#__PURE__*/React.createElement("button", {
+    key: f.name,
+    onClick: () => go("folder-contents", undefined, undefined, null, [...subPath, f.name]),
+    style: {
+      background: "white",
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 10,
+      padding: "13px 16px",
+      textAlign: "left",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      fontSize: 14,
+      fontWeight: 600,
+      color: "#2C3E50"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCC1 ", f.name), /*#__PURE__*/React.createElement("span", { style: { color: BLUE, fontSize: 18 } }, "\u203A")))),
+  // Files from SharePoint
+  !folderLoading && !folderError && folderContents && folderContents.files.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       fontWeight: 700,
@@ -9235,14 +9370,18 @@ function App() {
       letterSpacing: .5,
       marginBottom: 8
     }
-  }, "PDF Files"), (currentPdfs || ["No files uploaded yet"]).map(f => /*#__PURE__*/React.createElement("div", {
-    key: f,
+  }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement("button", {
+    key: f.name + (f.url || ""),
+    onClick: () => openFile(f.url),
     style: {
       background: "white",
       border: "1.5px solid #DDE3ED",
       borderRadius: 12,
       padding: "13px 14px",
       marginBottom: 8,
+      width: "100%",
+      textAlign: "left",
+      cursor: "pointer",
       display: "flex",
       alignItems: "center",
       gap: 12
@@ -9259,26 +9398,40 @@ function App() {
       fontSize: 18
     }
   }, "\uD83D\uDCC4"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
+    style: { flex: 1, minWidth: 0 }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 600,
       color: "#2C3E50",
-      fontSize: 13
+      fontSize: 13,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
     }
-  }, f), /*#__PURE__*/React.createElement("div", {
+  }, f.name), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#7F8C9A",
       fontSize: 11
     }
-  }, "Opens in Safari PDF viewer")), /*#__PURE__*/React.createElement("span", {
+  }, "Opens in SharePoint")), /*#__PURE__*/React.createElement("span", {
     style: {
       color: "#BDC3C7",
       fontSize: 18
     }
-  }, "\u203A"))))), view === "timecard" && /*#__PURE__*/React.createElement("div", {
+  }, "\u203A")))),
+  // Empty state — only when nothing else is showing
+  !folderLoading && !folderError && folderContents && !currentForms && folderContents.folders.length === 0 && folderContents.files.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "40px 20px",
+      background: "white",
+      border: "1.5px dashed #DDE3ED",
+      borderRadius: 14,
+      color: "#7F8C9A",
+      fontSize: 13
+    }
+  }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCC2"), "This folder is empty.")
+  ), view === "timecard" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 14
     }
@@ -9630,7 +9783,7 @@ function JobPicker({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const ql = q.toLowerCase().trim();
-  const list = projects || FALLBACK_PROJECTS;
+  const list = projects || [];
   const fStaples = ql ? TC_JOB_SUGGESTIONS.filter(s => s.toLowerCase().includes(ql)) : TC_JOB_SUGGESTIONS;
   const fProjects = ql ? list.filter(p => p.code.toLowerCase().includes(ql) || p.name.toLowerCase().includes(ql)) : list;
   const choose = v => {
