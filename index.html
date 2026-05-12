@@ -8417,7 +8417,13 @@ function App() {
   // showFeedback=true: surfaces refreshing state + success/error toast (button path).
   // showFeedback=false: silent (initial mount path) — failures keep the cached list as-is.
   const refreshProjects = (showFeedback) => {
-    if (showFeedback) setRefreshing(true);
+    if (showFeedback) {
+      setRefreshing(true);
+      // User-initiated refresh: also blow every folder cache across all projects so subsequent
+      // navigation anywhere in the app pulls fresh from SharePoint. Initial mount skips this
+      // (folderCacheRef is empty on mount anyway).
+      if (folderCacheRef && folderCacheRef.current) folderCacheRef.current = {};
+    }
     return fetch(PROJECTS_FETCH_URL, { method: "POST" })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
@@ -8548,6 +8554,20 @@ function App() {
     fetchCurrentFolder(false);
     // eslint-disable-next-line
   }, [project && project.code, view, sharePointPath]);
+  // User-initiated refresh: drop every cached path for the current project so re-navigation
+  // anywhere in the tree pulls fresh from SharePoint, then re-fetch the current path.
+  // Plain fetchCurrentFolder(true) only invalidates the current path — this version handles
+  // the case where the user wants a deeper or shallower change to also show up.
+  const refreshCurrentFolder = () => {
+    if (!project) return;
+    const cache = folderCacheRef.current;
+    Object.keys(cache).forEach(key => {
+      if (key.indexOf(project.code + ":") === 0) {
+        delete cache[key];
+      }
+    });
+    fetchCurrentFolder(true);
+  };
   // Open a file in a new tab. URLs from the flow are server-relative; prepend SHAREPOINT_HOST.
   const openFile = (url) => {
     if (!url) return;
@@ -9109,6 +9129,24 @@ function App() {
       marginBottom: 8
     }
   }, "\u25CF Blue dot = fillable forms available"),
+  // User-initiated cache invalidation + refetch for the current project.
+  /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", justifyContent: "flex-end", marginBottom: 10 }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: refreshCurrentFolder,
+    disabled: folderLoading,
+    style: {
+      background: "white",
+      color: NAVY,
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 8,
+      padding: "6px 12px",
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: folderLoading ? "default" : "pointer",
+      opacity: folderLoading ? 0.5 : 1
+    }
+  }, folderLoading ? "Refreshing\u2026" : "\u21BB Refresh")),
   // Folder contents — fetched dynamically from SharePoint via FETCH_FOLDER_CONTENTS_URL.
   folderLoading && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -9270,6 +9308,24 @@ function App() {
       fontSize: 18
     }
   }, "\u203A")))) ), view === "folder-contents" && folder && /*#__PURE__*/React.createElement(React.Fragment, null,
+  // User-initiated cache invalidation + refetch for the current project.
+  /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", justifyContent: "flex-end", marginBottom: 10 }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: refreshCurrentFolder,
+    disabled: folderLoading,
+    style: {
+      background: "white",
+      color: NAVY,
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 8,
+      padding: "6px 12px",
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: folderLoading ? "default" : "pointer",
+      opacity: folderLoading ? 0.5 : 1
+    }
+  }, folderLoading ? "Refreshing\u2026" : "\u21BB Refresh")),
   // Sub-folders, files, and form-tile overlay — all rendered from dynamic SharePoint fetch.
   // Form tiles only show on app-created projects (project.app === true) where pathKey matches FORM_FOLDERS.
   currentForms && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
