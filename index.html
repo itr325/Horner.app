@@ -135,19 +135,8 @@ const CONTACTS = {
 //   timeCard: TO timecards, CC project's PM (existing)
 //   returns: TO returns, CC project's PM (when wired)
 //   safety / pre-fab / testing / RFC / RFI: TBD
-const FALLBACK_PROJECTS = [{
-  code: "BRA-25103",
-  name: "CI Design Office & Apts",
-  pm: "corey"
-}, {
-  code: "CAT-25166",
-  name: "Dousman Clubhouse",
-  pm: "jeremy"
-}, {
-  code: "CMA-117",
-  name: "The Corliss - Bldg 7L",
-  pm: "steve"
-}];
+// Active Projects list is a 1-to-1 sync with SharePoint via PROJECTS_FETCH_URL.
+// No hardcoded fallback — empty fetch result means empty list, surfaced as an empty state w/ Refresh button.
 const PROJECTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aa5cb91c782f4b8b89e06f3441595c68/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=RwoZXivyVk7EY3kRWvPdQumUigq_hsyDWIAvcP4ZsY4";
 const CREATE_JOB_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E";
 const UPDATE_PM_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4f704ea9da2f4eeda6518a676ac2bb0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gS73UO7R4CbO13dGN1sKBICk3bog6_ZCDQjThKPHDDY";
@@ -8468,27 +8457,30 @@ function App() {
   });
   const [editPm, setEditPm] = useState({ code: "", pm: "" });
   const [toast, setToast] = useState(null);
-  // Projects state — start with cached list if available, otherwise the hardcoded fallback.
-  // Fetched fresh from SharePoint (via Power Automate) on mount.
+  // Projects state — start with cached list if available, else empty.
+  // SharePoint (via PROJECTS_FETCH_URL) is the source of truth; cache only exists for fast initial render.
   const [projects, setProjects] = useState(() => {
     try {
       const cached = localStorage.getItem(PROJECTS_CACHE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
-    return FALLBACK_PROJECTS;
+    return [];
   });
-  useEffect(() => {
-    let cancelled = false;
-    fetch(PROJECTS_FETCH_URL, { method: "POST" })
+  const [refreshing, setRefreshing] = useState(false);
+  // Single fetch implementation used by both initial mount and the Refresh Projects List button.
+  // showFeedback=true: surfaces refreshing state + success/error toast (button path).
+  // showFeedback=false: silent (initial mount path) — failures keep the cached list as-is.
+  const refreshProjects = (showFeedback) => {
+    if (showFeedback) setRefreshing(true);
+    return fetch(PROJECTS_FETCH_URL, { method: "POST" })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
-        if (cancelled) return;
         // Power Automate returns the Select output array directly.
         const list = Array.isArray(data) ? data : (data && Array.isArray(data.body) ? data.body : null);
-        if (!list) return;
+        if (!list) throw new Error("Unexpected response shape");
         const normalized = list
           .filter(p => p && p.code && p.name)
           .map(p => ({
@@ -8497,12 +8489,24 @@ function App() {
             pm: p.pm && PMS[p.pm] ? p.pm : "unassigned"
           }))
           .sort((a, b) => a.code.localeCompare(b.code));
-        if (normalized.length === 0) return;
+        // 1-to-1 sync: even an empty result is committed (replaces cache).
         setProjects(normalized);
         try { localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(normalized)); } catch (e) {}
+        if (showFeedback) {
+          setRefreshing(false);
+          showToast(normalized.length === 0 ? "Synced — no active projects in SharePoint" : "Projects list refreshed", true);
+        }
       })
-      .catch(() => { /* silent — keep cached/fallback list */ });
-    return () => { cancelled = true; };
+      .catch(() => {
+        if (showFeedback) {
+          setRefreshing(false);
+          showToast("SharePoint sync error — please try again", false);
+        }
+        // Initial mount: silent. Cached list (if any) stays.
+      });
+  };
+  useEffect(() => {
+    refreshProjects(false);
   }, []);
   useEffect(() => {
     if (view === "admin") setEditPm({ code: "", pm: "" });
@@ -8848,11 +8852,43 @@ function App() {
     }
   }, "\uD83D\uDD0D")), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
-      color: "#7F8C9A",
+      textAlign: "center",
+      fontSize: 18,
+      fontWeight: 700,
+      color: NAVY,
+      marginBottom: 12,
+      letterSpacing: 0.3
+    }
+  }, "Active Projects"), projects.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
       marginBottom: 10
     }
-  }, filtered.length, " active projects"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "#7F8C9A"
+    }
+  }, filtered.length, " active projects"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => refreshProjects(true),
+    disabled: refreshing,
+    style: {
+      background: "none",
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 8,
+      padding: "6px 10px",
+      fontSize: 12,
+      fontWeight: 600,
+      color: NAVY,
+      cursor: refreshing ? "wait" : "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      opacity: refreshing ? 0.6 : 1
+    }
+  }, refreshing ? "\u21BB Refreshing\u2026" : "\u21BB Refresh")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -8914,7 +8950,48 @@ function App() {
       fontWeight: 700,
       flexShrink: 0
     }
-  }, PMS[p.pm].name))))), view === "folders" && project && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, PMS[p.pm].name))))), projects.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "48px 24px",
+      background: "white",
+      border: "1.5px dashed #DDE3ED",
+      borderRadius: 14,
+      color: "#7F8C9A"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 44,
+      marginBottom: 14
+    }
+  }, "\uD83D\uDCC2"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: "#2C3E50",
+      marginBottom: 6
+    }
+  }, "No Active Projects"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      marginBottom: 20,
+      lineHeight: 1.5
+    }
+  }, "SharePoint sync returned no projects.", /*#__PURE__*/React.createElement("br"), "Create a job from the Admin Panel or tap below to re-sync."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => refreshProjects(true),
+    disabled: refreshing,
+    style: {
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: "12px 22px",
+      fontSize: 14,
+      fontWeight: 700,
+      cursor: refreshing ? "wait" : "pointer",
+      opacity: refreshing ? 0.6 : 1
+    }
+  }, refreshing ? "Refreshing\u2026" : "\u21BB Refresh Projects List")), view === "folders" && project && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 12,
