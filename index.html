@@ -8873,8 +8873,19 @@ function PdfMarkupView(props) {
   const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0 });
   const drawingRef = useRef(false);
   const currentRef = useRef(null);
+  // Zoom / pan. viewRef holds the live transform (zoom, panX, panY in document-area-local px);
+  // it's applied imperatively to the page wrapper so pinch frames don't trigger React renders.
+  // pointersRef tracks active pointers for the draw-vs-gesture state machine; gestureRef holds
+  // the pinch baseline. drawPointerIdRef pins drawing to the one pointer that started it.
+  const wrapperRef = useRef(null);
+  const docAreaRef = useRef(null);
+  const viewRef = useRef({ zoom: 1, panX: 0, panY: 0 });
+  const pointersRef = useRef(new Map());
+  const gestureRef = useRef(null);
+  const drawPointerIdRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pageReady, setPageReady] = useState(false);
   const [numPages, setNumPages] = useState(0);
   const [pageNum, setPageNum] = useState(1);
   const [annotations, setAnnotations] = useState({});
@@ -8947,7 +8958,10 @@ function PdfMarkupView(props) {
       renderTaskRef.current = null;
     }
     drawingRef.current = false;
+    drawPointerIdRef.current = null;
     currentRef.current = null;
+    pointersRef.current.clear();
+    gestureRef.current = null;
     pdf.getPage(pageNum).then(page => {
       if (cancelled) return;
       const dpr = window.devicePixelRatio || 1;
@@ -8975,6 +8989,9 @@ function PdfMarkupView(props) {
       task.promise.then(() => {
         if (cancelled) return;
         renderTaskRef.current = null;
+        // Reset zoom to fit and center the page in the document area.
+        setView({ zoom: 1, panX: 0, panY: 0 });
+        setPageReady(true);
         rerender();
       }).catch(() => {});
     }).catch(() => {
@@ -9071,8 +9088,88 @@ function PdfMarkupView(props) {
       return copy;
     });
   }
-  function onPointerDown(e) {
-    if (loading || error) return;
+  // ---- zoom / pan ----------------------------------------------------------
+  // Apply viewRef to the page wrapper imperatively (no React render on pinch frames).
+  function applyTransform() {
+    const wrap = wrapperRef.current;
+    if (!wrap) return;
+    const v = viewRef.current;
+    wrap.style.transformOrigin = "0 0";
+    wrap.style.transform = "translate(" + v.panX + "px," + v.panY + "px) scale(" + v.zoom + ")";
+  }
+  // Keep the page sensibly within the document area: center it on any axis where the page
+  // is smaller than the viewport, otherwise clamp so its edges can't be dragged inside.
+  function clampView(v) {
+    const docArea = docAreaRef.current;
+    const d = dimsRef.current;
+    if (!docArea || !d.cssW) return v;
+    const vw = docArea.clientWidth;
+    const vh = docArea.clientHeight;
+    const cw = d.cssW * v.zoom;
+    const ch = d.cssH * v.zoom;
+    let px = v.panX, py = v.panY;
+    if (cw <= vw) px = (vw - cw) / 2;
+    else px = Math.min(0, Math.max(vw - cw, px));
+    if (ch <= vh) py = (vh - ch) / 2;
+    else py = Math.min(0, Math.max(vh - ch, py));
+    return { zoom: v.zoom, panX: px, panY: py };
+  }
+  function setView(v) {
+    viewRef.current = clampView(v);
+    applyTransform();
+  }
+  function fitView() {
+    setView({ zoom: 1, panX: 0, panY: 0 });
+  }
+  // Pointer position in document-area-local coordinates (matches panX/panY space).
+  function localPoint(e) {
+    const docArea = docAreaRef.current;
+    const rect = docArea ? docArea.getBoundingClientRect() : { left: 0, top: 0 };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  // Capture the pinch baseline from the current two pointers.
+  function beginGesture() {
+    const pts = Array.from(pointersRef.current.values());
+    if (pts.length < 2) return;
+    const a = pts[0], b = pts[1];
+    const d0 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const v = viewRef.current;
+    gestureRef.current = {
+      active: true,
+      d0: d0,
+      m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      zoom0: v.zoom,
+      panX0: v.panX,
+      panY0: v.panY
+    };
+  }
+  // Pinch: scale around the finger midpoint; two-finger drag pans.
+  function updateGesture() {
+    const g = gestureRef.current;
+    if (!g || !g.active) return;
+    const pts = Array.from(pointersRef.current.values());
+    if (pts.length < 2) return;
+    const a = pts[0], b = pts[1];
+    const d1 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const zoom1 = Math.max(1, Math.min(6, g.zoom0 * (d1 / g.d0)));
+    // The content point under the original midpoint should stay under the current midpoint.
+    const cx = (g.m0.x - g.panX0) / g.zoom0;
+    const cy = (g.m0.y - g.panY0) / g.zoom0;
+    setView({ zoom: zoom1, panX: m1.x - cx * zoom1, panY: m1.y - cy * zoom1 });
+  }
+  // ---- drawing -------------------------------------------------------------
+  // Pointer → normalized (0..1) coordinates on the annotation canvas. getBoundingClientRect
+  // already reflects the wrapper's CSS transform, so this is correct at any zoom / pan.
+  function getNormPoint(e) {
+    const canvas = annotCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) / rect.width,
+      y: (e.clientY - rect.top) / rect.height
+    };
+  }
+  function startDraw(e) {
     const p = getNormPoint(e);
     if (tool === "text") {
       if (textDraft) { commitText(); return; }
@@ -9084,6 +9181,7 @@ function PdfMarkupView(props) {
       try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
     }
     drawingRef.current = true;
+    drawPointerIdRef.current = e.pointerId;
     const d = dimsRef.current;
     const dpr = window.devicePixelRatio || 1;
     const widthNorm = (toolSize[tool] * dpr) / d.w;
@@ -9095,8 +9193,8 @@ function PdfMarkupView(props) {
     }
     rerender();
   }
-  function onPointerMove(e) {
-    if (!drawingRef.current) return;
+  function moveDraw(e) {
+    if (!drawingRef.current || e.pointerId !== drawPointerIdRef.current) return;
     e.preventDefault();
     const cur = currentRef.current;
     if (!cur) return;
@@ -9105,14 +9203,69 @@ function PdfMarkupView(props) {
     else cur.points.push(p);
     rerender();
   }
-  function onPointerUp(e) {
-    if (!drawingRef.current) return;
+  function endDraw(e) {
+    if (!drawingRef.current || e.pointerId !== drawPointerIdRef.current) return;
     e.preventDefault();
     drawingRef.current = false;
+    drawPointerIdRef.current = null;
     const cur = currentRef.current;
     currentRef.current = null;
     if (cur) addAnnotation(cur);
     else rerender();
+  }
+  // Discard an in-progress stroke (used when a 2nd finger lands and we switch to a gesture).
+  function cancelDraw() {
+    const id = drawPointerIdRef.current;
+    drawingRef.current = false;
+    drawPointerIdRef.current = null;
+    currentRef.current = null;
+    const canvas = annotCanvasRef.current;
+    if (canvas && id != null && canvas.releasePointerCapture) {
+      try { canvas.releasePointerCapture(id); } catch (err) {}
+    }
+    rerender();
+  }
+  // ---- pointer event routing ----------------------------------------------
+  // Pencil always draws. One finger draws. Two fingers pinch/pan. Adding or removing a
+  // finger mid-gesture re-baselines the pinch so it stays smooth.
+  function onPointerDown(e) {
+    if (loading || error) return;
+    pointersRef.current.set(e.pointerId, Object.assign(localPoint(e), { type: e.pointerType }));
+    if (e.pointerType === "pen") {
+      startDraw(e);
+      return;
+    }
+    const hasPen = Array.from(pointersRef.current.values()).some(p => p.type === "pen");
+    if (hasPen) return; // a pencil owns drawing; ignore stray fingers
+    const n = pointersRef.current.size;
+    if (n === 1) {
+      startDraw(e);
+    } else if (n >= 2) {
+      if (drawingRef.current) cancelDraw();
+      beginGesture();
+    }
+  }
+  function onPointerMove(e) {
+    if (pointersRef.current.has(e.pointerId)) {
+      const prev = pointersRef.current.get(e.pointerId);
+      pointersRef.current.set(e.pointerId, Object.assign(localPoint(e), { type: prev.type }));
+    }
+    if (gestureRef.current && gestureRef.current.active) {
+      e.preventDefault();
+      updateGesture();
+      return;
+    }
+    moveDraw(e);
+  }
+  function onPointerUp(e) {
+    pointersRef.current.delete(e.pointerId);
+    if (gestureRef.current && gestureRef.current.active) {
+      e.preventDefault();
+      if (pointersRef.current.size >= 2) beginGesture(); // re-baseline with remaining fingers
+      else gestureRef.current = null;
+      return;
+    }
+    endDraw(e);
   }
   function commitText() {
     const draft = textDraft;
@@ -9136,7 +9289,10 @@ function PdfMarkupView(props) {
     if (n < 1 || n > numPages) return;
     if (textDraft) commitText();
     drawingRef.current = false;
+    drawPointerIdRef.current = null;
     currentRef.current = null;
+    pointersRef.current.clear();
+    gestureRef.current = null;
     setPageNum(n);
   }
   // ---- render ----
@@ -9218,6 +9374,15 @@ function PdfMarkupView(props) {
         cursor: annCount === 0 ? "default" : "pointer", opacity: annCount === 0 ? 0.4 : 1
       }
     }, "\u21B6"),
+    // Fit to screen — resets zoom/pan
+    /*#__PURE__*/React.createElement("button", {
+      onClick: fitView,
+      title: "Fit to screen",
+      style: {
+        width: 44, height: 40, borderRadius: 8, border: "none",
+        background: "#2E3850", color: "white", fontSize: 16, fontWeight: 700, cursor: "pointer"
+      }
+    }, "\u26F6"),
     // Spacer pushes page nav to the bottom
     /*#__PURE__*/React.createElement("div", { style: { flex: 1, minHeight: 8 } }),
     // Page navigation
@@ -9249,15 +9414,22 @@ function PdfMarkupView(props) {
       display: "flex", flexDirection: "row", touchAction: "none"
     }
   },
-    // Document area
+    // Document area — the page wrapper inside is positioned + transformed for zoom/pan.
     /*#__PURE__*/React.createElement("div", {
-      style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto", padding: 14 }
+      ref: docAreaRef,
+      style: { flex: 1, position: "relative", overflow: "hidden", background: "#2A2F3A" }
     },
-      loading
-        ? /*#__PURE__*/React.createElement("div", { style: { color: "#9AA5B4", fontSize: 14 } }, "Loading PDF\u2026")
-        : error
-          ? /*#__PURE__*/React.createElement("div", { style: { color: "#E8909A", fontSize: 14, textAlign: "center", maxWidth: 320, lineHeight: 1.5 } }, error)
-          : /*#__PURE__*/React.createElement("div", { style: { position: "relative", lineHeight: 0 } },
+      error
+        ? /*#__PURE__*/React.createElement("div", {
+            style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, color: "#E8909A", fontSize: 14, textAlign: "center", lineHeight: 1.5 }
+          }, error)
+        : /*#__PURE__*/React.createElement(React.Fragment, null,
+            // Page wrapper — always mounted (when no error) so the render effect can size its
+            // canvases. The loading overlay below sits on top until the first page has painted.
+            /*#__PURE__*/React.createElement("div", {
+              ref: wrapperRef,
+              style: { position: "absolute", left: 0, top: 0, lineHeight: 0, willChange: "transform" }
+            },
               /*#__PURE__*/React.createElement("canvas", {
                 ref: pageCanvasRef,
                 style: { display: "block", borderRadius: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }
@@ -9288,7 +9460,11 @@ function PdfMarkupView(props) {
                   borderRadius: 3, padding: "1px 4px", outline: "none", minWidth: 90, lineHeight: 1.2
                 }
               })
-            )
+            ),
+            (loading || !pageReady) && /*#__PURE__*/React.createElement("div", {
+              style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#2A2F3A", color: "#9AA5B4", fontSize: 14 }
+            }, "Loading PDF\u2026")
+          )
     ),
     toolbar
   );
