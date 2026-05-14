@@ -8875,14 +8875,15 @@ function PdfMarkupView(props) {
   const currentRef = useRef(null);
   // Zoom / pan. viewRef holds the live transform (zoom, panX, panY in document-area-local px);
   // it's applied imperatively to the page wrapper so pinch frames don't trigger React renders.
-  // pointersRef tracks active pointers for the draw-vs-gesture state machine; gestureRef holds
-  // the pinch baseline. drawPointerIdRef pins drawing to the one pointer that started it.
+  // gestureRef holds the pinch baseline. Input uses TOUCH events (not pointer events): on iOS,
+  // pointer events fire a pointercancel on the first finger when a second lands, which races
+  // the draw-vs-gesture logic. e.touches is authoritative on every touch event, so there's no
+  // race. handlersRef lets the non-passive listeners always call the latest handler closures.
   const wrapperRef = useRef(null);
   const docAreaRef = useRef(null);
   const viewRef = useRef({ zoom: 1, panX: 0, panY: 0 });
-  const pointersRef = useRef(new Map());
   const gestureRef = useRef(null);
-  const drawPointerIdRef = useRef(null);
+  const handlersRef = useRef({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pageReady, setPageReady] = useState(false);
@@ -8958,9 +8959,7 @@ function PdfMarkupView(props) {
       renderTaskRef.current = null;
     }
     drawingRef.current = false;
-    drawPointerIdRef.current = null;
     currentRef.current = null;
-    pointersRef.current.clear();
     gestureRef.current = null;
     pdf.getPage(pageNum).then(page => {
       if (cancelled) return;
@@ -9121,22 +9120,19 @@ function PdfMarkupView(props) {
   function fitView() {
     setView({ zoom: 1, panX: 0, panY: 0 });
   }
-  // Pointer position in document-area-local coordinates (matches panX/panY space).
-  function localPoint(e) {
+  // Capture the pinch baseline from a touch list (positions in document-area-local space).
+  function gestureXY(t) {
     const docArea = docAreaRef.current;
     const rect = docArea ? docArea.getBoundingClientRect() : { left: 0, top: 0 };
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
   }
-  // Capture the pinch baseline from the current two pointers.
-  function beginGesture() {
-    const pts = Array.from(pointersRef.current.values());
-    if (pts.length < 2) return;
-    const a = pts[0], b = pts[1];
-    const d0 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+  function beginGesture(touches) {
+    if (!touches || touches.length < 2) return;
+    const a = gestureXY(touches[0]), b = gestureXY(touches[1]);
     const v = viewRef.current;
     gestureRef.current = {
       active: true,
-      d0: d0,
+      d0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
       m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
       zoom0: v.zoom,
       panX0: v.panX,
@@ -9144,12 +9140,10 @@ function PdfMarkupView(props) {
     };
   }
   // Pinch: scale around the finger midpoint; two-finger drag pans.
-  function updateGesture() {
+  function updateGesture(touches) {
     const g = gestureRef.current;
-    if (!g || !g.active) return;
-    const pts = Array.from(pointersRef.current.values());
-    if (pts.length < 2) return;
-    const a = pts[0], b = pts[1];
+    if (!g || !g.active || !touches || touches.length < 2) return;
+    const a = gestureXY(touches[0]), b = gestureXY(touches[1]);
     const d1 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
     const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     const zoom1 = Math.max(1, Math.min(6, g.zoom0 * (d1 / g.d0)));
@@ -9159,29 +9153,24 @@ function PdfMarkupView(props) {
     setView({ zoom: zoom1, panX: m1.x - cx * zoom1, panY: m1.y - cy * zoom1 });
   }
   // ---- drawing -------------------------------------------------------------
-  // Pointer → normalized (0..1) coordinates on the annotation canvas. getBoundingClientRect
+  // pt is anything with clientX / clientY (a Touch or a MouseEvent). getBoundingClientRect
   // already reflects the wrapper's CSS transform, so this is correct at any zoom / pan.
-  function getNormPoint(e) {
+  function getNormPoint(pt) {
     const canvas = annotCanvasRef.current;
     const rect = canvas.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height
+      x: (pt.clientX - rect.left) / rect.width,
+      y: (pt.clientY - rect.top) / rect.height
     };
   }
-  function startDraw(e) {
-    const p = getNormPoint(e);
+  function startDraw(pt) {
+    const p = getNormPoint(pt);
     if (tool === "text") {
       if (textDraft) { commitText(); return; }
       setTextDraft({ x: p.x, y: p.y, value: "" });
       return;
     }
-    e.preventDefault();
-    if (e.target.setPointerCapture) {
-      try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
-    }
     drawingRef.current = true;
-    drawPointerIdRef.current = e.pointerId;
     const d = dimsRef.current;
     const dpr = window.devicePixelRatio || 1;
     const widthNorm = (toolSize[tool] * dpr) / d.w;
@@ -9193,21 +9182,18 @@ function PdfMarkupView(props) {
     }
     rerender();
   }
-  function moveDraw(e) {
-    if (!drawingRef.current || e.pointerId !== drawPointerIdRef.current) return;
-    e.preventDefault();
+  function moveDraw(pt) {
+    if (!drawingRef.current) return;
     const cur = currentRef.current;
     if (!cur) return;
-    const p = getNormPoint(e);
+    const p = getNormPoint(pt);
     if (cur.tool === "arrow") cur.end = p;
     else cur.points.push(p);
     rerender();
   }
-  function endDraw(e) {
-    if (!drawingRef.current || e.pointerId !== drawPointerIdRef.current) return;
-    e.preventDefault();
+  function endDraw() {
+    if (!drawingRef.current) return;
     drawingRef.current = false;
-    drawPointerIdRef.current = null;
     const cur = currentRef.current;
     currentRef.current = null;
     if (cur) addAnnotation(cur);
@@ -9215,57 +9201,86 @@ function PdfMarkupView(props) {
   }
   // Discard an in-progress stroke (used when a 2nd finger lands and we switch to a gesture).
   function cancelDraw() {
-    const id = drawPointerIdRef.current;
     drawingRef.current = false;
-    drawPointerIdRef.current = null;
     currentRef.current = null;
-    const canvas = annotCanvasRef.current;
-    if (canvas && id != null && canvas.releasePointerCapture) {
-      try { canvas.releasePointerCapture(id); } catch (err) {}
-    }
     rerender();
   }
-  // ---- pointer event routing ----------------------------------------------
-  // Pencil always draws. One finger draws. Two fingers pinch/pan. Adding or removing a
-  // finger mid-gesture re-baselines the pinch so it stays smooth.
-  function onPointerDown(e) {
+  // ---- touch / mouse input -------------------------------------------------
+  // Touch events (not pointer events): e.touches gives the authoritative finger list on every
+  // event, so the draw-vs-pinch decision never races a pointercancel. Apple Pencil is detected
+  // via Touch.touchType === "stylus" and always draws regardless of fingers on the glass.
+  function findStylus(touchList) {
+    for (let i = 0; i < touchList.length; i++) {
+      if (touchList[i].touchType === "stylus") return touchList[i];
+    }
+    return null;
+  }
+  function onTouchStart(e) {
     if (loading || error) return;
-    pointersRef.current.set(e.pointerId, Object.assign(localPoint(e), { type: e.pointerType }));
-    if (e.pointerType === "pen") {
-      startDraw(e);
+    const touches = e.touches;
+    const stylus = findStylus(touches);
+    if (stylus) {
+      if (!drawingRef.current) startDraw(stylus);
+      e.preventDefault();
       return;
     }
-    const hasPen = Array.from(pointersRef.current.values()).some(p => p.type === "pen");
-    if (hasPen) return; // a pencil owns drawing; ignore stray fingers
-    const n = pointersRef.current.size;
-    if (n === 1) {
-      startDraw(e);
-    } else if (n >= 2) {
+    if (touches.length === 1) {
+      startDraw(touches[0]);
+      e.preventDefault();
+    } else if (touches.length >= 2) {
       if (drawingRef.current) cancelDraw();
-      beginGesture();
+      beginGesture(touches);
+      e.preventDefault();
     }
   }
-  function onPointerMove(e) {
-    if (pointersRef.current.has(e.pointerId)) {
-      const prev = pointersRef.current.get(e.pointerId);
-      pointersRef.current.set(e.pointerId, Object.assign(localPoint(e), { type: prev.type }));
-    }
-    if (gestureRef.current && gestureRef.current.active) {
-      e.preventDefault();
-      updateGesture();
+  function onTouchMove(e) {
+    if (loading || error) return;
+    const touches = e.touches;
+    const stylus = findStylus(touches);
+    if (stylus) {
+      if (drawingRef.current) { moveDraw(stylus); e.preventDefault(); }
       return;
     }
-    moveDraw(e);
-  }
-  function onPointerUp(e) {
-    pointersRef.current.delete(e.pointerId);
-    if (gestureRef.current && gestureRef.current.active) {
+    if (gestureRef.current && gestureRef.current.active && touches.length >= 2) {
+      updateGesture(touches);
       e.preventDefault();
-      if (pointersRef.current.size >= 2) beginGesture(); // re-baseline with remaining fingers
+      return;
+    }
+    if (drawingRef.current && touches.length === 1) {
+      moveDraw(touches[0]);
+      e.preventDefault();
+    }
+  }
+  function onTouchEnd(e) {
+    const touches = e.touches; // remaining touches
+    if (gestureRef.current && gestureRef.current.active) {
+      if (touches.length >= 2) beginGesture(touches); // re-baseline with remaining fingers
       else gestureRef.current = null;
+      e.preventDefault();
       return;
     }
-    endDraw(e);
+    if (drawingRef.current) {
+      if (findStylus(touches)) return; // pencil still down — keep drawing
+      endDraw();
+      e.preventDefault();
+    }
+  }
+  function onTouchCancel(e) {
+    if (drawingRef.current) cancelDraw();
+    const touches = e.touches;
+    if (touches && touches.length >= 2) beginGesture(touches);
+    else gestureRef.current = null;
+  }
+  // Mouse fallback — desktop testing only; iOS goes through the touch handlers above.
+  function onMouseDown(e) {
+    if (loading || error || e.button !== 0) return;
+    startDraw(e);
+  }
+  function onMouseMove(e) {
+    if (drawingRef.current) moveDraw(e);
+  }
+  function onMouseUp() {
+    if (drawingRef.current) endDraw();
   }
   function commitText() {
     const draft = textDraft;
@@ -9289,12 +9304,46 @@ function PdfMarkupView(props) {
     if (n < 1 || n > numPages) return;
     if (textDraft) commitText();
     drawingRef.current = false;
-    drawPointerIdRef.current = null;
     currentRef.current = null;
-    pointersRef.current.clear();
     gestureRef.current = null;
     setPageNum(n);
   }
+  // Keep the latest handler closures reachable from the stable (non-passive) listeners below.
+  handlersRef.current = {
+    onTouchStart: onTouchStart, onTouchMove: onTouchMove, onTouchEnd: onTouchEnd,
+    onTouchCancel: onTouchCancel, onMouseDown: onMouseDown, onMouseMove: onMouseMove, onMouseUp: onMouseUp
+  };
+  // Attach input listeners directly so touch listeners are non-passive ({ passive: false }) and
+  // preventDefault() actually suppresses native scroll/zoom. React's onTouch* props can be
+  // passive, which would make preventDefault a no-op. Re-runs only when the canvas mounts.
+  useEffect(() => {
+    const canvas = annotCanvasRef.current;
+    if (!canvas) return;
+    const ts = (e) => handlersRef.current.onTouchStart(e);
+    const tm = (e) => handlersRef.current.onTouchMove(e);
+    const te = (e) => handlersRef.current.onTouchEnd(e);
+    const tc = (e) => handlersRef.current.onTouchCancel(e);
+    const md = (e) => handlersRef.current.onMouseDown(e);
+    const mm = (e) => handlersRef.current.onMouseMove(e);
+    const mu = (e) => handlersRef.current.onMouseUp(e);
+    const opts = { passive: false };
+    canvas.addEventListener("touchstart", ts, opts);
+    canvas.addEventListener("touchmove", tm, opts);
+    canvas.addEventListener("touchend", te, opts);
+    canvas.addEventListener("touchcancel", tc, opts);
+    canvas.addEventListener("mousedown", md);
+    canvas.addEventListener("mousemove", mm);
+    canvas.addEventListener("mouseup", mu);
+    return () => {
+      canvas.removeEventListener("touchstart", ts, opts);
+      canvas.removeEventListener("touchmove", tm, opts);
+      canvas.removeEventListener("touchend", te, opts);
+      canvas.removeEventListener("touchcancel", tc, opts);
+      canvas.removeEventListener("mousedown", md);
+      canvas.removeEventListener("mousemove", mm);
+      canvas.removeEventListener("mouseup", mu);
+    };
+  }, [error]);
   // ---- render ----
   const TOOLS = [
     { id: "pen", label: "\u270F\uFE0F", name: "Pen" },
@@ -9436,10 +9485,6 @@ function PdfMarkupView(props) {
               }),
               /*#__PURE__*/React.createElement("canvas", {
                 ref: annotCanvasRef,
-                onPointerDown: onPointerDown,
-                onPointerMove: onPointerMove,
-                onPointerUp: onPointerUp,
-                onPointerCancel: onPointerUp,
                 style: { position: "absolute", left: 0, top: 0, touchAction: "none", cursor: "crosshair" }
               }),
               textDraft && /*#__PURE__*/React.createElement("input", {
