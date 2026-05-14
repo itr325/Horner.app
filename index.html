@@ -8870,7 +8870,20 @@ function PdfMarkupView(props) {
   const annotCanvasRef = useRef(null);
   const pdfDocRef = useRef(null);
   const renderTaskRef = useRef(null);
-  const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0 });
+  const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0, fit: 1 });
+  // Detail layer: a second PDF canvas that renders ONLY the on-screen region at full zoom
+  // resolution, sitting on top of the base page canvas. The base canvas (pageCanvasRef) is
+  // the whole page at fit resolution exactly as before — it stays the always-present, safe
+  // fallback and the live preview during pinch. The detail canvas (detailCanvasRef) re-renders
+  // the visible region crisply once a gesture settles. Because it only ever covers the
+  // viewport, its buffer stays ~screen-sized at any zoom, so it never approaches the iOS
+  // canvas-size limit the way an oversized whole-page canvas does. pageRef keeps the live
+  // PDF.js page so the detail render doesn't re-fetch it; detailTaskRef / detailTimerRef are
+  // its render task and settle debounce.
+  const detailCanvasRef = useRef(null);
+  const pageRef = useRef(null);
+  const detailTaskRef = useRef(null);
+  const detailTimerRef = useRef(null);
   const drawingRef = useRef(false);
   const currentRef = useRef(null);
   // Zoom / pan. viewRef holds the live transform (zoom, panX, panY in document-area-local px);
@@ -8949,14 +8962,13 @@ function PdfMarkupView(props) {
     });
     return () => { cancelled = true; };
   }, [file]);
-  // Render the current page whenever it changes (or on resize / rotation).
-  // NOTE: do not oversize these canvases past fit*dpr to get sharper zoom. Tried in index_40
-  // and index_41 — a larger backing buffer pushes the canvas past iOS's compositing/texture
-  // size limit, and once the wrapper gets a CSS transform the iPad compositor can't render
-  // the scaled layer, so pinch-zoom silently stops responding (iPhone's smaller screen →
-  // smaller canvas stays under the limit, which is why it only broke on iPad). The real fix
-  // for crisp deep zoom is region/viewport rendering — render only the on-screen area, so the
-  // canvas stays viewport-sized at any zoom — which is its own piece of work, not this effect.
+  // Render the current page whenever it changes (or on resize / rotation). This paints the
+  // BASE page canvas — the whole page at fit resolution. Do not oversize it (tried in
+  // index_40/41: a larger backing buffer pushes the canvas past iOS's compositing/texture
+  // size limit, and once the wrapper gets a CSS transform the iPad compositor stops rendering
+  // the scaled layer, so pinch-zoom silently dies — iPhone's smaller screen kept its canvas
+  // under the limit, which is why it only broke on iPad). Sharp deep zoom is handled instead
+  // by the detail layer (renderDetail), which renders just the on-screen region.
   useEffect(() => {
     const pdf = pdfDocRef.current;
     if (!pdf || loading || error) return;
@@ -8965,11 +8977,13 @@ function PdfMarkupView(props) {
       try { renderTaskRef.current.cancel(); } catch (e) {}
       renderTaskRef.current = null;
     }
+    hideDetail(); // drop any stale detail render from the previous page
     drawingRef.current = false;
     currentRef.current = null;
     gestureRef.current = null;
     pdf.getPage(pageNum).then(page => {
       if (cancelled) return;
+      pageRef.current = page; // kept live so renderDetail doesn't re-fetch the page
       const dpr = window.devicePixelRatio || 1;
       const unscaled = page.getViewport({ scale: 1 });
       const availW = Math.max(200, window.innerWidth - 64 - 28);
@@ -8989,7 +9003,8 @@ function PdfMarkupView(props) {
         c.style.width = cssW + "px";
         c.style.height = cssH + "px";
       });
-      dimsRef.current = { w: viewport.width, h: viewport.height, cssW: cssW, cssH: cssH };
+      // `fit` is stored so renderDetail can map wrapper-local px <-> PDF user-space.
+      dimsRef.current = { w: viewport.width, h: viewport.height, cssW: cssW, cssH: cssH, fit: fit };
       const task = page.render({ canvasContext: pageCanvas.getContext("2d"), viewport: viewport });
       renderTaskRef.current = task;
       task.promise.then(() => {
@@ -9004,7 +9019,11 @@ function PdfMarkupView(props) {
       if (cancelled) return;
       setError("Couldn't render page " + pageNum + ".");
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (detailTimerRef.current) { clearTimeout(detailTimerRef.current); detailTimerRef.current = null; }
+      if (detailTaskRef.current) { try { detailTaskRef.current.cancel(); } catch (e) {} detailTaskRef.current = null; }
+    };
   }, [pageNum, loading, error, resizeTick]);
   // Re-fit on viewport resize / rotation.
   useEffect(() => {
@@ -9126,6 +9145,7 @@ function PdfMarkupView(props) {
   }
   function fitView() {
     setView({ zoom: 1, panX: 0, panY: 0 });
+    hideDetail();
   }
   // Capture the pinch baseline from a touch list (positions in document-area-local space).
   function gestureXY(t) {
@@ -9135,6 +9155,7 @@ function PdfMarkupView(props) {
   }
   function beginGesture(touches) {
     if (!touches || touches.length < 2) return;
+    hideDetail(); // base canvas is the live preview during the pinch; detail re-renders on settle
     const a = gestureXY(touches[0]), b = gestureXY(touches[1]);
     const v = viewRef.current;
     gestureRef.current = {
@@ -9158,6 +9179,86 @@ function PdfMarkupView(props) {
     const cx = (g.m0.x - g.panX0) / g.zoom0;
     const cy = (g.m0.y - g.panY0) / g.zoom0;
     setView({ zoom: zoom1, panX: m1.x - cx * zoom1, panY: m1.y - cy * zoom1 });
+  }
+  // ---- detail layer (crisp zoom) -------------------------------------------
+  // The base page canvas is the whole page at fit resolution, so once it's CSS-scaled up by
+  // the wrapper transform it goes soft. renderDetail paints a SECOND canvas that covers only
+  // the currently-visible region of the page, rendered by PDF.js at the current zoom's true
+  // resolution — so zoomed-in text is sharp. It's a child of the same wrapper and positioned
+  // (in wrapper-local px) over the region it represents, so the wrapper transform places it
+  // exactly over the matching part of the base canvas. Because it only ever spans the
+  // viewport, its backing buffer stays ~screen-sized at ANY zoom — it never approaches the
+  // iOS canvas-size limit that an oversized whole-page canvas hits.
+  function hideDetail() {
+    if (detailTimerRef.current) { clearTimeout(detailTimerRef.current); detailTimerRef.current = null; }
+    if (detailTaskRef.current) { try { detailTaskRef.current.cancel(); } catch (e) {} detailTaskRef.current = null; }
+    const detail = detailCanvasRef.current;
+    if (detail) detail.style.display = "none";
+  }
+  function renderDetail() {
+    const page = pageRef.current;
+    const detail = detailCanvasRef.current;
+    const docArea = docAreaRef.current;
+    const d = dimsRef.current;
+    if (!page || !detail || !docArea || !d.cssW || !d.fit) return;
+    const v = viewRef.current;
+    // At/near fit the base canvas is already full resolution — no detail layer needed.
+    if (v.zoom <= 1.05) { hideDetail(); return; }
+    // Visible region of the page in wrapper-local px (the page spans 0..cssW x 0..cssH there;
+    // screen = translate(pan) + scale(zoom) applied to wrapper-local). Clamp to the page.
+    const docW = docArea.clientWidth, docH = docArea.clientHeight;
+    let x0 = -v.panX / v.zoom, y0 = -v.panY / v.zoom;
+    let visW = docW / v.zoom, visH = docH / v.zoom;
+    if (x0 < 0) { visW += x0; x0 = 0; }
+    if (y0 < 0) { visH += y0; y0 = 0; }
+    if (x0 + visW > d.cssW) visW = d.cssW - x0;
+    if (y0 + visH > d.cssH) visH = d.cssH - y0;
+    if (visW <= 1 || visH <= 1) { hideDetail(); return; }
+    // Backing buffer: device px per wrapper-local px is dpr*zoom. That makes the buffer
+    // ~viewport-sized regardless of zoom. Clamp the longer side as cheap insurance.
+    const dpr = window.devicePixelRatio || 1;
+    const MAX_DETAIL_SIDE = 4000;
+    let renderScale = dpr * v.zoom;
+    let bw = visW * renderScale, bh = visH * renderScale;
+    const longest = Math.max(bw, bh);
+    if (longest > MAX_DETAIL_SIDE) {
+      const k = MAX_DETAIL_SIDE / longest;
+      renderScale *= k; bw *= k; bh *= k;
+    }
+    bw = Math.max(1, Math.round(bw));
+    bh = Math.max(1, Math.round(bh));
+    // Position/size the canvas over the region (wrapper-local). The wrapper transform then
+    // puts it on screen, exactly over the matching slice of the base canvas underneath.
+    detail.style.left = x0 + "px";
+    detail.style.top = y0 + "px";
+    detail.style.width = visW + "px";
+    detail.style.height = visH + "px";
+    detail.width = bw;
+    detail.height = bh;
+    // Render that region. The page is rendered at PDF scale (fit * renderScale); the transform
+    // shifts the region's top-left (x0,y0 wrapper-local -> x0*renderScale buffer px) to the
+    // canvas origin so only the region lands in the buffer.
+    if (detailTaskRef.current) { try { detailTaskRef.current.cancel(); } catch (e) {} detailTaskRef.current = null; }
+    const viewport = page.getViewport({ scale: d.fit * renderScale });
+    const task = page.render({
+      canvasContext: detail.getContext("2d"),
+      viewport: viewport,
+      transform: [1, 0, 0, 1, -x0 * renderScale, -y0 * renderScale]
+    });
+    detailTaskRef.current = task;
+    task.promise.then(() => {
+      detailTaskRef.current = null;
+      detail.style.display = "block";
+    }).catch(() => {});
+  }
+  // Debounced — fires after a gesture settles. hideDetail (called on gesture start) clears any
+  // pending timer, so a render is only ever queued for the most recent settled view.
+  function scheduleDetail() {
+    if (detailTimerRef.current) clearTimeout(detailTimerRef.current);
+    detailTimerRef.current = setTimeout(() => {
+      detailTimerRef.current = null;
+      renderDetail();
+    }, 120);
   }
   // ---- drawing -------------------------------------------------------------
   // pt is anything with clientX / clientY (a Touch or a MouseEvent). getBoundingClientRect
@@ -9265,8 +9366,12 @@ function PdfMarkupView(props) {
   function onTouchEnd(e) {
     const touches = e.touches; // remaining touches
     if (gestureRef.current && gestureRef.current.active) {
-      if (touches.length >= 2) beginGesture(touches); // re-baseline with remaining fingers
-      else gestureRef.current = null;
+      if (touches.length >= 2) {
+        beginGesture(touches); // re-baseline with remaining fingers
+      } else {
+        gestureRef.current = null;
+        scheduleDetail(); // gesture settled — render the visible region crisply
+      }
       e.preventDefault();
       return;
     }
@@ -9280,7 +9385,7 @@ function PdfMarkupView(props) {
     if (drawingRef.current) cancelDraw();
     const touches = e.touches;
     if (touches && touches.length >= 2) beginGesture(touches);
-    else gestureRef.current = null;
+    else { gestureRef.current = null; scheduleDetail(); }
   }
   // Mouse fallback — desktop testing only; iOS goes through the touch handlers above.
   function onMouseDown(e) {
@@ -9495,6 +9600,14 @@ function PdfMarkupView(props) {
               /*#__PURE__*/React.createElement("canvas", {
                 ref: pageCanvasRef,
                 style: { display: "block", borderRadius: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }
+              }),
+              // Detail layer — crisp re-render of just the visible region at the current zoom.
+              // Sits above the base page canvas, below the annotation canvas. Positioned and
+              // sized imperatively by renderDetail; hidden (display:none) until/unless zoomed
+              // in. pointerEvents:none so the annotation canvas above still receives all input.
+              /*#__PURE__*/React.createElement("canvas", {
+                ref: detailCanvasRef,
+                style: { position: "absolute", left: 0, top: 0, display: "none", pointerEvents: "none" }
               }),
               /*#__PURE__*/React.createElement("canvas", {
                 ref: annotCanvasRef,
