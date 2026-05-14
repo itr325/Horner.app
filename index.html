@@ -57,7 +57,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_45";
+const BUILD_ID = "index_46";
 // Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
 // Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
 // FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
@@ -8901,6 +8901,20 @@ function PdfMarkupView(props) {
   const [resizeTick, setResizeTick] = useState(0);
   const [, setTick] = useState(0);
   const rerender = () => setTick(t => t + 1);
+  // ---- diagnostics (index_46) ----------------------------------------------
+  // On-screen readout so issue #2 can be debugged on-device without a Mac:
+  // build id, devicePixelRatio, page-canvas buffer dimensions + megapixels (the
+  // number that matters for the iOS canvas-size wall), CSS size, fit scale,
+  // doc-area viewport size, page number, and whether the PDF.js render task
+  // actually resolves (+ how long it took). Live zoom is written imperatively
+  // from setView so it updates on every pinch frame without a React render.
+  const [dbg, setDbg] = useState({
+    dpr: window.devicePixelRatio || 1,
+    bufW: 0, bufH: 0, cssW: 0, cssH: 0, fit: 0,
+    areaW: 0, areaH: 0, renderStatus: "\u2013", renderMs: 0
+  });
+  const [dbgOpen, setDbgOpen] = useState(true);
+  const zoomReadoutRef = useRef(null);
   const COLORS_BY_TOOL = {
     pen: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
     arrow: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
@@ -8994,16 +9008,37 @@ function PdfMarkupView(props) {
         c.style.height = cssH + "px";
       });
       dimsRef.current = { w: viewport.width, h: viewport.height, cssW: cssW, cssH: cssH };
+      // diagnostics: snapshot the geometry now, mark render in-flight, time it.
+      const docAreaEl = docAreaRef.current;
+      const _t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+      setDbg({
+        dpr: dpr,
+        bufW: viewport.width, bufH: viewport.height,
+        cssW: Math.round(cssW), cssH: Math.round(cssH),
+        fit: fit,
+        areaW: docAreaEl ? docAreaEl.clientWidth : 0,
+        areaH: docAreaEl ? docAreaEl.clientHeight : 0,
+        renderStatus: "rendering\u2026", renderMs: 0
+      });
       const task = page.render({ canvasContext: pageCanvas.getContext("2d"), viewport: viewport });
       renderTaskRef.current = task;
       task.promise.then(() => {
-        if (cancelled) return;
+        const _ms = Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - _t0);
+        if (cancelled) {
+          setDbg(p => Object.assign({}, p, { renderStatus: "cancelled", renderMs: _ms }));
+          return;
+        }
         renderTaskRef.current = null;
+        setDbg(p => Object.assign({}, p, { renderStatus: "ok", renderMs: _ms }));
         // Reset zoom to fit and center the page in the document area.
         setView({ zoom: 1, panX: 0, panY: 0 });
         setPageReady(true);
         rerender();
-      }).catch(() => {});
+      }).catch(() => {
+        const _ms = Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - _t0);
+        // PDF.js rejects this promise both on a real render error and on task.cancel().
+        setDbg(p => Object.assign({}, p, { renderStatus: cancelled ? "cancelled" : "render error", renderMs: _ms }));
+      });
     }).catch(() => {
       if (cancelled) return;
       setError("Couldn't render page " + pageNum + ".");
@@ -9127,6 +9162,10 @@ function PdfMarkupView(props) {
   function setView(v) {
     viewRef.current = clampView(v);
     applyTransform();
+    // diagnostics: live zoom readout, updated imperatively so pinch frames stay render-free.
+    if (zoomReadoutRef.current) {
+      try { zoomReadoutRef.current.textContent = (viewRef.current.zoom || 1).toFixed(2) + "x"; } catch (e) {}
+    }
   }
   function fitView() {
     setView({ zoom: 1, panX: 0, panY: 0 });
@@ -9485,6 +9524,47 @@ function PdfMarkupView(props) {
       ref: docAreaRef,
       style: { flex: 1, position: "relative", overflow: "hidden", background: "#2A2F3A" }
     },
+      // ---- diagnostic readout (index_46) — remove or gate before this ships to field ----
+      /*#__PURE__*/React.createElement("div", {
+        style: {
+          position: "absolute", top: 8, left: 8, zIndex: 6, pointerEvents: "none",
+          font: "600 10px/1.5 ui-monospace,Menlo,Consolas,monospace", color: "#D7E0EC",
+          background: "rgba(15,18,26,0.84)", border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: 6, minWidth: 150
+        }
+      },
+        /*#__PURE__*/React.createElement("div", {
+          onClick: () => setDbgOpen(o => !o),
+          style: {
+            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
+            padding: "4px 7px", cursor: "pointer", pointerEvents: "auto",
+            color: "#7FB2E8", letterSpacing: 0.3,
+            borderBottom: dbgOpen ? "1px solid rgba(255,255,255,0.12)" : "none"
+          }
+        },
+          /*#__PURE__*/React.createElement("span", null, "DIAG \u00B7 " + BUILD_ID),
+          /*#__PURE__*/React.createElement("span", { style: { opacity: 0.7 } }, dbgOpen ? "\u25BE" : "\u25B8")
+        ),
+        dbgOpen && /*#__PURE__*/React.createElement("div", {
+          style: { padding: "5px 7px", display: "flex", flexDirection: "column", gap: 2, whiteSpace: "nowrap" }
+        },
+          /*#__PURE__*/React.createElement("div", null,
+            "dpr " + dbg.dpr + "  zoom ",
+            /*#__PURE__*/React.createElement("span", { ref: zoomReadoutRef, style: { color: "#FFD479" } },
+              (viewRef.current.zoom || 1).toFixed(2) + "x")
+          ),
+          /*#__PURE__*/React.createElement("div", null, "buf " + dbg.bufW + "\u00D7" + dbg.bufH),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#9FE0A8" } },
+            "    " + (dbg.bufW * dbg.bufH / 1e6).toFixed(2) + " MP"),
+          /*#__PURE__*/React.createElement("div", null,
+            "css " + dbg.cssW + "\u00D7" + dbg.cssH + "  fit " + dbg.fit.toFixed(3)),
+          /*#__PURE__*/React.createElement("div", null, "area " + dbg.areaW + "\u00D7" + dbg.areaH),
+          /*#__PURE__*/React.createElement("div", null, "page " + pageNum + "/" + (numPages || "\u2013")),
+          /*#__PURE__*/React.createElement("div", {
+            style: { color: dbg.renderStatus === "ok" ? "#9FE0A8" : (dbg.renderStatus.indexOf("error") >= 0 ? "#E8909A" : "#D7E0EC") }
+          }, "render " + dbg.renderStatus + (dbg.renderMs ? "  " + dbg.renderMs + "ms" : ""))
+        )
+      ),
       error
         ? /*#__PURE__*/React.createElement("div", {
             style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, color: "#E8909A", fontSize: 14, textAlign: "center", lineHeight: 1.5 }
