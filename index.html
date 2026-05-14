@@ -8949,18 +8949,14 @@ function PdfMarkupView(props) {
     });
     return () => { cancelled = true; };
   }, [file]);
-  // Render the current page whenever it changes (or on resize / rotation). The page is
-  // rendered ONCE, at a higher scale than fit, directly into the visible canvas — the existing
-  // CSS-transform zoom then magnifies a high-res bitmap instead of a fit-res one, so zoomed-in
-  // detail stays legible. The scale multiplier is capped by canvas area: a single static
-  // canvas this size renders reliably on iOS, but the whole page can't be rendered at full
-  // pinch zoom (6x) without blowing past the area limit, so very deep zoom is still somewhat
-  // soft. (Rendering OFF-screen, or only the visible region, is the next step if needed —
-  // off-screen canvases render blank on iOS, and region rendering is a larger rework.)
-  // MAX_PAGE_CANVAS_AREA: ~16M px is the well-documented safe iOS canvas ceiling. Bump it if
-  // testing shows headroom on the deployment iPads — the renderAt fail-safe falls back to fit
-  // scale if a device ever rejects the larger canvas.
-  const MAX_PAGE_CANVAS_AREA = 16000000;
+  // Render the current page whenever it changes (or on resize / rotation).
+  // NOTE: do not oversize these canvases past fit*dpr to get sharper zoom. Tried in index_40
+  // and index_41 — a larger backing buffer pushes the canvas past iOS's compositing/texture
+  // size limit, and once the wrapper gets a CSS transform the iPad compositor can't render
+  // the scaled layer, so pinch-zoom silently stops responding (iPhone's smaller screen →
+  // smaller canvas stays under the limit, which is why it only broke on iPad). The real fix
+  // for crisp deep zoom is region/viewport rendering — render only the on-screen area, so the
+  // canvas stays viewport-sized at any zoom — which is its own piece of work, not this effect.
   useEffect(() => {
     const pdf = pdfDocRef.current;
     if (!pdf || loading || error) return;
@@ -8979,52 +8975,31 @@ function PdfMarkupView(props) {
       const availW = Math.max(200, window.innerWidth - 64 - 28);
       const availH = Math.max(200, window.innerHeight - 28);
       const fit = Math.min(availW / unscaled.width, availH / unscaled.height);
-      const baseScale = fit * dpr; // scale at which the page exactly fits, in device px
-      const baseArea = (unscaled.width * baseScale) * (unscaled.height * baseScale);
-      // Render above fit for zoom headroom, capped so the canvas stays within the iOS limit.
-      const quality = Math.max(1, Math.min(2.5, Math.sqrt(MAX_PAGE_CANVAS_AREA / baseArea)));
+      const viewport = page.getViewport({ scale: fit * dpr });
       const pageCanvas = pageCanvasRef.current;
       const annotCanvas = annotCanvasRef.current;
       if (!pageCanvas || !annotCanvas) return;
-      // CSS size is always the fit size — the wrapper's transform handles zoom/pan. Only the
-      // backing buffers are oversized (by `quality`), which is what buys the extra sharpness.
-      const cssW = (unscaled.width * baseScale) / dpr;
-      const cssH = (unscaled.height * baseScale) / dpr;
-      // Render at `scale`; if a non-fit render fails (e.g. a device rejecting the larger
-      // canvas), fall back once to fit scale. Both canvases share the chosen resolution so
-      // annotations drawn while zoomed in are just as crisp as the page.
-      const renderAt = (scale, isRetry) => {
+      pageCanvas.width = viewport.width;
+      pageCanvas.height = viewport.height;
+      annotCanvas.width = viewport.width;
+      annotCanvas.height = viewport.height;
+      const cssW = viewport.width / dpr;
+      const cssH = viewport.height / dpr;
+      [pageCanvas, annotCanvas].forEach(c => {
+        c.style.width = cssW + "px";
+        c.style.height = cssH + "px";
+      });
+      dimsRef.current = { w: viewport.width, h: viewport.height, cssW: cssW, cssH: cssH };
+      const task = page.render({ canvasContext: pageCanvas.getContext("2d"), viewport: viewport });
+      renderTaskRef.current = task;
+      task.promise.then(() => {
         if (cancelled) return;
-        if (renderTaskRef.current) {
-          try { renderTaskRef.current.cancel(); } catch (e) {}
-          renderTaskRef.current = null;
-        }
-        const viewport = page.getViewport({ scale: scale });
-        pageCanvas.width = Math.round(viewport.width);
-        pageCanvas.height = Math.round(viewport.height);
-        annotCanvas.width = pageCanvas.width;
-        annotCanvas.height = pageCanvas.height;
-        [pageCanvas, annotCanvas].forEach(c => {
-          c.style.width = cssW + "px";
-          c.style.height = cssH + "px";
-        });
-        dimsRef.current = { w: pageCanvas.width, h: pageCanvas.height, cssW: cssW, cssH: cssH };
-        const task = page.render({ canvasContext: pageCanvas.getContext("2d"), viewport: viewport });
-        renderTaskRef.current = task;
-        task.promise.then(() => {
-          if (cancelled) return;
-          renderTaskRef.current = null;
-          // Reset zoom to fit and center the page in the document area.
-          setView({ zoom: 1, panX: 0, panY: 0 });
-          setPageReady(true);
-          rerender();
-        }).catch(err => {
-          if (cancelled || (err && err.name === "RenderingCancelledException")) return;
-          if (!isRetry && scale > baseScale) { renderAt(baseScale, true); return; }
-          setError("Couldn't render page " + pageNum + ".");
-        });
-      };
-      renderAt(baseScale * quality, false);
+        renderTaskRef.current = null;
+        // Reset zoom to fit and center the page in the document area.
+        setView({ zoom: 1, panX: 0, panY: 0 });
+        setPageReady(true);
+        rerender();
+      }).catch(() => {});
     }).catch(() => {
       if (cancelled) return;
       setError("Couldn't render page " + pageNum + ".");
