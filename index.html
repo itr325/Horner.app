@@ -57,7 +57,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_49";
+const BUILD_ID = "index_50";
 // Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
 // Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
 // FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
@@ -8874,7 +8874,7 @@ function PdfMarkupView(props) {
   const annotCanvasRef = useRef(null);
   const pdfDocRef = useRef(null);
   const renderTaskRef = useRef(null);
-  const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0 });
+  const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0, fit: 0 });
   const drawingRef = useRef(false);
   const currentRef = useRef(null);
   // Zoom / pan. viewRef holds the live transform (zoom, panX, panY in document-area-local px);
@@ -9085,7 +9085,7 @@ function PdfMarkupView(props) {
         c.style.width = cssW + "px";
         c.style.height = cssH + "px";
       });
-      dimsRef.current = { w: viewport.width, h: viewport.height, cssW: cssW, cssH: cssH };
+      dimsRef.current = { w: viewport.width, h: viewport.height, cssW: cssW, cssH: cssH, fit: fit };
       // diagnostics: snapshot the geometry now, mark render in-flight, time it.
       // MERGE (not replace) — a full-replace here would drop the detail* fields
       // that the diag panel reads, leaving them undefined and crashing the panel.
@@ -9289,30 +9289,33 @@ function PdfMarkupView(props) {
     const regCssW = rxe - rx, regCssH = rye - ry;
     if (regCssW <= 1 || regCssH <= 1) { hideDetail(); return; }
     const dpr = window.devicePixelRatio || 1;
-    // Detail buffer = visible region at full device resolution for this zoom.
-    // regCss*zoom is bounded by the doc-area size, so this never grows past
-    // ~docArea*dpr no matter how far the user zooms in.
-    let bw = Math.round(regCssW * zoom * dpr);
-    let bh = Math.round(regCssH * zoom * dpr);
-    // Defensive cap, far below the probed device ceiling — the natural size
-    // (~area*dpr) never reaches this; it only guards a pathological case.
-    const MAX_DETAIL_PX = 10 * 1e6;
-    if (bw * bh > MAX_DETAIL_PX) {
-      const k = Math.sqrt(MAX_DETAIL_PX / (bw * bh));
-      bw = Math.round(bw * k);
-      bh = Math.round(bh * k);
+    const fit = d.fit;
+    if (!fit) { hideDetail(); return; } // need the page's fit scale to map coords correctly
+    // pxPerCss = device pixels packed per page-CSS unit in the detail buffer.
+    // Naturally zoom*dpr; the defensive cap below can only lower it. The buffer is
+    // regCss*pxPerCss, and since regCss <= docArea/zoom this never exceeds
+    // ~docArea*dpr regardless of how far the user zooms in.
+    let pxPerCss = zoom * dpr;
+    const MAX_DETAIL_PX = 10 * 1e6; // far below the probed device ceiling; a safety belt only
+    if (regCssW * regCssH * pxPerCss * pxPerCss > MAX_DETAIL_PX) {
+      pxPerCss = Math.sqrt(MAX_DETAIL_PX / (regCssW * regCssH));
     }
+    const bw = Math.round(regCssW * pxPerCss);
+    const bh = Math.round(regCssH * pxPerCss);
     if (bw < 2 || bh < 2) { hideDetail(); return; }
     if (detailTaskRef.current) { try { detailTaskRef.current.cancel(); } catch (e) {} detailTaskRef.current = null; }
     dc.width = bw;
     dc.height = bh;
-    // PDF.js render scale that maps the region's width onto the detail buffer,
-    // with a transform that shifts the region's top-left to canvas (0,0). PDF.js
-    // draws the full page display list but the canvas clips it to the region.
-    const detailScale = bw / regCssW;
+    // Coordinate spaces: page-CSS space = PDF-user space * fit. The detail buffer
+    // packs pxPerCss device px per page-CSS unit, so the PDF-user -> buffer scale
+    // is fit*pxPerCss. The transform then shifts the region's top-left — page-CSS
+    // (rx,ry), i.e. rx*pxPerCss in buffer px — to the canvas origin. The previous
+    // build omitted the `fit` factor here, which made PDF.js sample a different
+    // part of the sheet than the detail canvas was positioned over.
+    const detailScale = fit * pxPerCss;
     const viewport = page.getViewport({ scale: detailScale });
-    const offX = -rx * detailScale;
-    const offY = -ry * detailScale;
+    const offX = -rx * pxPerCss;
+    const offY = -ry * pxPerCss;
     const _t0 = (window.performance && performance.now) ? performance.now() : Date.now();
     setDbg(p => Object.assign({}, p, { detailStatus: "rendering\u2026", detailW: bw, detailH: bh, detailMs: 0 }));
     const task = page.render({
