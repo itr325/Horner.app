@@ -57,7 +57,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_47";
+const BUILD_ID = "index_48";
 // Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
 // Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
 // FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
@@ -8911,10 +8911,29 @@ function PdfMarkupView(props) {
   const [dbg, setDbg] = useState({
     dpr: window.devicePixelRatio || 1,
     bufW: 0, bufH: 0, cssW: 0, cssH: 0, fit: 0,
-    areaW: 0, areaH: 0, renderStatus: "\u2013", renderMs: 0
+    areaW: 0, areaH: 0, renderStatus: "\u2013", renderMs: 0,
+    detailStatus: "\u2013", detailW: 0, detailH: 0, detailMs: 0
   });
   const [dbgOpen, setDbgOpen] = useState(true);
   const zoomReadoutRef = useRef(null);
+  // ---- region/viewport rendering (index_48) --------------------------------
+  // Issue #2 fix. The V39 base canvas (pageCanvasRef) is left exactly as-is — it
+  // renders the whole page once at fit resolution and is the always-correct
+  // fallback layer. On top of it sits a *detail* canvas that re-renders ONLY the
+  // currently-visible region at full device resolution for the current zoom, on
+  // gesture-settle. Because it only ever covers the viewport, its buffer is
+  // ~area*dpr (~2.8 MP on the old field iPad) at ANY zoom level — it never grows
+  // with zoom, so it never approaches the device canvas ceiling the probe
+  // measured (~16.8 MP on that iPad; index_41 died at ~16 MP rendering the whole
+  // page oversized — the thing this approach specifically avoids).
+  // The detail canvas lives inside the page wrapper positioned in page-CSS space,
+  // so the wrapper's existing scale(zoom) transform keeps it aligned to the page
+  // during pinch/pan with zero extra math — only its resolution goes stale
+  // between settles, and the base canvas shows through anywhere it doesn't cover.
+  const detailCanvasRef = useRef(null);
+  const detailTaskRef = useRef(null);   // in-flight PDF.js detail render task
+  const detailTimerRef = useRef(null);  // gesture-settle debounce timer
+  const pageObjRef = useRef(null);      // current PDF.js page object, cached for detail renders
   // ---- canvas-ceiling probe (index_47) -------------------------------------
   // Measures THIS device's real canvas wall instead of guessing from index_40/41.
   // For each step it allocates a canvas, fills it, draws a sentinel marker in the
@@ -9046,6 +9065,7 @@ function PdfMarkupView(props) {
     gestureRef.current = null;
     pdf.getPage(pageNum).then(page => {
       if (cancelled) return;
+      pageObjRef.current = page; // cached so detail renders don't re-fetch the page
       const dpr = window.devicePixelRatio || 1;
       const unscaled = page.getViewport({ scale: 1 });
       const availW = Math.max(200, window.innerWidth - 64 - 28);
@@ -9101,7 +9121,7 @@ function PdfMarkupView(props) {
       if (cancelled) return;
       setError("Couldn't render page " + pageNum + ".");
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; hideDetail(); };
   }, [pageNum, loading, error, resizeTick]);
   // Re-fit on viewport resize / rotation.
   useEffect(() => {
@@ -9226,7 +9246,97 @@ function PdfMarkupView(props) {
     }
   }
   function fitView() {
+    hideDetail(); // back to fit — the base canvas is already the correct resolution
     setView({ zoom: 1, panX: 0, panY: 0 });
+  }
+  // ---- region/viewport rendering (index_48) --------------------------------
+  // Tear down the detail layer: cancel any pending/​in-flight render and hide the
+  // canvas so only the V39 base layer shows.
+  function hideDetail() {
+    if (detailTimerRef.current) { clearTimeout(detailTimerRef.current); detailTimerRef.current = null; }
+    if (detailTaskRef.current) { try { detailTaskRef.current.cancel(); } catch (e) {} detailTaskRef.current = null; }
+    const dc = detailCanvasRef.current;
+    if (dc) dc.style.display = "none";
+  }
+  // Debounced trigger — called whenever a pinch/pan settles. Coalesces the burst
+  // of touchend events (finger lifts, 3->2 re-baselines) into one detail render.
+  function scheduleDetail() {
+    if (detailTimerRef.current) clearTimeout(detailTimerRef.current);
+    detailTimerRef.current = setTimeout(renderDetail, 160);
+  }
+  // Re-rasterize just the visible region at full device resolution for the
+  // current zoom, into the detail canvas, and position it over that region in
+  // page-CSS space inside the wrapper (so the wrapper's scale(zoom) aligns it).
+  function renderDetail() {
+    detailTimerRef.current = null;
+    const dc = detailCanvasRef.current;
+    const docArea = docAreaRef.current;
+    const page = pageObjRef.current;
+    const d = dimsRef.current;
+    if (!dc || !docArea || !page || !d.cssW) return;
+    const v = viewRef.current;
+    const zoom = v.zoom || 1;
+    // At/near fit, the base canvas is already at the right resolution.
+    if (zoom <= 1.05) { hideDetail(); return; }
+    // Visible region of the page, in page-CSS space, clamped to the page bounds.
+    const docW = docArea.clientWidth, docH = docArea.clientHeight;
+    const rx = Math.max(0, -v.panX / zoom);
+    const ry = Math.max(0, -v.panY / zoom);
+    const rxe = Math.min(d.cssW, (docW - v.panX) / zoom);
+    const rye = Math.min(d.cssH, (docH - v.panY) / zoom);
+    const regCssW = rxe - rx, regCssH = rye - ry;
+    if (regCssW <= 1 || regCssH <= 1) { hideDetail(); return; }
+    const dpr = window.devicePixelRatio || 1;
+    // Detail buffer = visible region at full device resolution for this zoom.
+    // regCss*zoom is bounded by the doc-area size, so this never grows past
+    // ~docArea*dpr no matter how far the user zooms in.
+    let bw = Math.round(regCssW * zoom * dpr);
+    let bh = Math.round(regCssH * zoom * dpr);
+    // Defensive cap, far below the probed device ceiling — the natural size
+    // (~area*dpr) never reaches this; it only guards a pathological case.
+    const MAX_DETAIL_PX = 10 * 1e6;
+    if (bw * bh > MAX_DETAIL_PX) {
+      const k = Math.sqrt(MAX_DETAIL_PX / (bw * bh));
+      bw = Math.round(bw * k);
+      bh = Math.round(bh * k);
+    }
+    if (bw < 2 || bh < 2) { hideDetail(); return; }
+    if (detailTaskRef.current) { try { detailTaskRef.current.cancel(); } catch (e) {} detailTaskRef.current = null; }
+    dc.width = bw;
+    dc.height = bh;
+    // PDF.js render scale that maps the region's width onto the detail buffer,
+    // with a transform that shifts the region's top-left to canvas (0,0). PDF.js
+    // draws the full page display list but the canvas clips it to the region.
+    const detailScale = bw / regCssW;
+    const viewport = page.getViewport({ scale: detailScale });
+    const offX = -rx * detailScale;
+    const offY = -ry * detailScale;
+    const _t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    setDbg(p => Object.assign({}, p, { detailStatus: "rendering\u2026", detailW: bw, detailH: bh, detailMs: 0 }));
+    const task = page.render({
+      canvasContext: dc.getContext("2d"),
+      viewport: viewport,
+      transform: [1, 0, 0, 1, offX, offY]
+    });
+    detailTaskRef.current = task;
+    task.promise.then(() => {
+      const _ms = Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - _t0);
+      detailTaskRef.current = null;
+      // Place the detail canvas over exactly the region it represents. It lives in
+      // page-CSS space inside the wrapper; the wrapper's scale(zoom) maps it onto
+      // the on-screen region, buffer pixels landing 1:1 on device pixels.
+      dc.style.width = regCssW + "px";
+      dc.style.height = regCssH + "px";
+      dc.style.left = rx + "px";
+      dc.style.top = ry + "px";
+      dc.style.display = "block";
+      setDbg(p => Object.assign({}, p, { detailStatus: "ok", detailMs: _ms }));
+    }).catch(() => {
+      const _ms = Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - _t0);
+      // Rejects on a real render error OR on cancel() (a newer gesture superseded
+      // this render). Either way the base canvas stays visible underneath.
+      setDbg(p => Object.assign({}, p, { detailStatus: "superseded/err", detailMs: _ms }));
+    });
   }
   // Capture the pinch baseline from a touch list (positions in document-area-local space).
   function gestureXY(t) {
@@ -9236,6 +9346,12 @@ function PdfMarkupView(props) {
   }
   function beginGesture(touches) {
     if (!touches || touches.length < 2) return;
+    // A new gesture is starting — drop any pending/in-flight detail render so a
+    // stale-zoom result can't pop in mid-gesture. The detail canvas already on
+    // screen stays put: it's pinned in page-CSS space, so it tracks the page
+    // through the pinch/pan and is simply replaced when this gesture settles.
+    if (detailTimerRef.current) { clearTimeout(detailTimerRef.current); detailTimerRef.current = null; }
+    if (detailTaskRef.current) { try { detailTaskRef.current.cancel(); } catch (e) {} detailTaskRef.current = null; }
     const a = gestureXY(touches[0]), b = gestureXY(touches[1]);
     const v = viewRef.current;
     gestureRef.current = {
@@ -9367,7 +9483,7 @@ function PdfMarkupView(props) {
     const touches = e.touches; // remaining touches
     if (gestureRef.current && gestureRef.current.active) {
       if (touches.length >= 2) beginGesture(touches); // re-baseline with remaining fingers
-      else gestureRef.current = null;
+      else { gestureRef.current = null; scheduleDetail(); } // gesture settled — sharpen the visible region
       e.preventDefault();
       return;
     }
@@ -9381,7 +9497,7 @@ function PdfMarkupView(props) {
     if (drawingRef.current) cancelDraw();
     const touches = e.touches;
     if (touches && touches.length >= 2) beginGesture(touches);
-    else gestureRef.current = null;
+    else { gestureRef.current = null; scheduleDetail(); } // treat as a settle — re-sharpen
   }
   // Mouse fallback — desktop testing only; iOS goes through the touch handlers above.
   function onMouseDown(e) {
@@ -9621,6 +9737,12 @@ function PdfMarkupView(props) {
           /*#__PURE__*/React.createElement("div", {
             style: { color: dbg.renderStatus === "ok" ? "#9FE0A8" : (dbg.renderStatus.indexOf("error") >= 0 ? "#E8909A" : "#D7E0EC") }
           }, "render " + dbg.renderStatus + (dbg.renderMs ? "  " + dbg.renderMs + "ms" : "")),
+          /*#__PURE__*/React.createElement("div", {
+            style: { color: dbg.detailStatus === "ok" ? "#9FE0A8" : (dbg.detailStatus.indexOf("err") >= 0 ? "#E8909A" : "#D7E0EC") }
+          }, "detail " + dbg.detailStatus + (dbg.detailMs ? "  " + dbg.detailMs + "ms" : "")),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#9FE0A8" } },
+            "    " + dbg.detailW + "\u00D7" + dbg.detailH +
+            (dbg.detailW ? "  " + (dbg.detailW * dbg.detailH / 1e6).toFixed(2) + " MP" : "")),
           /*#__PURE__*/React.createElement("button", {
             onClick: runCanvasProbe,
             disabled: probe === "running",
@@ -9649,6 +9771,14 @@ function PdfMarkupView(props) {
               /*#__PURE__*/React.createElement("canvas", {
                 ref: pageCanvasRef,
                 style: { display: "block", borderRadius: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }
+              }),
+              /*#__PURE__*/React.createElement("canvas", {
+                ref: detailCanvasRef,
+                // Region/viewport detail layer (index_48). Sits above the base
+                // canvas, below annotations. Hidden until a successful render;
+                // never a touch target. left/top/width/height are set imperatively
+                // by renderDetail to pin it over the visible region in page-CSS space.
+                style: { position: "absolute", left: 0, top: 0, display: "none", pointerEvents: "none" }
               }),
               /*#__PURE__*/React.createElement("canvas", {
                 ref: annotCanvasRef,
