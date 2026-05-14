@@ -169,6 +169,10 @@ const MAX_UPLOAD_BYTES = 70 * 1024 * 1024;
 // The SharePoint folder where capture/library uploads land. Capture buttons surface anywhere
 // inside this folder (any depth). Stays in sync with the FOLDER_STYLES key for the photo tile.
 const SITE_PHOTOS_FOLDER = "SITE PHOTOS & VIDEO";
+// Download File flow — POST body { path } (server-relative file path). Returns the file's
+// bytes base64-encoded as the response body. Routes file fetches through Power Automate so
+// they aren't blocked by SharePoint's cross-origin restrictions (and no SharePoint login prompt).
+const DOWNLOAD_FILE_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/987d39e8b6ae4467894c4f8d1a161825/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=myOgb3PFzlYvR-iAyxKWKPI_8yPS_FS1V5xpha0DvnI";
 // Icon + color styling for known top-level folder names. Unknown folders fall back to DEFAULT_FOLDER_STYLE.
 // Match is case-insensitive at lookup time. Used only for visual decoration; folder existence comes from SharePoint.
 const FOLDER_STYLES = {
@@ -8812,57 +8816,47 @@ function MarkupView(props) {
   );
 }
 // ---- FileRow: a file in a folder listing -----------------------------------
-// Tapping the file info opens it in SharePoint (unchanged behavior). PDFs additionally
-// get a "Markup" button that launches the in-app PDF editor.
+// Tapping a PDF opens it straight into the in-app markup editor. Tapping any other file
+// type opens it in SharePoint (unchanged). One tap, no separate button.
 function FileRow(props) {
   const f = props.file;
   const isPdf = /\.pdf$/i.test(f.name || "");
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: () => { if (isPdf) props.onMarkup(f); else props.onOpen(f.url); },
     style: {
       background: "white",
       border: "1.5px solid #DDE3ED",
       borderRadius: 12,
       marginBottom: 8,
+      width: "100%",
+      textAlign: "left",
+      cursor: "pointer",
+      padding: "13px 14px",
       display: "flex",
-      alignItems: "stretch",
-      overflow: "hidden"
+      alignItems: "center",
+      gap: 12
     }
   },
-    /*#__PURE__*/React.createElement("button", {
-      onClick: () => props.onOpen(f.url),
+    /*#__PURE__*/React.createElement("div", {
       style: {
-        flex: 1, minWidth: 0,
-        background: "white", border: "none",
-        padding: "13px 14px", textAlign: "left", cursor: "pointer",
-        display: "flex", alignItems: "center", gap: 12
+        width: 38, height: 38, background: isPdf ? "#E7EEF9" : "#FFEAEA", borderRadius: 9,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 18, flexShrink: 0
       }
-    },
+    }, "\uD83D\uDCC4"),
+    /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
       /*#__PURE__*/React.createElement("div", {
         style: {
-          width: 38, height: 38, background: "#FFEAEA", borderRadius: 9,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 18, flexShrink: 0
+          fontWeight: 600, color: "#2C3E50", fontSize: 13,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
         }
-      }, "\uD83D\uDCC4"),
-      /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-        /*#__PURE__*/React.createElement("div", {
-          style: {
-            fontWeight: 600, color: "#2C3E50", fontSize: 13,
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
-          }
-        }, f.name),
-        /*#__PURE__*/React.createElement("div", { style: { color: "#7F8C9A", fontSize: 11 } },
-          isPdf ? "Tap to open \u00B7 or mark up \u2192" : "Opens in SharePoint")
-      )
+      }, f.name),
+      /*#__PURE__*/React.createElement("div", { style: { color: "#7F8C9A", fontSize: 11 } },
+        isPdf ? "Tap to mark up" : "Opens in SharePoint")
     ),
-    isPdf && /*#__PURE__*/React.createElement("button", {
-      onClick: () => props.onMarkup(f),
-      style: {
-        background: "#1B3A6B", color: "white", border: "none",
-        padding: "0 14px", cursor: "pointer", fontWeight: 700, fontSize: 12,
-        display: "flex", alignItems: "center", gap: 5, flexShrink: 0
-      }
-    }, "\u270F\uFE0F Markup")
+    /*#__PURE__*/React.createElement("span", {
+      style: { color: isPdf ? "#1B3A6B" : "#BDC3C7", fontSize: 18 }
+    }, isPdf ? "\u270F\uFE0F" : "\u203A")
   );
 }
 // ---- PdfMarkupView: in-app PDF annotation editor ---------------------------
@@ -8903,7 +8897,8 @@ function PdfMarkupView(props) {
     highlighter: [14, 22, 32],
     text: [14, 22, 32]
   };
-  // Load the PDF document once.
+  // Load the PDF document once. Bytes come through the Download File flow (base64) rather
+  // than a direct SharePoint fetch — sidesteps cross-origin blocking and the login prompt.
   useEffect(() => {
     if (!window.pdfjsLib) {
       setError("PDF viewer library didn't load. Check the connection and reopen.");
@@ -8911,11 +8906,26 @@ function PdfMarkupView(props) {
       return;
     }
     let cancelled = false;
-    const full = (file.url || "").indexOf("http") === 0 ? file.url : SHAREPOINT_HOST + (file.url || "");
     setLoading(true);
     setError(null);
-    window.pdfjsLib.getDocument(full).promise.then(pdf => {
+    fetch(DOWNLOAD_FILE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: file.url || "" })
+    }).then(r => {
+      if (!r.ok) return Promise.reject(r.status);
+      return r.text();
+    }).then(text => {
       if (cancelled) return;
+      // Response is the file's bytes base64-encoded (possibly JSON-quoted). Strip quotes,
+      // decode to a byte array, hand that to PDF.js.
+      const b64 = text.replace(/^"|"$/g, "");
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return window.pdfjsLib.getDocument({ data: bytes }).promise;
+    }).then(pdf => {
+      if (cancelled || !pdf) return;
       pdfDocRef.current = pdf;
       setNumPages(pdf.numPages);
       setPageNum(1);
