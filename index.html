@@ -57,7 +57,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_51";
+const BUILD_ID = "index_52";
 // Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
 // Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
 // FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
@@ -8934,6 +8934,12 @@ function PdfMarkupView(props) {
   const detailTaskRef = useRef(null);   // in-flight PDF.js detail render task
   const detailTimerRef = useRef(null);  // gesture-settle debounce timer
   const pageObjRef = useRef(null);      // current PDF.js page object, cached for detail renders
+  // renderDetail runs ~160ms after a gesture/draw settles, from a setTimeout — its
+  // closure can hold a stale `annotations`/`pageNum`. These refs always mirror the
+  // latest values (kept current by the effect below), so the detail overlay draws
+  // the up-to-date markups instead of a one-version-behind (or empty) snapshot.
+  const annotationsRef = useRef(annotations);
+  const pageNumRef = useRef(pageNum);
   // ---- canvas-ceiling probe (index_47) -------------------------------------
   // Measures THIS device's real canvas wall instead of guessing from index_40/41.
   // For each step it allocates a canvas, fills it, draws a sentinel marker in the
@@ -9197,6 +9203,9 @@ function PdfMarkupView(props) {
     all.forEach(a => drawAnnotation(ctx, a, d.w, d.h));
   }
   useEffect(() => { repaintAnnotations(); });
+  // Keep the mirror refs in sync so the debounced renderDetail always sees current data.
+  annotationsRef.current = annotations;
+  pageNumRef.current = pageNum;
   // Pointer → normalized (0..1) coordinates on the annotation canvas.
   function getNormPoint(e) {
     const canvas = annotCanvasRef.current;
@@ -9336,8 +9345,9 @@ function PdfMarkupView(props) {
       // annotation as if onto a full-page canvas at detail resolution. This keeps
       // markups crisp and on top, and means the screen-space overlay can sit
       // above the wrapper without hiding the wrapper's (blurry) annotation layer.
+      // Read via refs, not the closure — see annotationsRef note above.
       const dctx = dc.getContext("2d");
-      const pageAnns = annotations[pageNum] || [];
+      const pageAnns = annotationsRef.current[pageNumRef.current] || [];
       if (pageAnns.length) {
         dctx.save();
         dctx.translate(offX, offY);
