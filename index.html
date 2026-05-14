@@ -57,7 +57,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_46";
+const BUILD_ID = "index_47";
 // Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
 // Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
 // FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
@@ -8915,6 +8915,64 @@ function PdfMarkupView(props) {
   });
   const [dbgOpen, setDbgOpen] = useState(true);
   const zoomReadoutRef = useRef(null);
+  // ---- canvas-ceiling probe (index_47) -------------------------------------
+  // Measures THIS device's real canvas wall instead of guessing from index_40/41.
+  // For each step it allocates a canvas, fills it, draws a sentinel marker in the
+  // far corner, then reads that pixel back: allocation succeeding is not enough —
+  // iOS will hand back an over-limit canvas that silently renders nothing, so the
+  // pixel read-back is what actually confirms the draw landed. Reports the largest
+  // square dimension (and megapixels) that genuinely worked. Pure measurement —
+  // touches nothing in the render/gesture path.
+  const [probe, setProbe] = useState(null); // null | "running" | result string
+  function runCanvasProbe() {
+    setProbe("running");
+    // Defer so the "running" state paints before the (synchronous) probe blocks.
+    setTimeout(() => {
+      const dpr = window.devicePixelRatio || 1;
+      // Square test sizes in CSS px; buffer = size*dpr. Spans well past any plausible wall.
+      const steps = [1024, 1536, 2048, 2560, 3072, 3584, 4096, 5120, 6144, 8192];
+      let lastOK = 0, lastOKbuf = 0, failAt = 0, failBuf = 0, failReason = "";
+      for (let i = 0; i < steps.length; i++) {
+        const css = steps[i];
+        const buf = Math.round(css * dpr);
+        let ok = false, reason = "";
+        try {
+          const c = document.createElement("canvas");
+          c.width = buf; c.height = buf;
+          const ctx = c.getContext("2d");
+          if (!ctx) {
+            reason = "no 2d context";
+          } else {
+            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, buf, buf);
+            // sentinel marker in the far (bottom-right) corner
+            ctx.fillStyle = "rgb(0,200,100)";
+            ctx.fillRect(buf - 4, buf - 4, 4, 4);
+            const px = ctx.getImageData(buf - 2, buf - 2, 1, 1).data;
+            if (px[1] > 150 && px[2] > 50 && px[2] < 160) ok = true;
+            else reason = "draw dropped (g=" + px[1] + ")";
+          }
+        } catch (e) {
+          reason = (e && e.name) ? e.name : "threw";
+        }
+        if (ok) { lastOK = css; lastOKbuf = buf; }
+        else { failAt = css; failBuf = buf; failReason = reason; break; }
+      }
+      if (!lastOK) {
+        setProbe("FAILED at smallest step " + failBuf + "\u00D7" + failBuf + " \u2014 " + failReason);
+      } else {
+        const okMP = (lastOKbuf * lastOKbuf / 1e6).toFixed(1);
+        let msg = "max OK " + lastOKbuf + "\u00D7" + lastOKbuf + " buf (" + okMP + " MP)";
+        if (failAt) {
+          const failMP = (failBuf * failBuf / 1e6).toFixed(1);
+          msg += " \u00B7 fails at " + failBuf + "\u00D7" + failBuf + " (" + failMP + " MP, " + failReason + ")";
+        } else {
+          const topBuf = Math.round(steps[steps.length - 1] * dpr);
+          msg += " \u00B7 no failure up to " + topBuf + "\u00D7" + topBuf;
+        }
+        setProbe(msg);
+      }
+    }, 60);
+  }
   const COLORS_BY_TOOL = {
     pen: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
     arrow: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
@@ -9562,7 +9620,19 @@ function PdfMarkupView(props) {
           /*#__PURE__*/React.createElement("div", null, "page " + pageNum + "/" + (numPages || "\u2013")),
           /*#__PURE__*/React.createElement("div", {
             style: { color: dbg.renderStatus === "ok" ? "#9FE0A8" : (dbg.renderStatus.indexOf("error") >= 0 ? "#E8909A" : "#D7E0EC") }
-          }, "render " + dbg.renderStatus + (dbg.renderMs ? "  " + dbg.renderMs + "ms" : ""))
+          }, "render " + dbg.renderStatus + (dbg.renderMs ? "  " + dbg.renderMs + "ms" : "")),
+          /*#__PURE__*/React.createElement("button", {
+            onClick: runCanvasProbe,
+            disabled: probe === "running",
+            style: {
+              marginTop: 4, pointerEvents: "auto", cursor: probe === "running" ? "default" : "pointer",
+              font: "inherit", color: "#0E121A", background: probe === "running" ? "#6E7787" : "#7FB2E8",
+              border: "none", borderRadius: 4, padding: "4px 6px", textAlign: "left", whiteSpace: "normal"
+            }
+          }, probe === "running" ? "probing canvas ceiling\u2026" : "\u25B6 probe canvas ceiling"),
+          probe && probe !== "running" && /*#__PURE__*/React.createElement("div", {
+            style: { color: probe.indexOf("FAILED") === 0 ? "#E8909A" : "#9FE0A8", whiteSpace: "normal", maxWidth: 200 }
+          }, probe)
         )
       ),
       error
