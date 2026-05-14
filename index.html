@@ -8871,14 +8871,6 @@ function PdfMarkupView(props) {
   const pdfDocRef = useRef(null);
   const renderTaskRef = useRef(null);
   const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0 });
-  // PDF page re-rendering for sharp zoom. pageRef holds the live PDF.js page so a zoom
-  // re-render doesn't re-fetch it; baseScaleRef is the page-canvas buffer scale at zoom 1
-  // (fit * dpr); renderScaleRef is the integer multiplier the page canvas is currently
-  // rendered at, so rerenderForZoom can skip no-op re-renders; zoomRenderTimerRef debounces.
-  const pageRef = useRef(null);
-  const baseScaleRef = useRef(1);
-  const renderScaleRef = useRef(1);
-  const zoomRenderTimerRef = useRef(null);
   const drawingRef = useRef(false);
   const currentRef = useRef(null);
   // Zoom / pan. viewRef holds the live transform (zoom, panX, panY in document-area-local px);
@@ -8957,41 +8949,18 @@ function PdfMarkupView(props) {
     });
     return () => { cancelled = true; };
   }, [file]);
-  // Render the current PDF page into the page canvas at a given buffer scale. The canvas's
-  // CSS size stays pinned to the fit size (dimsRef.cssW/cssH) — only the backing buffer
-  // changes, so a higher scale just means more real pixels (sharp zoom) without disturbing
-  // layout, the annotation canvas, pan clamping, or coordinate math. Renders into an
-  // offscreen canvas and blits on completion, so the visible page never flashes blank
-  // (the previous bitmap stays up until the new one is ready). Returns the render promise.
-  function paintPage(scale) {
-    const page = pageRef.current;
-    const pageCanvas = pageCanvasRef.current;
-    const d = dimsRef.current;
-    if (!page || !pageCanvas) return Promise.reject();
-    if (renderTaskRef.current) {
-      try { renderTaskRef.current.cancel(); } catch (e) {}
-      renderTaskRef.current = null;
-    }
-    const viewport = page.getViewport({ scale: scale });
-    const off = document.createElement("canvas");
-    off.width = Math.round(viewport.width);
-    off.height = Math.round(viewport.height);
-    const task = page.render({ canvasContext: off.getContext("2d"), viewport: viewport });
-    renderTaskRef.current = task;
-    return task.promise.then(() => {
-      renderTaskRef.current = null;
-      // Swap the freshly rendered bitmap in; CSS box stays pinned to the fit size.
-      pageCanvas.width = off.width;
-      pageCanvas.height = off.height;
-      pageCanvas.style.width = d.cssW + "px";
-      pageCanvas.style.height = d.cssH + "px";
-      pageCanvas.getContext("2d").drawImage(off, 0, 0);
-    });
-  }
-  // Render the current page whenever it changes (or on resize / rotation). The page canvas is
-  // painted at base scale here; it gets re-painted at a higher scale on zoom (rerenderForZoom)
-  // so zoomed-in detail stays crisp. The annotation canvas stays at base resolution always —
-  // it's vector-redrawn from normalized coords each paint, so it never needs more pixels.
+  // Render the current page whenever it changes (or on resize / rotation). The page is
+  // rendered ONCE, at a higher scale than fit, directly into the visible canvas — the existing
+  // CSS-transform zoom then magnifies a high-res bitmap instead of a fit-res one, so zoomed-in
+  // detail stays legible. The scale multiplier is capped by canvas area: a single static
+  // canvas this size renders reliably on iOS, but the whole page can't be rendered at full
+  // pinch zoom (6x) without blowing past the area limit, so very deep zoom is still somewhat
+  // soft. (Rendering OFF-screen, or only the visible region, is the next step if needed —
+  // off-screen canvases render blank on iOS, and region rendering is a larger rework.)
+  // MAX_PAGE_CANVAS_AREA: ~16M px is the well-documented safe iOS canvas ceiling. Bump it if
+  // testing shows headroom on the deployment iPads — the renderAt fail-safe falls back to fit
+  // scale if a device ever rejects the larger canvas.
+  const MAX_PAGE_CANVAS_AREA = 16000000;
   useEffect(() => {
     const pdf = pdfDocRef.current;
     if (!pdf || loading || error) return;
@@ -9005,45 +8974,62 @@ function PdfMarkupView(props) {
     gestureRef.current = null;
     pdf.getPage(pageNum).then(page => {
       if (cancelled) return;
-      pageRef.current = page;
       const dpr = window.devicePixelRatio || 1;
       const unscaled = page.getViewport({ scale: 1 });
       const availW = Math.max(200, window.innerWidth - 64 - 28);
       const availH = Math.max(200, window.innerHeight - 28);
       const fit = Math.min(availW / unscaled.width, availH / unscaled.height);
-      const baseScale = fit * dpr;
+      const baseScale = fit * dpr; // scale at which the page exactly fits, in device px
+      const baseArea = (unscaled.width * baseScale) * (unscaled.height * baseScale);
+      // Render above fit for zoom headroom, capped so the canvas stays within the iOS limit.
+      const quality = Math.max(1, Math.min(2.5, Math.sqrt(MAX_PAGE_CANVAS_AREA / baseArea)));
       const pageCanvas = pageCanvasRef.current;
       const annotCanvas = annotCanvasRef.current;
       if (!pageCanvas || !annotCanvas) return;
-      // Annotation canvas: fixed at base (fit) resolution — vector content, redrawn each paint.
-      const baseViewport = page.getViewport({ scale: baseScale });
-      annotCanvas.width = baseViewport.width;
-      annotCanvas.height = baseViewport.height;
-      const cssW = baseViewport.width / dpr;
-      const cssH = baseViewport.height / dpr;
-      [pageCanvas, annotCanvas].forEach(c => {
-        c.style.width = cssW + "px";
-        c.style.height = cssH + "px";
-      });
-      dimsRef.current = { w: baseViewport.width, h: baseViewport.height, cssW: cssW, cssH: cssH };
-      baseScaleRef.current = baseScale;
-      renderScaleRef.current = 1;
-      // Paint the page canvas at base scale (paintPage renders offscreen then blits).
-      paintPage(baseScale).then(() => {
+      // CSS size is always the fit size — the wrapper's transform handles zoom/pan. Only the
+      // backing buffers are oversized (by `quality`), which is what buys the extra sharpness.
+      const cssW = (unscaled.width * baseScale) / dpr;
+      const cssH = (unscaled.height * baseScale) / dpr;
+      // Render at `scale`; if a non-fit render fails (e.g. a device rejecting the larger
+      // canvas), fall back once to fit scale. Both canvases share the chosen resolution so
+      // annotations drawn while zoomed in are just as crisp as the page.
+      const renderAt = (scale, isRetry) => {
         if (cancelled) return;
-        // Reset zoom to fit and center the page in the document area.
-        setView({ zoom: 1, panX: 0, panY: 0 });
-        setPageReady(true);
-        rerender();
-      }).catch(() => {});
+        if (renderTaskRef.current) {
+          try { renderTaskRef.current.cancel(); } catch (e) {}
+          renderTaskRef.current = null;
+        }
+        const viewport = page.getViewport({ scale: scale });
+        pageCanvas.width = Math.round(viewport.width);
+        pageCanvas.height = Math.round(viewport.height);
+        annotCanvas.width = pageCanvas.width;
+        annotCanvas.height = pageCanvas.height;
+        [pageCanvas, annotCanvas].forEach(c => {
+          c.style.width = cssW + "px";
+          c.style.height = cssH + "px";
+        });
+        dimsRef.current = { w: pageCanvas.width, h: pageCanvas.height, cssW: cssW, cssH: cssH };
+        const task = page.render({ canvasContext: pageCanvas.getContext("2d"), viewport: viewport });
+        renderTaskRef.current = task;
+        task.promise.then(() => {
+          if (cancelled) return;
+          renderTaskRef.current = null;
+          // Reset zoom to fit and center the page in the document area.
+          setView({ zoom: 1, panX: 0, panY: 0 });
+          setPageReady(true);
+          rerender();
+        }).catch(err => {
+          if (cancelled || (err && err.name === "RenderingCancelledException")) return;
+          if (!isRetry && scale > baseScale) { renderAt(baseScale, true); return; }
+          setError("Couldn't render page " + pageNum + ".");
+        });
+      };
+      renderAt(baseScale * quality, false);
     }).catch(() => {
       if (cancelled) return;
       setError("Couldn't render page " + pageNum + ".");
     });
-    return () => {
-      cancelled = true;
-      if (zoomRenderTimerRef.current) { clearTimeout(zoomRenderTimerRef.current); zoomRenderTimerRef.current = null; }
-    };
+    return () => { cancelled = true; };
   }, [pageNum, loading, error, resizeTick]);
   // Re-fit on viewport resize / rotation.
   useEffect(() => {
@@ -9165,7 +9151,6 @@ function PdfMarkupView(props) {
   }
   function fitView() {
     setView({ zoom: 1, panX: 0, panY: 0 });
-    scheduleZoomRender(); // back to fit — drop the page canvas back to base resolution
   }
   // Capture the pinch baseline from a touch list (positions in document-area-local space).
   function gestureXY(t) {
@@ -9199,38 +9184,6 @@ function PdfMarkupView(props) {
     const cy = (g.m0.y - g.panY0) / g.zoom0;
     setView({ zoom: zoom1, panX: m1.x - cx * zoom1, panY: m1.y - cy * zoom1 });
   }
-  // ---- zoom re-render ------------------------------------------------------
-  // Pinch-zoom only CSS-scales the page bitmap, so zooming in magnifies fit-resolution pixels
-  // (blurry). After a gesture settles we re-render the page from PDF.js at a higher buffer
-  // scale so the detail is real pixels again. Buckets to integer multipliers (1..3) so we
-  // re-render at most a couple of times, never per pinch frame; capped by canvas area so a
-  // large plan sheet can't allocate a buffer big enough to blank out on iOS.
-  const MAX_RENDER_MULT = 3;
-  const MAX_CANVAS_AREA = 24000000;
-  function bestRenderMult() {
-    const page = pageRef.current;
-    if (!page) return 1;
-    let m = Math.min(MAX_RENDER_MULT, Math.max(1, Math.round(viewRef.current.zoom)));
-    const u = page.getViewport({ scale: 1 });
-    const base = baseScaleRef.current;
-    while (m > 1 && (base * m * u.width) * (base * m * u.height) > MAX_CANVAS_AREA) m--;
-    return m;
-  }
-  function rerenderForZoom() {
-    const target = bestRenderMult();
-    if (target === renderScaleRef.current) return; // already rendered at this scale
-    paintPage(baseScaleRef.current * target).then(() => {
-      renderScaleRef.current = target;
-    }).catch(() => {});
-  }
-  // Debounced — fires only after a gesture has settled, and resets if another gesture starts.
-  function scheduleZoomRender() {
-    if (zoomRenderTimerRef.current) clearTimeout(zoomRenderTimerRef.current);
-    zoomRenderTimerRef.current = setTimeout(() => {
-      zoomRenderTimerRef.current = null;
-      rerenderForZoom();
-    }, 180);
-  }
   // ---- drawing -------------------------------------------------------------
   // pt is anything with clientX / clientY (a Touch or a MouseEvent). getBoundingClientRect
   // already reflects the wrapper's CSS transform, so this is correct at any zoom / pan.
@@ -9251,11 +9204,12 @@ function PdfMarkupView(props) {
     }
     drawingRef.current = true;
     const d = dimsRef.current;
-    const dpr = window.devicePixelRatio || 1;
-    // Normalize the stroke width against the *zoomed* page size: the selected width is in
-    // on-screen pixels at the current zoom, so a stroke drawn zoomed-in is stored thin and
-    // scales down with the page when you zoom back out (instead of staying a fat line).
-    const widthNorm = (toolSize[tool] * dpr) / d.w / (viewRef.current.zoom || 1);
+    // Stroke width is normalized against the page's CSS width and the current zoom: the
+    // selected size means that many on-screen pixels at the zoom you're drawing at, so a
+    // stroke drawn zoomed-in is stored thin and scales down with the page when you zoom back
+    // out (instead of staying a fat line). Using cssW (not the oversized buffer width) keeps
+    // this independent of the page render resolution.
+    const widthNorm = toolSize[tool] / d.cssW / (viewRef.current.zoom || 1);
     const col = toolColor[tool];
     if (tool === "arrow") {
       currentRef.current = { tool: "arrow", color: col, width: widthNorm, start: p, end: p };
@@ -9336,12 +9290,8 @@ function PdfMarkupView(props) {
   function onTouchEnd(e) {
     const touches = e.touches; // remaining touches
     if (gestureRef.current && gestureRef.current.active) {
-      if (touches.length >= 2) {
-        beginGesture(touches); // re-baseline with remaining fingers
-      } else {
-        gestureRef.current = null;
-        scheduleZoomRender(); // gesture settled — sharpen the page at the new zoom
-      }
+      if (touches.length >= 2) beginGesture(touches); // re-baseline with remaining fingers
+      else gestureRef.current = null;
       e.preventDefault();
       return;
     }
@@ -9355,7 +9305,7 @@ function PdfMarkupView(props) {
     if (drawingRef.current) cancelDraw();
     const touches = e.touches;
     if (touches && touches.length >= 2) beginGesture(touches);
-    else { gestureRef.current = null; scheduleZoomRender(); }
+    else gestureRef.current = null;
   }
   // Mouse fallback — desktop testing only; iOS goes through the touch handlers above.
   function onMouseDown(e) {
@@ -9373,10 +9323,10 @@ function PdfMarkupView(props) {
     setTextDraft(null);
     if (draft && draft.value && draft.value.trim()) {
       const d = dimsRef.current;
-      const dpr = window.devicePixelRatio || 1;
-      // Same as stroke width: size is on-screen px at the current zoom, so text placed while
-      // zoomed in scales with the page instead of being huge when you zoom back out.
-      const sizeNorm = (toolSize.text * dpr) / d.h / (viewRef.current.zoom || 1);
+      // Same as stroke width: size is on-screen px at the current zoom (normalized against
+      // cssH, not the oversized buffer), so text placed while zoomed in scales with the page
+      // instead of being huge when you zoom back out.
+      const sizeNorm = toolSize.text / d.cssH / (viewRef.current.zoom || 1);
       addAnnotation({ tool: "text", color: toolColor.text, size: sizeNorm, x: draft.x, y: draft.y, text: draft.value.trim() });
     }
   }
