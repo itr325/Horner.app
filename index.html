@@ -31,6 +31,15 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
+<!-- PDF.js (CDN) — renders PDF pages to canvas for the in-app markup editor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  // Point PDF.js at its worker (same version). Guarded in case the CDN script failed to load.
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+</script>
+
 <!-- Application code (JSX pre-compiled to React.createElement) -->
 <script>
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -8802,6 +8811,478 @@ function MarkupView(props) {
     )
   );
 }
+// ---- FileRow: a file in a folder listing -----------------------------------
+// Tapping the file info opens it in SharePoint (unchanged behavior). PDFs additionally
+// get a "Markup" button that launches the in-app PDF editor.
+function FileRow(props) {
+  const f = props.file;
+  const isPdf = /\.pdf$/i.test(f.name || "");
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 12,
+      marginBottom: 8,
+      display: "flex",
+      alignItems: "stretch",
+      overflow: "hidden"
+    }
+  },
+    /*#__PURE__*/React.createElement("button", {
+      onClick: () => props.onOpen(f.url),
+      style: {
+        flex: 1, minWidth: 0,
+        background: "white", border: "none",
+        padding: "13px 14px", textAlign: "left", cursor: "pointer",
+        display: "flex", alignItems: "center", gap: 12
+      }
+    },
+      /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 38, height: 38, background: "#FFEAEA", borderRadius: 9,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 18, flexShrink: 0
+        }
+      }, "\uD83D\uDCC4"),
+      /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+        /*#__PURE__*/React.createElement("div", {
+          style: {
+            fontWeight: 600, color: "#2C3E50", fontSize: 13,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+          }
+        }, f.name),
+        /*#__PURE__*/React.createElement("div", { style: { color: "#7F8C9A", fontSize: 11 } },
+          isPdf ? "Tap to open \u00B7 or mark up \u2192" : "Opens in SharePoint")
+      )
+    ),
+    isPdf && /*#__PURE__*/React.createElement("button", {
+      onClick: () => props.onMarkup(f),
+      style: {
+        background: "#1B3A6B", color: "white", border: "none",
+        padding: "0 14px", cursor: "pointer", fontWeight: 700, fontSize: 12,
+        display: "flex", alignItems: "center", gap: 5, flexShrink: 0
+      }
+    }, "\u270F\uFE0F Markup")
+  );
+}
+// ---- PdfMarkupView: in-app PDF annotation editor ---------------------------
+// v1 scope: view + annotate only. No save-back to SharePoint yet (next session).
+// PDF.js renders one page at a time to a canvas; a second canvas on top takes annotations.
+// Tools: pen, arrow, highlighter, text. Annotation geometry is stored normalized (0..1)
+// per page so it re-projects correctly across page changes and device rotation.
+function PdfMarkupView(props) {
+  const file = props.file;
+  const pageCanvasRef = useRef(null);
+  const annotCanvasRef = useRef(null);
+  const pdfDocRef = useRef(null);
+  const renderTaskRef = useRef(null);
+  const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0 });
+  const drawingRef = useRef(false);
+  const currentRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [numPages, setNumPages] = useState(0);
+  const [pageNum, setPageNum] = useState(1);
+  const [annotations, setAnnotations] = useState({});
+  const [tool, setTool] = useState("pen");
+  const [toolColor, setToolColor] = useState({ pen: "#E53935", arrow: "#E53935", highlighter: "#FFEB3B", text: "#1E88E5" });
+  const [toolSize, setToolSize] = useState({ pen: 6, arrow: 6, highlighter: 22, text: 22 });
+  const [textDraft, setTextDraft] = useState(null);
+  const [resizeTick, setResizeTick] = useState(0);
+  const [, setTick] = useState(0);
+  const rerender = () => setTick(t => t + 1);
+  const COLORS_BY_TOOL = {
+    pen: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
+    arrow: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
+    highlighter: ["#FFEB3B", "#76FF03", "#FF4081", "#40C4FF"],
+    text: ["#E53935", "#000000", "#1E88E5"]
+  };
+  const SIZES_BY_TOOL = {
+    pen: [3, 6, 10],
+    arrow: [3, 6, 10],
+    highlighter: [14, 22, 32],
+    text: [14, 22, 32]
+  };
+  // Load the PDF document once.
+  useEffect(() => {
+    if (!window.pdfjsLib) {
+      setError("PDF viewer library didn't load. Check the connection and reopen.");
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const full = (file.url || "").indexOf("http") === 0 ? file.url : SHAREPOINT_HOST + (file.url || "");
+    setLoading(true);
+    setError(null);
+    window.pdfjsLib.getDocument(full).promise.then(pdf => {
+      if (cancelled) return;
+      pdfDocRef.current = pdf;
+      setNumPages(pdf.numPages);
+      setPageNum(1);
+      setLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setError("Couldn't load this PDF. It may be a permissions or connection issue.");
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [file]);
+  // Render the current page whenever it changes (or on resize / rotation).
+  useEffect(() => {
+    const pdf = pdfDocRef.current;
+    if (!pdf || loading || error) return;
+    let cancelled = false;
+    if (renderTaskRef.current) {
+      try { renderTaskRef.current.cancel(); } catch (e) {}
+      renderTaskRef.current = null;
+    }
+    drawingRef.current = false;
+    currentRef.current = null;
+    pdf.getPage(pageNum).then(page => {
+      if (cancelled) return;
+      const dpr = window.devicePixelRatio || 1;
+      const unscaled = page.getViewport({ scale: 1 });
+      const availW = Math.max(200, window.innerWidth - 64 - 28);
+      const availH = Math.max(200, window.innerHeight - 28);
+      const fit = Math.min(availW / unscaled.width, availH / unscaled.height);
+      const viewport = page.getViewport({ scale: fit * dpr });
+      const pageCanvas = pageCanvasRef.current;
+      const annotCanvas = annotCanvasRef.current;
+      if (!pageCanvas || !annotCanvas) return;
+      pageCanvas.width = viewport.width;
+      pageCanvas.height = viewport.height;
+      annotCanvas.width = viewport.width;
+      annotCanvas.height = viewport.height;
+      const cssW = viewport.width / dpr;
+      const cssH = viewport.height / dpr;
+      [pageCanvas, annotCanvas].forEach(c => {
+        c.style.width = cssW + "px";
+        c.style.height = cssH + "px";
+      });
+      dimsRef.current = { w: viewport.width, h: viewport.height, cssW: cssW, cssH: cssH };
+      const task = page.render({ canvasContext: pageCanvas.getContext("2d"), viewport: viewport });
+      renderTaskRef.current = task;
+      task.promise.then(() => {
+        if (cancelled) return;
+        renderTaskRef.current = null;
+        rerender();
+      }).catch(() => {});
+    }).catch(() => {
+      if (cancelled) return;
+      setError("Couldn't render page " + pageNum + ".");
+    });
+    return () => { cancelled = true; };
+  }, [pageNum, loading, error, resizeTick]);
+  // Re-fit on viewport resize / rotation.
+  useEffect(() => {
+    const onResize = () => setResizeTick(t => t + 1);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+  // Draw a single annotation. cw/ch are the target canvas buffer dimensions.
+  function drawAnnotation(ctx, a, cw, ch) {
+    ctx.save();
+    if (a.tool === "pen" || a.tool === "highlighter") {
+      ctx.strokeStyle = a.color;
+      ctx.fillStyle = a.color;
+      ctx.lineWidth = Math.max(1, a.width * cw);
+      ctx.lineCap = a.tool === "highlighter" ? "butt" : "round";
+      ctx.lineJoin = "round";
+      if (a.tool === "highlighter") ctx.globalAlpha = 0.4;
+      const pts = a.points || [];
+      if (pts.length === 1) {
+        ctx.beginPath();
+        ctx.arc(pts[0].x * cw, pts[0].y * ch, ctx.lineWidth / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (pts.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x * cw, pts[0].y * ch);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x * cw, pts[i].y * ch);
+        ctx.stroke();
+      }
+    } else if (a.tool === "arrow") {
+      ctx.strokeStyle = a.color;
+      ctx.fillStyle = a.color;
+      ctx.lineWidth = Math.max(1, a.width * cw);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      const x1 = a.start.x * cw, y1 = a.start.y * ch, x2 = a.end.x * cw, y2 = a.end.y * ch;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const head = Math.max(ctx.lineWidth * 3.2, 12);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(ang - Math.PI / 6), y2 - head * Math.sin(ang - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(ang + Math.PI / 6), y2 - head * Math.sin(ang + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    } else if (a.tool === "text") {
+      ctx.fillStyle = a.color;
+      const fontPx = a.size * ch;
+      ctx.font = "600 " + fontPx + "px Arial, sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText(a.text, a.x * cw, a.y * ch);
+    }
+    ctx.restore();
+  }
+  // Repaint the annotation overlay for the current page.
+  function repaintAnnotations() {
+    const canvas = annotCanvasRef.current;
+    const d = dimsRef.current;
+    if (!canvas || !d.w) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, d.w, d.h);
+    const pageAnns = annotations[pageNum] || [];
+    const cur = currentRef.current;
+    const all = cur ? pageAnns.concat([cur]) : pageAnns;
+    all.forEach(a => drawAnnotation(ctx, a, d.w, d.h));
+  }
+  useEffect(() => { repaintAnnotations(); });
+  // Pointer → normalized (0..1) coordinates on the annotation canvas.
+  function getNormPoint(e) {
+    const canvas = annotCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) / rect.width,
+      y: (e.clientY - rect.top) / rect.height
+    };
+  }
+  function addAnnotation(ann) {
+    setAnnotations(prev => {
+      const copy = Object.assign({}, prev);
+      copy[pageNum] = (copy[pageNum] || []).concat([ann]);
+      return copy;
+    });
+  }
+  function onPointerDown(e) {
+    if (loading || error) return;
+    const p = getNormPoint(e);
+    if (tool === "text") {
+      if (textDraft) { commitText(); return; }
+      setTextDraft({ x: p.x, y: p.y, value: "" });
+      return;
+    }
+    e.preventDefault();
+    if (e.target.setPointerCapture) {
+      try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    drawingRef.current = true;
+    const d = dimsRef.current;
+    const dpr = window.devicePixelRatio || 1;
+    const widthNorm = (toolSize[tool] * dpr) / d.w;
+    const col = toolColor[tool];
+    if (tool === "arrow") {
+      currentRef.current = { tool: "arrow", color: col, width: widthNorm, start: p, end: p };
+    } else {
+      currentRef.current = { tool: tool, color: col, width: widthNorm, points: [p] };
+    }
+    rerender();
+  }
+  function onPointerMove(e) {
+    if (!drawingRef.current) return;
+    e.preventDefault();
+    const cur = currentRef.current;
+    if (!cur) return;
+    const p = getNormPoint(e);
+    if (cur.tool === "arrow") cur.end = p;
+    else cur.points.push(p);
+    rerender();
+  }
+  function onPointerUp(e) {
+    if (!drawingRef.current) return;
+    e.preventDefault();
+    drawingRef.current = false;
+    const cur = currentRef.current;
+    currentRef.current = null;
+    if (cur) addAnnotation(cur);
+    else rerender();
+  }
+  function commitText() {
+    const draft = textDraft;
+    setTextDraft(null);
+    if (draft && draft.value && draft.value.trim()) {
+      const d = dimsRef.current;
+      const dpr = window.devicePixelRatio || 1;
+      const sizeNorm = (toolSize.text * dpr) / d.h;
+      addAnnotation({ tool: "text", color: toolColor.text, size: sizeNorm, x: draft.x, y: draft.y, text: draft.value.trim() });
+    }
+  }
+  function undo() {
+    setAnnotations(prev => {
+      const copy = Object.assign({}, prev);
+      const arr = copy[pageNum] || [];
+      copy[pageNum] = arr.slice(0, -1);
+      return copy;
+    });
+  }
+  function goPage(n) {
+    if (n < 1 || n > numPages) return;
+    if (textDraft) commitText();
+    drawingRef.current = false;
+    currentRef.current = null;
+    setPageNum(n);
+  }
+  // ---- render ----
+  const TOOLS = [
+    { id: "pen", label: "\u270F\uFE0F", name: "Pen" },
+    { id: "arrow", label: "\u2197", name: "Arrow" },
+    { id: "highlighter", label: "\uD83D\uDD8D", name: "Highlight" },
+    { id: "text", label: "T", name: "Text" }
+  ];
+  const sep = /*#__PURE__*/React.createElement("div", {
+    key: "sep" + Math.random(),
+    style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" }
+  });
+  const curColors = COLORS_BY_TOOL[tool] || [];
+  const curSizes = SIZES_BY_TOOL[tool] || [];
+  const annCount = (annotations[pageNum] || []).length;
+  const toolbar = /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 64, background: "#1A1F2B", display: "flex", flexDirection: "column",
+      alignItems: "center", padding: "8px 0", gap: 6, overflowY: "auto", flexShrink: 0
+    }
+  },
+    // Close
+    /*#__PURE__*/React.createElement("button", {
+      onClick: props.onClose,
+      style: {
+        width: 44, height: 38, borderRadius: 8, border: "none",
+        background: "#39435A", color: "white", fontSize: 16, fontWeight: 700, cursor: "pointer"
+      }
+    }, "\u2715"),
+    /*#__PURE__*/React.createElement("div", { style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" } }),
+    // Tools
+    TOOLS.map(t => /*#__PURE__*/React.createElement("button", {
+      key: t.id,
+      onClick: () => setTool(t.id),
+      title: t.name,
+      style: {
+        width: 44, height: 44, borderRadius: 8, border: "none",
+        background: tool === t.id ? "#1B6FB3" : "#2E3850",
+        color: "white", fontSize: 18, fontWeight: 700, cursor: "pointer"
+      }
+    }, t.label)),
+    /*#__PURE__*/React.createElement("div", { style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" } }),
+    // Colors for the active tool
+    curColors.map(c => /*#__PURE__*/React.createElement("button", {
+      key: c,
+      onClick: () => setToolColor(prev => Object.assign({}, prev, { [tool]: c })),
+      "aria-label": "color",
+      style: {
+        width: 32, height: 32, borderRadius: "50%", background: c,
+        border: toolColor[tool] === c ? "3px solid #FFFFFF" : "2px solid #4A5568",
+        boxShadow: toolColor[tool] === c ? "0 0 0 2px #1B6FB3" : "none",
+        cursor: "pointer", padding: 0
+      }
+    })),
+    /*#__PURE__*/React.createElement("div", { style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" } }),
+    // Sizes for the active tool
+    curSizes.map((s, i) => /*#__PURE__*/React.createElement("button", {
+      key: s,
+      onClick: () => setToolSize(prev => Object.assign({}, prev, { [tool]: s })),
+      "aria-label": "size",
+      style: {
+        width: 44, height: 36, borderRadius: 8, border: "none",
+        background: toolSize[tool] === s ? "#1B6FB3" : "#2E3850",
+        color: "white", cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700
+      }
+    }, tool === "text"
+      ? /*#__PURE__*/React.createElement("span", { style: { fontSize: [12, 16, 21][i] || 14 } }, "A")
+      : /*#__PURE__*/React.createElement("div", { style: { width: 22, height: Math.max(2, s / 1.6), background: "white", borderRadius: 4 } }))),
+    /*#__PURE__*/React.createElement("div", { style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" } }),
+    // Undo
+    /*#__PURE__*/React.createElement("button", {
+      onClick: undo,
+      disabled: annCount === 0,
+      style: {
+        width: 44, height: 40, borderRadius: 8, border: "none",
+        background: "#2E3850", color: "white", fontSize: 18, fontWeight: 700,
+        cursor: annCount === 0 ? "default" : "pointer", opacity: annCount === 0 ? 0.4 : 1
+      }
+    }, "\u21B6"),
+    // Spacer pushes page nav to the bottom
+    /*#__PURE__*/React.createElement("div", { style: { flex: 1, minHeight: 8 } }),
+    // Page navigation
+    /*#__PURE__*/React.createElement("button", {
+      onClick: () => goPage(pageNum - 1),
+      disabled: pageNum <= 1,
+      style: {
+        width: 44, height: 40, borderRadius: 8, border: "none",
+        background: "#2E3850", color: "white", fontSize: 16, fontWeight: 700,
+        cursor: pageNum <= 1 ? "default" : "pointer", opacity: pageNum <= 1 ? 0.35 : 1
+      }
+    }, "\u25B2"),
+    /*#__PURE__*/React.createElement("div", {
+      style: { color: "#C7CFDB", fontSize: 11, fontWeight: 700, textAlign: "center", lineHeight: 1.3 }
+    }, numPages ? (pageNum + " / " + numPages) : "\u2013"),
+    /*#__PURE__*/React.createElement("button", {
+      onClick: () => goPage(pageNum + 1),
+      disabled: pageNum >= numPages,
+      style: {
+        width: 44, height: 40, borderRadius: 8, border: "none",
+        background: "#2E3850", color: "white", fontSize: 16, fontWeight: 700,
+        cursor: pageNum >= numPages ? "default" : "pointer", opacity: pageNum >= numPages ? 0.35 : 1
+      }
+    }, "\u25BC")
+  );
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed", inset: 0, background: "#2A2F3A", zIndex: 9998,
+      display: "flex", flexDirection: "row", touchAction: "none"
+    }
+  },
+    // Document area
+    /*#__PURE__*/React.createElement("div", {
+      style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto", padding: 14 }
+    },
+      loading
+        ? /*#__PURE__*/React.createElement("div", { style: { color: "#9AA5B4", fontSize: 14 } }, "Loading PDF\u2026")
+        : error
+          ? /*#__PURE__*/React.createElement("div", { style: { color: "#E8909A", fontSize: 14, textAlign: "center", maxWidth: 320, lineHeight: 1.5 } }, error)
+          : /*#__PURE__*/React.createElement("div", { style: { position: "relative", lineHeight: 0 } },
+              /*#__PURE__*/React.createElement("canvas", {
+                ref: pageCanvasRef,
+                style: { display: "block", borderRadius: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }
+              }),
+              /*#__PURE__*/React.createElement("canvas", {
+                ref: annotCanvasRef,
+                onPointerDown: onPointerDown,
+                onPointerMove: onPointerMove,
+                onPointerUp: onPointerUp,
+                onPointerCancel: onPointerUp,
+                style: { position: "absolute", left: 0, top: 0, touchAction: "none", cursor: "crosshair" }
+              }),
+              textDraft && /*#__PURE__*/React.createElement("input", {
+                autoFocus: true,
+                value: textDraft.value,
+                onChange: (e) => setTextDraft(Object.assign({}, textDraft, { value: e.target.value })),
+                onBlur: commitText,
+                onKeyDown: (e) => { if (e.key === "Enter") { e.preventDefault(); commitText(); } },
+                placeholder: "type\u2026",
+                style: {
+                  position: "absolute",
+                  left: (textDraft.x * dimsRef.current.cssW) + "px",
+                  top: (textDraft.y * dimsRef.current.cssH) + "px",
+                  font: "600 " + toolSize.text + "px Arial, sans-serif",
+                  color: toolColor.text,
+                  background: "rgba(255,255,255,0.92)",
+                  border: "1.5px solid " + toolColor.text,
+                  borderRadius: 3, padding: "1px 4px", outline: "none", minWidth: 90, lineHeight: 1.2
+                }
+              })
+            )
+    ),
+    toolbar
+  );
+}
 function App() {
   const [view, setView] = useState("projects");
   const [project, setProject] = useState(null);
@@ -9007,6 +9488,11 @@ function App() {
   // captured at the moment of capture so it doesn't drift if the user navigates underneath.
   const [markupFile, setMarkupFile] = useState(null);
   const [markupTarget, setMarkupTarget] = useState(null);
+  // PDF markup session. markupPdf holds the file object { name, url } being edited; when set,
+  // the full-screen PdfMarkupView overlay renders. v1 is edit-only — no save-back yet.
+  const [markupPdf, setMarkupPdf] = useState(null);
+  const openPdfMarkup = (f) => setMarkupPdf(f);
+  const closePdfMarkup = () => setMarkupPdf(null);
   // POST a single file to the Upload File flow. Resolves to { url, filename } on success.
   const uploadFile = (file, targetFolder) => {
     return fileToBase64(file).then(base64 => {
@@ -9789,55 +10275,12 @@ function App() {
       letterSpacing: 0.5,
       marginBottom: 8
     }
-  }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement("button", {
+  }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement(FileRow, {
     key: f.name + (f.url || ""),
-    onClick: () => openFile(f.url),
-    style: {
-      background: "white",
-      border: "1.5px solid #DDE3ED",
-      borderRadius: 12,
-      padding: "13px 14px",
-      marginBottom: 8,
-      width: "100%",
-      textAlign: "left",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 38,
-      height: 38,
-      background: "#FFEAEA",
-      borderRadius: 9,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 18
-    }
-  }, "\uD83D\uDCC4"), /*#__PURE__*/React.createElement("div", {
-    style: { flex: 1, minWidth: 0 }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 600,
-      color: "#2C3E50",
-      fontSize: 13,
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap"
-    }
-  }, f.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: "#7F8C9A",
-      fontSize: 11
-    }
-  }, "Opens in SharePoint")), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#BDC3C7",
-      fontSize: 18
-    }
-  }, "\u203A")))) ), view === "folder-contents" && folder && /*#__PURE__*/React.createElement(React.Fragment, null,
+    file: f,
+    onOpen: openFile,
+    onMarkup: openPdfMarkup
+  }))) ), view === "folder-contents" && folder && /*#__PURE__*/React.createElement(React.Fragment, null,
   // Site Photos & Video: capture + library buttons + hidden inputs. Renders only inside the
   // SITE PHOTOS & VIDEO folder (any depth). Capture is one-shot from native camera; Library is
   // multi-select from the device picker. Both upload via the Upload File flow.
@@ -10077,55 +10520,12 @@ function App() {
       letterSpacing: .5,
       marginBottom: 8
     }
-  }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement("button", {
+  }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement(FileRow, {
     key: f.name + (f.url || ""),
-    onClick: () => openFile(f.url),
-    style: {
-      background: "white",
-      border: "1.5px solid #DDE3ED",
-      borderRadius: 12,
-      padding: "13px 14px",
-      marginBottom: 8,
-      width: "100%",
-      textAlign: "left",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 38,
-      height: 38,
-      background: "#FFEAEA",
-      borderRadius: 9,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 18
-    }
-  }, "\uD83D\uDCC4"), /*#__PURE__*/React.createElement("div", {
-    style: { flex: 1, minWidth: 0 }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 600,
-      color: "#2C3E50",
-      fontSize: 13,
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap"
-    }
-  }, f.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: "#7F8C9A",
-      fontSize: 11
-    }
-  }, "Opens in SharePoint")), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#BDC3C7",
-      fontSize: 18
-    }
-  }, "\u203A")))),
+    file: f,
+    onOpen: openFile,
+    onMarkup: openPdfMarkup
+  }))),
   // Empty state — only when nothing else is showing
   !folderLoading && !folderError && folderContents && !currentForms && folderContents.folders.length === 0 && folderContents.files.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -10484,6 +10884,9 @@ function App() {
     onDone: handleMarkupDone,
     onSkip: handleMarkupSkip,
     onCancel: handleMarkupCancel
+  }), markupPdf && /*#__PURE__*/React.createElement(PdfMarkupView, {
+    file: markupPdf,
+    onClose: closePdfMarkup
   }));
 }
 function JobPicker({
