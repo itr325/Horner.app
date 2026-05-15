@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_56";
+const BUILD_ID = "index_57";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -8947,12 +8947,21 @@ function PdfMarkupView(props) {
   const [toolSize, setToolSize] = useState({ pen: 6, arrow: 6, highlighter: 22, text: 22 });
   const [textDraft, setTextDraft] = useState(null);
   const [resizeTick, setResizeTick] = useState(0);
-  // Save-back (index_56). `saving` disables the Save/Close buttons and shows progress
-  // while the PDF is flattened + uploaded. `saveError` surfaces a flatten-stage failure
-  // (e.g. pdf-lib didn't load) as a dismissible banner; upload-stage failures are
-  // reported by App via its toast instead.
+  // Save-back (index_56, instrumented index_57). `saving` disables the Save/Close
+  // buttons while the PDF is flattened + uploaded. `saveStage` is shown on-screen
+  // as the save progresses AND named in the error banner if a stage stalls — so a
+  // hang surfaces *where* it stuck instead of spinning silently. `saveError` is the
+  // dismissible failure banner. saveStageRef mirrors saveStage so the watchdog
+  // timeout (in handleSaveClick) can read the current stage synchronously.
   const [saving, setSaving] = useState(false);
+  const [saveStage, setSaveStageState] = useState("");
   const [saveError, setSaveError] = useState(null);
+  const saveStageRef = useRef("");
+  function setSaveStage(s) {
+    saveStageRef.current = s;
+    setSaveStageState(s);
+    try { console.log("[save] " + s); } catch (e) {}
+  }
   const [, setTick] = useState(0);
   const rerender = () => setTick(t => t + 1);
   // ---- diagnostics (index_46) ----------------------------------------------
@@ -9650,115 +9659,155 @@ function PdfMarkupView(props) {
   function flattenToPdf() {
     const PDFLib = window.PDFLib;
     if (!PDFLib) {
-      return Promise.reject(new Error("PDF save library didn't load. Check the connection and reopen the file."));
+      return Promise.reject(new Error("PDF save library didn't load — reopen the file. (stage: check-library)"));
     }
     const srcBytes = pdfBytesRef.current;
     if (!srcBytes) {
-      return Promise.reject(new Error("The original PDF isn't available to save. Reopen the file and try again."));
+      return Promise.reject(new Error("The original PDF isn't loaded yet — reopen the file. (stage: check-source)"));
     }
     const anns = annotationsRef.current || {};
-    // ignoreEncryption lets permission-flagged PDFs (common in plan sets — no real
-    // password, just restriction flags) load instead of throwing outright.
-    return PDFLib.PDFDocument.load(srcBytes, { ignoreEncryption: true }).then(doc => {
-      const pages = doc.getPages();
-      // Cap each overlay canvas well under the iOS canvas ceiling the probe measured
-      // (~16.8 MP on the old field iPad). Hand-drawn marks stay crisp far below that.
-      const MAX_OVERLAY_PX = 8 * 1e6;
-      const jobs = [];
-      for (let i = 0; i < pages.length; i++) {
-        const pageAnns = anns[i + 1] || []; // annotations are keyed by 1-based page number
-        if (!pageAnns.length) continue;
-        const page = pages[i];
-        const size = page.getSize(); // unrotated media-box size, in PDF points
-        let rot = (page.getRotation().angle || 0) % 360;
-        if (rot < 0) rot += 360;
-        const swapped = (rot === 90 || rot === 270);
-        // Displayed (viewer) dimensions — what the editor showed and what the
-        // normalized annotation coords are relative to. PDF.js's getViewport applies
-        // page rotation, so a 90/270 page displays with width/height swapped.
-        const dispW = swapped ? size.height : size.width;
-        const dispH = swapped ? size.width : size.height;
-        let scale = Math.sqrt(MAX_OVERLAY_PX / (dispW * dispH));
-        if (!isFinite(scale) || scale <= 0) scale = 1;
-        if (scale > 2) scale = 2;
-        // 1) Draw the marks onto a transparent canvas in VIEWER orientation.
-        const oc = document.createElement("canvas");
-        oc.width = Math.max(1, Math.round(dispW * scale));
-        oc.height = Math.max(1, Math.round(dispH * scale));
-        const octx = oc.getContext("2d");
-        pageAnns.forEach(a => drawAnnotation(octx, a, oc.width, oc.height));
-        // 2) If the page is rotated, re-project the overlay into PAGE space so it can
-        //    be stamped with a plain x:0,y:0 drawImage and no pdf-lib rotation math.
-        //    The viewer image is the page rotated `rot` clockwise, so rotate it back
-        //    counter-clockwise by `rot`. (rot 0: this canvas IS the overlay.)
-        let stampCanvas = oc;
-        if (rot !== 0) {
-          const pc = document.createElement("canvas");
-          pc.width = swapped ? oc.height : oc.width;
-          pc.height = swapped ? oc.width : oc.height;
-          const pctx = pc.getContext("2d");
-          pctx.save();
-          if (rot === 90) { pctx.translate(0, pc.height); pctx.rotate(-Math.PI / 2); }
-          else if (rot === 180) { pctx.translate(pc.width, pc.height); pctx.rotate(Math.PI); }
-          else { pctx.translate(pc.width, 0); pctx.rotate(Math.PI / 2); } // 270
-          pctx.drawImage(oc, 0, 0);
-          pctx.restore();
-          stampCanvas = pc;
-        }
-        const url = stampCanvas.toDataURL("image/png");
-        jobs.push({ page: page, w: size.width, h: size.height, png: url.slice(url.indexOf(",") + 1) });
-      }
-      // No page was annotated — save returns the original document unchanged.
-      if (!jobs.length) return doc.save();
-      // Embed + stamp each overlay. pdf-lib's embedPng is async, so chain them.
-      let chain = Promise.resolve();
-      jobs.forEach(job => {
-        chain = chain.then(() => {
-          const bin = atob(job.png);
-          const bytes = new Uint8Array(bin.length);
-          for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
-          return doc.embedPng(bytes).then(img => {
-            // Cover the whole page. The overlay is already in page space (step 2),
-            // so x:0,y:0 at full media-box size lands it correctly with no rotation.
-            job.page.drawImage(img, { x: 0, y: 0, width: job.w, height: job.h });
+    // Hand a macrotask back to the browser so it can paint the current stage label
+    // before the next blocking step runs (microtask .then chains don't allow a paint).
+    const yieldPaint = () => new Promise(r => setTimeout(r, 0));
+    setSaveStage("loading PDF");
+    return yieldPaint()
+      // ignoreEncryption lets permission-flagged PDFs (common in plan sets — no real
+      // password, just restriction flags) load instead of throwing outright.
+      .then(() => PDFLib.PDFDocument.load(srcBytes, { ignoreEncryption: true }))
+      .then(doc => {
+        setSaveStage("rendering marks");
+        return yieldPaint().then(() => {
+          const pages = doc.getPages();
+          // Cap each overlay canvas well under the iOS canvas ceiling the probe measured
+          // (~16.8 MP on the old field iPad). Hand-drawn marks stay crisp far below that.
+          const MAX_OVERLAY_PX = 8 * 1e6;
+          const jobs = [];
+          for (let i = 0; i < pages.length; i++) {
+            const pageAnns = anns[i + 1] || []; // annotations are keyed by 1-based page number
+            if (!pageAnns.length) continue;
+            const page = pages[i];
+            const size = page.getSize(); // unrotated media-box size, in PDF points
+            let rot = (page.getRotation().angle || 0) % 360;
+            if (rot < 0) rot += 360;
+            const swapped = (rot === 90 || rot === 270);
+            // Displayed (viewer) dimensions — what the editor showed and what the
+            // normalized annotation coords are relative to. PDF.js's getViewport applies
+            // page rotation, so a 90/270 page displays with width/height swapped.
+            const dispW = swapped ? size.height : size.width;
+            const dispH = swapped ? size.width : size.height;
+            let scale = Math.sqrt(MAX_OVERLAY_PX / (dispW * dispH));
+            if (!isFinite(scale) || scale <= 0) scale = 1;
+            if (scale > 2) scale = 2;
+            // 1) Draw the marks onto a transparent canvas in VIEWER orientation.
+            const oc = document.createElement("canvas");
+            oc.width = Math.max(1, Math.round(dispW * scale));
+            oc.height = Math.max(1, Math.round(dispH * scale));
+            const octx = oc.getContext("2d");
+            pageAnns.forEach(a => drawAnnotation(octx, a, oc.width, oc.height));
+            // 2) If the page is rotated, re-project the overlay into PAGE space so it can
+            //    be stamped with a plain x:0,y:0 drawImage and no pdf-lib rotation math.
+            //    The viewer image is the page rotated `rot` clockwise, so rotate it back
+            //    counter-clockwise by `rot`. (rot 0: this canvas IS the overlay.)
+            let stampCanvas = oc;
+            if (rot !== 0) {
+              const pc = document.createElement("canvas");
+              pc.width = swapped ? oc.height : oc.width;
+              pc.height = swapped ? oc.width : oc.height;
+              const pctx = pc.getContext("2d");
+              pctx.save();
+              if (rot === 90) { pctx.translate(0, pc.height); pctx.rotate(-Math.PI / 2); }
+              else if (rot === 180) { pctx.translate(pc.width, pc.height); pctx.rotate(Math.PI); }
+              else { pctx.translate(pc.width, 0); pctx.rotate(Math.PI / 2); } // 270
+              pctx.drawImage(oc, 0, 0);
+              pctx.restore();
+              stampCanvas = pc;
+            }
+            const url = stampCanvas.toDataURL("image/png");
+            jobs.push({ page: page, w: size.width, h: size.height, png: url.slice(url.indexOf(",") + 1) });
+          }
+          // No page was annotated — save returns the original document unchanged.
+          if (!jobs.length) {
+            setSaveStage("writing PDF");
+            return doc.save();
+          }
+          // Embed + stamp each overlay. pdf-lib's embedPng is async, so chain them.
+          setSaveStage("embedding marks");
+          let chain = Promise.resolve();
+          jobs.forEach(job => {
+            chain = chain.then(() => {
+              const bin = atob(job.png);
+              const bytes = new Uint8Array(bin.length);
+              for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+              return doc.embedPng(bytes).then(img => {
+                // Cover the whole page. The overlay is already in page space (step 2),
+                // so x:0,y:0 at full media-box size lands it correctly with no rotation.
+                job.page.drawImage(img, { x: 0, y: 0, width: job.w, height: job.h });
+              });
+            });
+          });
+          return chain.then(() => {
+            setSaveStage("writing PDF");
+            return doc.save();
           });
         });
+      })
+      .then(pdfBytes => {
+        setSaveStage("encoding");
+        return yieldPaint().then(() => {
+          // Uint8Array -> base64, chunked so a big PDF doesn't blow the call stack.
+          const CHUNK = 0x8000;
+          let binary = "";
+          for (let i = 0; i < pdfBytes.length; i += CHUNK) {
+            binary += String.fromCharCode.apply(null, pdfBytes.subarray(i, i + CHUNK));
+          }
+          return btoa(binary);
+        });
       });
-      return chain.then(() => doc.save());
-    }).then(pdfBytes => {
-      // Uint8Array -> base64, chunked so a big PDF doesn't blow the call stack.
-      const CHUNK = 0x8000;
-      let binary = "";
-      for (let i = 0; i < pdfBytes.length; i += CHUNK) {
-        binary += String.fromCharCode.apply(null, pdfBytes.subarray(i, i + CHUNK));
-      }
-      return btoa(binary);
-    });
   }
   // Any markups anywhere in the document? Drives the Save button's enabled state
   // and whether closing needs a discard confirmation.
   const hasAnnotations = Object.keys(annotations).some(k => annotations[k] && annotations[k].length > 0);
   // Save: flatten, hand the bytes to App (which uploads + versions + closes on success).
+  // Instrumented (index_57): a 45s watchdog converts any silent hang into a visible
+  // banner naming the stage it stuck on, and every failure path reports its stage.
   function handleSaveClick() {
     if (saving || !hasAnnotations || !props.onSave) return;
     setSaveError(null);
     setSaving(true);
+    setSaveStage("starting");
+    // Watchdog — no single stage should take 45s. If one does, surface WHERE it stuck
+    // (read from saveStageRef, always current) instead of spinning on "Saving…" forever.
+    let timedOut = false;
+    let watchdogId = setTimeout(() => {
+      timedOut = true;
+      setSaving(false);
+      setSaveError("Save timed out — stuck at stage: \"" + (saveStageRef.current || "?") +
+        "\". Note that stage and send it to support.");
+    }, 45000);
+    const stopWatchdog = () => { if (watchdogId) { clearTimeout(watchdogId); watchdogId = null; } };
     flattenToPdf()
       .then(base64 => {
-        // Flatten succeeded. From here any rejection is upload-stage — App reports
-        // those with its own toast, so tag it so the catch below doesn't double up.
-        return Promise.resolve(props.onSave(base64)).catch(() => {
-          throw { __uploadStage: true };
-        });
+        if (timedOut) return; // watchdog already gave up — don't fire the upload late
+        setSaveStage("uploading to SharePoint");
+        return props.onSave(base64);
       })
       .then(() => {
+        stopWatchdog();
         // Success — App closes the editor, so this component unmounts. Nothing to do.
       })
       .catch(err => {
+        stopWatchdog();
+        if (timedOut) return; // the watchdog already reported a stage-named timeout
         setSaving(false);
-        // Only flatten-stage failures (real Errors with a message) get the inline
-        // banner; upload-stage failures were already surfaced by App's toast.
-        if (err && err.message && !err.__uploadStage) setSaveError(err.message);
+        let msg;
+        if (err && err.message) msg = err.message;
+        else if (typeof err === "number") {
+          msg = "Upload failed — the flow returned HTTP " + err +
+            " (stage: " + (saveStageRef.current || "?") + ")";
+        } else {
+          msg = "Save failed at stage: \"" + (saveStageRef.current || "?") + "\"";
+        }
+        setSaveError(msg);
       });
   }
   // Close: warn before discarding unsaved markups (matches the Reload App confirm pattern).
@@ -10063,8 +10112,17 @@ function PdfMarkupView(props) {
           )
     ),
     toolbar,
-    // Flatten-stage save failure (e.g. pdf-lib didn't load). Upload-stage failures
-    // are reported by App's toast instead. Tap to dismiss.
+    // Live save-progress indicator (index_57). Shows the current stage while saving
+    // so a stall is visible as "stuck on <stage>" rather than a silent spinner.
+    saving && !saveError && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute", left: "50%", bottom: 18, transform: "translateX(-50%)",
+        maxWidth: "78%", background: "#1B3A6B", color: "white", padding: "10px 16px",
+        borderRadius: 8, fontSize: 13, fontWeight: 600, lineHeight: 1.4, zIndex: 10001,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.45)", textAlign: "center"
+      }
+    }, "Saving\u2026 " + (saveStage || "starting")),
+    // Save failure banner — names the stage that failed/stalled. Tap to dismiss.
     saveError && /*#__PURE__*/React.createElement("div", {
       onClick: () => setSaveError(null),
       style: {
@@ -10416,7 +10474,22 @@ function App() {
         sourceFilename: rawName,
         contentBase64: contentBase64
       })
-    }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(res => {
+    }).then(r => {
+      // Non-2xx: read the body if we can — the flow's error text is the useful part.
+      if (!r.ok) {
+        return r.text().then(
+          t => Promise.reject(new Error("the flow returned HTTP " + r.status +
+            (t ? (" \u2014 " + String(t).slice(0, 140)) : ""))),
+          () => Promise.reject(new Error("the flow returned HTTP " + r.status))
+        );
+      }
+      return r.text().then(t => {
+        // The flow should return JSON { url, filename }. Tolerate a non-JSON body
+        // rather than throwing a confusing parse error.
+        try { return t ? JSON.parse(t) : {}; }
+        catch (e) { return { filename: "", _rawBody: String(t).slice(0, 140) }; }
+      });
+    }).then(res => {
       const savedName = (res && res.filename) ? res.filename : "a new version";
       // The folder has a new file — drop its cache so re-entering it refetches,
       // and refetch now if the user is sitting in that folder behind the editor.
@@ -10425,8 +10498,18 @@ function App() {
       showToast("Saved " + savedName, true);
       closePdfMarkup();
     }).catch(err => {
-      showToast("Couldn't save markup to SharePoint \u2014 please try again", false);
-      return Promise.reject(err);
+      // fetch() itself rejecting (vs. an HTTP error above) is almost always a
+      // network drop or a CORS block on the flow — call that out specifically.
+      let detail;
+      if (err && err.message) {
+        detail = /failed to fetch|networkerror|load failed/i.test(err.message)
+          ? "couldn't reach the flow (network or CORS issue)"
+          : err.message;
+      } else {
+        detail = "an unexpected error";
+      }
+      showToast("Couldn't save markup \u2014 " + detail, false);
+      return Promise.reject(new Error("Upload failed \u2014 " + detail));
     });
   };
   const showToast = (msg, ok = true) => {
