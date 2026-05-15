@@ -40,6 +40,10 @@
   }
 </script>
 
+<!-- pdf-lib (CDN) — writes the flattened, annotated PDF on save-back (exposes window.PDFLib).
+     PDF.js can only render; pdf-lib is what stamps the markup overlay and re-saves the file. -->
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
 <!-- Application code (JSX pre-compiled to React.createElement) -->
 <script>
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -57,7 +61,12 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_55";
+const BUILD_ID = "index_56";
+// Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
+// debug tool only. Set false for field release; flip true to bring it back for
+// on-device probing. The canvas-ceiling probe code stays compiled in either way,
+// just hidden with the panel. (HANDOFF_2026-05-14_session3, open item #2.)
+const SHOW_DIAG = false;
 // Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
 // Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
 // FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
@@ -177,6 +186,19 @@ const SITE_PHOTOS_FOLDER = "SITE PHOTOS & VIDEO";
 // bytes base64-encoded as the response body. Routes file fetches through Power Automate so
 // they aren't blocked by SharePoint's cross-origin restrictions (and no SharePoint login prompt).
 const DOWNLOAD_FILE_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/987d39e8b6ae4467894c4f8d1a161825/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=myOgb3PFzlYvR-iAyxKWKPI_8yPS_FS1V5xpha0DvnI";
+// Save Markup flow — POST body { code, folder, baseName, sourceFilename, contentBase64 }.
+//   code           — project code (e.g. "24-1234")
+//   folder         — folder path relative to the project root the source PDF lives in (e.g. "PLANS")
+//   baseName       — source filename with any ".pdf" and trailing "_vN" already stripped
+//                    (e.g. "FloorPlan") — the app does this so the flow needs no regex
+//   sourceFilename — the original filename, unmodified (for the flow's logging/debugging)
+//   contentBase64  — base64-encoded bytes of the flattened, annotated PDF
+// The flow scans `folder` for baseName.pdf + baseName_vN.pdf, finds the highest version
+// (bare = v1), and writes the file as baseName_v{highest+1}.pdf. Computing the version
+// server-side keeps revision numbers correct even if two crew members save at once.
+// Response: { url, filename } — the name actually written.
+// PLACEHOLDER — replace with the deployed flow's URL (see SAVE_MARKUP flow setup notes).
+const SAVE_MARKUP_URL = "PASTE_SAVE_MARKUP_FLOW_URL_HERE";
 // Icon + color styling for known top-level folder names. Unknown folders fall back to DEFAULT_FOLDER_STYLE.
 // Match is case-insensitive at lookup time. Used only for visual decoration; folder existence comes from SharePoint.
 const FOLDER_STYLES = {
@@ -8873,6 +8895,10 @@ function PdfMarkupView(props) {
   const pageCanvasRef = useRef(null);
   const annotCanvasRef = useRef(null);
   const pdfDocRef = useRef(null);
+  // Untouched copy of the original PDF bytes, kept for save-back flattening. PDF.js's
+  // getDocument() can transfer/detach the buffer it's handed, so the load effect stashes
+  // a .slice() copy here BEFORE calling getDocument — see that effect below.
+  const pdfBytesRef = useRef(null);
   const renderTaskRef = useRef(null);
   const dimsRef = useRef({ w: 0, h: 0, cssW: 0, cssH: 0, fit: 0 });
   const drawingRef = useRef(false);
@@ -8899,6 +8925,12 @@ function PdfMarkupView(props) {
   const [toolSize, setToolSize] = useState({ pen: 6, arrow: 6, highlighter: 22, text: 22 });
   const [textDraft, setTextDraft] = useState(null);
   const [resizeTick, setResizeTick] = useState(0);
+  // Save-back (index_56). `saving` disables the Save/Close buttons and shows progress
+  // while the PDF is flattened + uploaded. `saveError` surfaces a flatten-stage failure
+  // (e.g. pdf-lib didn't load) as a dismissible banner; upload-stage failures are
+  // reported by App via its toast instead.
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [, setTick] = useState(0);
   const rerender = () => setTick(t => t + 1);
   // ---- diagnostics (index_46) ----------------------------------------------
@@ -9036,6 +9068,10 @@ function PdfMarkupView(props) {
       const binary = atob(b64);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      // Keep an untouched copy for save-back BEFORE handing the array to PDF.js —
+      // getDocument() may transfer the underlying buffer to its worker, which would
+      // leave `bytes` detached and unusable for pdf-lib later.
+      pdfBytesRef.current = bytes.slice(0);
       return window.pdfjsLib.getDocument({ data: bytes }).promise;
     }).then(pdf => {
       if (cancelled || !pdf) return;
@@ -9580,6 +9616,135 @@ function PdfMarkupView(props) {
     gestureRef.current = null;
     setPageNum(n);
   }
+  // ---- save-back (index_56) ------------------------------------------------
+  // Flatten the current annotations onto the original PDF and resolve to base64-
+  // encoded PDF bytes. pdf-lib loads the original file (bytes stashed at download
+  // time) and, for every page that has annotations, stamps a transparent PNG of
+  // just the marks over that page. The PDF's own vector content/text is left
+  // untouched — only the hand-drawn overlay is raster. The marks are drawn with
+  // the SAME drawAnnotation() the editor uses, so the saved file can't drift from
+  // what the user saw on screen. This path is self-contained: it touches nothing
+  // in the render / gesture / detail-overlay code.
+  function flattenToPdf() {
+    const PDFLib = window.PDFLib;
+    if (!PDFLib) {
+      return Promise.reject(new Error("PDF save library didn't load. Check the connection and reopen the file."));
+    }
+    const srcBytes = pdfBytesRef.current;
+    if (!srcBytes) {
+      return Promise.reject(new Error("The original PDF isn't available to save. Reopen the file and try again."));
+    }
+    const anns = annotationsRef.current || {};
+    // ignoreEncryption lets permission-flagged PDFs (common in plan sets — no real
+    // password, just restriction flags) load instead of throwing outright.
+    return PDFLib.PDFDocument.load(srcBytes, { ignoreEncryption: true }).then(doc => {
+      const pages = doc.getPages();
+      // Cap each overlay canvas well under the iOS canvas ceiling the probe measured
+      // (~16.8 MP on the old field iPad). Hand-drawn marks stay crisp far below that.
+      const MAX_OVERLAY_PX = 8 * 1e6;
+      const jobs = [];
+      for (let i = 0; i < pages.length; i++) {
+        const pageAnns = anns[i + 1] || []; // annotations are keyed by 1-based page number
+        if (!pageAnns.length) continue;
+        const page = pages[i];
+        const size = page.getSize(); // unrotated media-box size, in PDF points
+        let rot = (page.getRotation().angle || 0) % 360;
+        if (rot < 0) rot += 360;
+        const swapped = (rot === 90 || rot === 270);
+        // Displayed (viewer) dimensions — what the editor showed and what the
+        // normalized annotation coords are relative to. PDF.js's getViewport applies
+        // page rotation, so a 90/270 page displays with width/height swapped.
+        const dispW = swapped ? size.height : size.width;
+        const dispH = swapped ? size.width : size.height;
+        let scale = Math.sqrt(MAX_OVERLAY_PX / (dispW * dispH));
+        if (!isFinite(scale) || scale <= 0) scale = 1;
+        if (scale > 2) scale = 2;
+        // 1) Draw the marks onto a transparent canvas in VIEWER orientation.
+        const oc = document.createElement("canvas");
+        oc.width = Math.max(1, Math.round(dispW * scale));
+        oc.height = Math.max(1, Math.round(dispH * scale));
+        const octx = oc.getContext("2d");
+        pageAnns.forEach(a => drawAnnotation(octx, a, oc.width, oc.height));
+        // 2) If the page is rotated, re-project the overlay into PAGE space so it can
+        //    be stamped with a plain x:0,y:0 drawImage and no pdf-lib rotation math.
+        //    The viewer image is the page rotated `rot` clockwise, so rotate it back
+        //    counter-clockwise by `rot`. (rot 0: this canvas IS the overlay.)
+        let stampCanvas = oc;
+        if (rot !== 0) {
+          const pc = document.createElement("canvas");
+          pc.width = swapped ? oc.height : oc.width;
+          pc.height = swapped ? oc.width : oc.height;
+          const pctx = pc.getContext("2d");
+          pctx.save();
+          if (rot === 90) { pctx.translate(0, pc.height); pctx.rotate(-Math.PI / 2); }
+          else if (rot === 180) { pctx.translate(pc.width, pc.height); pctx.rotate(Math.PI); }
+          else { pctx.translate(pc.width, 0); pctx.rotate(Math.PI / 2); } // 270
+          pctx.drawImage(oc, 0, 0);
+          pctx.restore();
+          stampCanvas = pc;
+        }
+        const url = stampCanvas.toDataURL("image/png");
+        jobs.push({ page: page, w: size.width, h: size.height, png: url.slice(url.indexOf(",") + 1) });
+      }
+      // No page was annotated — save returns the original document unchanged.
+      if (!jobs.length) return doc.save();
+      // Embed + stamp each overlay. pdf-lib's embedPng is async, so chain them.
+      let chain = Promise.resolve();
+      jobs.forEach(job => {
+        chain = chain.then(() => {
+          const bin = atob(job.png);
+          const bytes = new Uint8Array(bin.length);
+          for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+          return doc.embedPng(bytes).then(img => {
+            // Cover the whole page. The overlay is already in page space (step 2),
+            // so x:0,y:0 at full media-box size lands it correctly with no rotation.
+            job.page.drawImage(img, { x: 0, y: 0, width: job.w, height: job.h });
+          });
+        });
+      });
+      return chain.then(() => doc.save());
+    }).then(pdfBytes => {
+      // Uint8Array -> base64, chunked so a big PDF doesn't blow the call stack.
+      const CHUNK = 0x8000;
+      let binary = "";
+      for (let i = 0; i < pdfBytes.length; i += CHUNK) {
+        binary += String.fromCharCode.apply(null, pdfBytes.subarray(i, i + CHUNK));
+      }
+      return btoa(binary);
+    });
+  }
+  // Any markups anywhere in the document? Drives the Save button's enabled state
+  // and whether closing needs a discard confirmation.
+  const hasAnnotations = Object.keys(annotations).some(k => annotations[k] && annotations[k].length > 0);
+  // Save: flatten, hand the bytes to App (which uploads + versions + closes on success).
+  function handleSaveClick() {
+    if (saving || !hasAnnotations || !props.onSave) return;
+    setSaveError(null);
+    setSaving(true);
+    flattenToPdf()
+      .then(base64 => {
+        // Flatten succeeded. From here any rejection is upload-stage — App reports
+        // those with its own toast, so tag it so the catch below doesn't double up.
+        return Promise.resolve(props.onSave(base64)).catch(() => {
+          throw { __uploadStage: true };
+        });
+      })
+      .then(() => {
+        // Success — App closes the editor, so this component unmounts. Nothing to do.
+      })
+      .catch(err => {
+        setSaving(false);
+        // Only flatten-stage failures (real Errors with a message) get the inline
+        // banner; upload-stage failures were already surfaced by App's toast.
+        if (err && err.message && !err.__uploadStage) setSaveError(err.message);
+      });
+  }
+  // Close: warn before discarding unsaved markups (matches the Reload App confirm pattern).
+  function handleCloseClick() {
+    if (saving) return;
+    if (hasAnnotations && !window.confirm("Close without saving? Your markups will be lost.")) return;
+    props.onClose();
+  }
   // Keep the latest handler closures reachable from the stable (non-passive) listeners below.
   handlersRef.current = {
     onTouchStart: onTouchStart, onTouchMove: onTouchMove, onTouchEnd: onTouchEnd,
@@ -9636,14 +9801,29 @@ function PdfMarkupView(props) {
       alignItems: "center", padding: "8px 0", gap: 6, overflowY: "auto", flexShrink: 0
     }
   },
-    // Close
+    // Close — confirms first if there are unsaved markups
     /*#__PURE__*/React.createElement("button", {
-      onClick: props.onClose,
+      onClick: handleCloseClick,
+      disabled: saving,
       style: {
         width: 44, height: 38, borderRadius: 8, border: "none",
-        background: "#39435A", color: "white", fontSize: 16, fontWeight: 700, cursor: "pointer"
+        background: "#39435A", color: "white", fontSize: 16, fontWeight: 700,
+        cursor: saving ? "default" : "pointer", opacity: saving ? 0.5 : 1
       }
     }, "\u2715"),
+    // Save — flatten the markups onto the PDF and upload as the next version
+    /*#__PURE__*/React.createElement("button", {
+      onClick: handleSaveClick,
+      disabled: saving || !hasAnnotations,
+      title: saving ? "Saving\u2026" : "Save as new version",
+      style: {
+        width: 44, height: 44, borderRadius: 8, border: "none",
+        background: saving ? "#6E7787" : (hasAnnotations ? "#1E8E3E" : "#2E3850"),
+        color: "white", fontSize: 18, fontWeight: 700,
+        cursor: (saving || !hasAnnotations) ? "default" : "pointer",
+        opacity: (!hasAnnotations && !saving) ? 0.5 : 1
+      }
+    }, saving ? "\u22EF" : "\u2713"),
     /*#__PURE__*/React.createElement("div", { style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" } }),
     // Tools
     TOOLS.map(t => /*#__PURE__*/React.createElement("button", {
@@ -9740,8 +9920,11 @@ function PdfMarkupView(props) {
       ref: docAreaRef,
       style: { flex: 1, position: "relative", overflow: "hidden", background: "#2A2F3A" }
     },
-      // ---- diagnostic readout (index_46) — remove or gate before this ships to field ----
-      /*#__PURE__*/React.createElement("div", {
+      // ---- diagnostic readout (index_46) — gated behind SHOW_DIAG (index_56) ----
+      // When SHOW_DIAG is false this whole argument evaluates to false and React
+      // renders nothing; flip the flag near BUILD_ID to bring the panel back for
+      // on-device probing. The canvas-ceiling probe stays compiled in, just hidden.
+      SHOW_DIAG && /*#__PURE__*/React.createElement("div", {
         style: {
           position: "absolute", top: 8, left: 8, zIndex: 6, pointerEvents: "none",
           font: "600 10px/1.5 ui-monospace,Menlo,Consolas,monospace", color: "#D7E0EC",
@@ -9857,7 +10040,18 @@ function PdfMarkupView(props) {
             }, "Loading PDF\u2026")
           )
     ),
-    toolbar
+    toolbar,
+    // Flatten-stage save failure (e.g. pdf-lib didn't load). Upload-stage failures
+    // are reported by App's toast instead. Tap to dismiss.
+    saveError && /*#__PURE__*/React.createElement("div", {
+      onClick: () => setSaveError(null),
+      style: {
+        position: "absolute", left: "50%", bottom: 18, transform: "translateX(-50%)",
+        maxWidth: "78%", background: "#C0392B", color: "white", padding: "10px 16px",
+        borderRadius: 8, fontSize: 13, fontWeight: 600, lineHeight: 1.4, zIndex: 10001,
+        cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.45)", textAlign: "center"
+      }
+    }, saveError + "  (tap to dismiss)")
   );
 }
 function App() {
@@ -10066,10 +10260,13 @@ function App() {
   const [markupFile, setMarkupFile] = useState(null);
   const [markupTarget, setMarkupTarget] = useState(null);
   // PDF markup session. markupPdf holds the file object { name, url } being edited; when set,
-  // the full-screen PdfMarkupView overlay renders. v1 is edit-only — no save-back yet.
+  // the full-screen PdfMarkupView overlay renders. markupPdfFolder is the SharePoint-relative
+  // folder that PDF lives in, captured at open time so the save-back target can't drift if the
+  // user navigates underneath the editor (mirrors the markupTarget pattern above).
   const [markupPdf, setMarkupPdf] = useState(null);
-  const openPdfMarkup = (f) => setMarkupPdf(f);
-  const closePdfMarkup = () => setMarkupPdf(null);
+  const [markupPdfFolder, setMarkupPdfFolder] = useState(null);
+  const openPdfMarkup = (f) => { setMarkupPdf(f); setMarkupPdfFolder(sharePointPath); };
+  const closePdfMarkup = () => { setMarkupPdf(null); setMarkupPdfFolder(null); };
   // POST a single file to the Upload File flow. Resolves to { url, filename } on success.
   const uploadFile = (file, targetFolder) => {
     return fileToBase64(file).then(base64 => {
@@ -10166,6 +10363,48 @@ function App() {
   const handleMarkupCancel = () => {
     setMarkupFile(null);
     setMarkupTarget(null);
+  };
+  // PDF markup save-back (index_56). PdfMarkupView flattens the annotations onto the
+  // PDF and hands back base64 bytes; this POSTs them to the Save Markup flow, which
+  // writes the next _vN into the same folder and returns the name it used. Returns a
+  // promise so the editor can keep its "saving" state until this settles: on success
+  // the editor is closed here; on failure it stays open so the user can retry.
+  const handlePdfMarkupSave = (contentBase64) => {
+    const src = markupPdf;
+    const folderPath = markupPdfFolder || "";
+    if (!src) return Promise.reject(new Error("No active markup session."));
+    if (!SAVE_MARKUP_URL || SAVE_MARKUP_URL.indexOf("PASTE_") === 0) {
+      showToast("Save isn't configured yet \u2014 SAVE_MARKUP_URL is unset", false);
+      return Promise.reject(new Error("SAVE_MARKUP_URL not configured"));
+    }
+    showToast("Saving markup to SharePoint\u2026", true);
+    // Cleaned base name: drop the ".pdf" extension and any trailing "_vN" so the flow
+    // can scan for the whole revision family. Marking up "FloorPlan_v3.pdf" still
+    // versions against "FloorPlan" — i.e. the next save becomes "FloorPlan_v4.pdf".
+    const rawName = src.name || "markup.pdf";
+    const baseName = rawName.replace(/\.pdf$/i, "").replace(/_v\d+$/i, "");
+    return fetch(SAVE_MARKUP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: project.code,
+        folder: folderPath,
+        baseName: baseName,
+        sourceFilename: rawName,
+        contentBase64: contentBase64
+      })
+    }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(res => {
+      const savedName = (res && res.filename) ? res.filename : "a new version";
+      // The folder has a new file — drop its cache so re-entering it refetches,
+      // and refetch now if the user is sitting in that folder behind the editor.
+      delete folderCacheRef.current[project.code + ":" + folderPath];
+      if (sharePointPath === folderPath) fetchCurrentFolder(true);
+      showToast("Saved " + savedName, true);
+      closePdfMarkup();
+    }).catch(err => {
+      showToast("Couldn't save markup to SharePoint \u2014 please try again", false);
+      return Promise.reject(err);
+    });
   };
   const showToast = (msg, ok = true) => {
     setToast({
@@ -11536,7 +11775,8 @@ function App() {
     onCancel: handleMarkupCancel
   }), markupPdf && /*#__PURE__*/React.createElement(PdfMarkupView, {
     file: markupPdf,
-    onClose: closePdfMarkup
+    onClose: closePdfMarkup,
+    onSave: handlePdfMarkupSave
   }));
 }
 function JobPicker({
