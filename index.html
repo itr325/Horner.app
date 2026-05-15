@@ -57,7 +57,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_54";
+const BUILD_ID = "index_55";
 // Active commercial-field employees, sourced from Master Employee List 2026-05-08, sorted by last name.
 // Phone field is Horner-issued cell only; missing if not yet assigned. Email omitted if no Horner address yet.
 // FUTURE: Eric to migrate this to SharePoint sync via Power Automate (mirrors PROJECTS pattern).
@@ -10530,7 +10530,26 @@ function App() {
       alignItems: "center",
       marginBottom: 10
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (window.confirm("Reload App? Unsaved markups will be lost.")) {
+        window.location.href = window.location.pathname + "?v=" + Date.now();
+      }
+    },
+    style: {
+      background: "none",
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 8,
+      padding: "6px 10px",
+      fontSize: 12,
+      fontWeight: 600,
+      color: NAVY,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, "\u21BB Reload App"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: "#7F8C9A"
