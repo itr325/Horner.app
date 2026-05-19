@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_58";
+const BUILD_ID = "index_59";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -8894,11 +8894,23 @@ function FileRow(props) {
     }, "\uD83D\uDCC4"),
     /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
       /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontWeight: 600, color: "#2C3E50", fontSize: 13,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
-        }
-      }, f.name),
+        style: { display: "flex", alignItems: "center", gap: 6 }
+      },
+        /*#__PURE__*/React.createElement("div", {
+          style: {
+            fontWeight: 600, color: "#2C3E50", fontSize: 13,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            minWidth: 0
+          }
+        }, f.name),
+        props.isLatest && /*#__PURE__*/React.createElement("span", {
+          style: {
+            background: "#27AE60", color: "white", fontSize: 9, fontWeight: 700,
+            padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5,
+            flexShrink: 0, whiteSpace: "nowrap"
+          }
+        }, "LATEST")
+      ),
       /*#__PURE__*/React.createElement("div", { style: { color: "#7F8C9A", fontSize: 11 } },
         isPdf ? "Tap to mark up" : "Opens in SharePoint")
     ),
@@ -10252,6 +10264,30 @@ function App() {
     combined.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
     return combined;
   })();
+  // Identify the "latest" version in each PDF version family so FileRow can badge it.
+  // A family shares the same base name (e.g. FloorPlan.pdf, FloorPlan_v2.pdf, FloorPlan_v3.pdf).
+  // Only families with 2+ members get a badge — a lone file isn't a "latest" of anything.
+  const latestVersionNames = (() => {
+    var files = (folderContents && folderContents.files) || [];
+    var families = {};
+    files.forEach(f => {
+      var name = f.name || "";
+      if (!/\.pdf$/i.test(name)) return;
+      var base = name.replace(/\.pdf$/i, "").replace(/_v\d+$/i, "");
+      if (!families[base]) families[base] = [];
+      var vMatch = name.match(/_v(\d+)\.pdf$/i);
+      var vNum = vMatch ? parseInt(vMatch[1], 10) : 1;
+      families[base].push({ name: name, version: vNum });
+    });
+    var latest = {};
+    Object.keys(families).forEach(base => {
+      var group = families[base];
+      if (group.length < 2) return;
+      var best = group.reduce((a, b) => b.version > a.version ? b : a);
+      latest[best.name] = true;
+    });
+    return latest;
+  })();
   // Fetch folder contents on entry into a project or any folder navigation.
   // Runs whenever project, view, or path changes. Uses cache when available.
   const fetchCurrentFolder = (force) => {
@@ -11259,6 +11295,7 @@ function App() {
   }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement(FileRow, {
     key: f.name + (f.url || ""),
     file: f,
+    isLatest: !!latestVersionNames[f.name],
     onOpen: openFile,
     onMarkup: openPdfMarkup
   }))) ), view === "folder-contents" && folder && /*#__PURE__*/React.createElement(React.Fragment, null,
@@ -11524,6 +11561,7 @@ function App() {
   }, "Files"), folderContents.files.map(f => /*#__PURE__*/React.createElement(FileRow, {
     key: f.name + (f.url || ""),
     file: f,
+    isLatest: !!latestVersionNames[f.name],
     onOpen: openFile,
     onMarkup: openPdfMarkup
   }))),
