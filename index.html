@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_57";
+const BUILD_ID = "index_58";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10478,8 +10478,14 @@ function App() {
       // Non-2xx: read the body if we can — the flow's error text is the useful part.
       if (!r.ok) {
         return r.text().then(
-          t => Promise.reject(new Error("the flow returned HTTP " + r.status +
-            (t ? (" \u2014 " + String(t).slice(0, 140)) : ""))),
+          t => {
+            var msg = "the flow returned HTTP " + r.status;
+            if (t) {
+              try { var j = JSON.parse(t); if (j.error) msg = j.error; else msg += " \u2014 " + String(t).slice(0, 300); }
+              catch(e) { msg += " \u2014 " + String(t).slice(0, 300); }
+            }
+            return Promise.reject(new Error(msg));
+          },
           () => Promise.reject(new Error("the flow returned HTTP " + r.status))
         );
       }
