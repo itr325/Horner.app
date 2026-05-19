@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_61";
+const BUILD_ID = "index_62";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -8955,10 +8955,9 @@ function PdfMarkupView(props) {
   const [numPages, setNumPages] = useState(0);
   const [pageNum, setPageNum] = useState(1);
   const [annotations, setAnnotations] = useState({});
-  const [tool, setTool] = useState("pen");
+  const [tool, setTool] = useState("pan");
   const [toolColor, setToolColor] = useState({ pen: "#E53935", arrow: "#E53935", highlighter: "#FFEB3B", text: "#1E88E5" });
   const [toolSize, setToolSize] = useState({ pen: 6, arrow: 6, highlighter: 22, text: 22 });
-  const [panMode, setPanMode] = useState(false);
   const [textDraft, setTextDraft] = useState(null);
   const [resizeTick, setResizeTick] = useState(0);
   // Save-back (index_56, instrumented index_57). `saving` disables the Save/Close
@@ -9574,7 +9573,7 @@ function PdfMarkupView(props) {
       return;
     }
     if (touches.length === 1) {
-      if (panMode) {
+      if (tool === "pan") {
         hideDetail();
         const t0 = touches[0];
         const v = viewRef.current;
@@ -9602,7 +9601,7 @@ function PdfMarkupView(props) {
       e.preventDefault();
       return;
     }
-    if (panMode && panRef.current && touches.length === 1) {
+    if (tool === "pan" && panRef.current && touches.length === 1) {
       const p = panRef.current;
       const dx = touches[0].clientX - p.x0;
       const dy = touches[0].clientY - p.y0;
@@ -9933,11 +9932,11 @@ function PdfMarkupView(props) {
     /*#__PURE__*/React.createElement("div", { style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" } }),
     // Pan mode toggle — 1-finger drag pans instead of drawing
     /*#__PURE__*/React.createElement("button", {
-      onClick: () => setPanMode(prev => !prev),
-      title: panMode ? "Pan mode (tap to draw)" : "Pan mode (tap to pan)",
+      onClick: () => setTool("pan"),
+      title: "Pan mode",
       style: {
         width: 44, height: 44, borderRadius: 8, border: "none",
-        background: panMode ? "#1B6FB3" : "#2E3850",
+        background: tool === "pan" ? "#1B6FB3" : "#2E3850",
         color: "white", fontSize: 20, cursor: "pointer"
       }
     }, "\u270B"),
