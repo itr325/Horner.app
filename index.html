@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_64";
+const BUILD_ID = "index_65";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -13851,7 +13851,7 @@ function ValveTagList({
   }, project ? project.code + " \u2014 " + project.name : "\u2014"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
-      gridTemplateColumns: "1fr 1fr",
+      gridTemplateColumns: "130px 1fr",
       gap: 8
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -14009,6 +14009,8 @@ function ValveTagList({
     value: r.unit,
     onChange: e => upRow(i, "unit", e.target.value),
     placeholder: "Unit #",
+    inputMode: "numeric",
+    autoCapitalize: "characters",
     style: vtInp
   })), /*#__PURE__*/React.createElement("td", {
     style: {
