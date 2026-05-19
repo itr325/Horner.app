@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_62";
+const BUILD_ID = "index_63";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -221,6 +221,11 @@ const DOWNLOAD_FILE_URL = "https://defaultef466c747a134920854c210669ea3c.84.envi
 // Save Markup flow URL — deployed flow (workflow id 5bf390d1…). The HTTP-trigger sig
 // is a capability URL; treat it like a secret (same posture as the other flow URLs above).
 const SAVE_MARKUP_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5bf390d164134ddd85f35a8ec22435ed/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=slRF_p1Gd6pUZuc8rmWNF1oKbw6janepdQibFEYW1Mc";
+// Valve Tag List persistence flows — POST {code, name, data} to save; POST {code, name} to load.
+// Saves/loads valve_tag_list.json inside Active Projects/(JOB)/VALVE TAG/.
+// Stub URLs — replace with real Power Automate trigger URLs once flows are built.
+const SAVE_VALVE_TAGS_URL = "";
+const LOAD_VALVE_TAGS_URL = "";
 // Icon + color styling for known top-level folder names. Unknown folders fall back to DEFAULT_FOLDER_STYLE.
 // Match is case-insensitive at lookup time. Used only for visual decoration; folder existence comes from SharePoint.
 const FOLDER_STYLES = {
@@ -249,8 +254,9 @@ const FORM_FOLDERS = {
   "TIME CARDS": ["Commercial Time Card"],
   "T&M": ["T&M Log"],
   "FORMS": ["Daily Field Report", "RFI Form", "RFC Form"],
-  "SAFETY": ["Site Safety Inspection"]
-  // VALVE TAG folder intentionally has no FORM_FOLDERS entry — Valve Tag List form is built in a future session
+  "SAFETY": ["Site Safety Inspection"],
+  "VALVE TAG": ["Valve Tag List"]
+  // Note: VALVE TAG entry added — ValveTagList component handles SharePoint persistence (SaveValveTags/LoadValveTags flows)
 };
 const MAT_BGB = [{
   v: "BLACK",
@@ -10624,6 +10630,7 @@ function App() {
     if (n === "Case Quantity Reference Sheet") return "case_qty";
     if (n === "Daily Field Report") return "dailylog";
     if (n === "T&M Log") return "tmlog";
+    if (n === "Valve Tag List") return "valvetag";
     return "ordersheet";
   };
   const Crumb = () => {
@@ -11687,6 +11694,9 @@ function App() {
     project: project,
     onToast: showToast
   }), view === "tmlog" && activeForm && /*#__PURE__*/React.createElement(TMLog, {
+    project: project,
+    onToast: showToast
+  }), view === "valvetag" && activeForm && /*#__PURE__*/React.createElement(ValveTagList, {
     project: project,
     onToast: showToast
   }), view === "admin" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
@@ -13558,6 +13568,476 @@ function TimeCard({
       fontSize: 12
     }
   }, rSum(row).toFixed(1)))))))));
+}
+function ValveTagList({
+  project,
+  onToast
+}) {
+  const mkRow = () => ({
+    ch: "---",
+    purpose: "",
+    unit: "",
+    location: ""
+  });
+  const isoToday = () => {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  };
+  const [address, setAddress] = useState("");
+  const [dateCreated, setDateCreated] = useState(isoToday());
+  const [empId, setEmpId] = useState("");
+  const [rows, setRows] = useState(() => Array.from({
+    length: 20
+  }, mkRow));
+  const [preview, setPreview] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  // Mirror refs — keep async callbacks from reading stale state
+  const rowsRef = useRef(rows);
+  const addressRef = useRef(address);
+  const dateCreatedRef = useRef(dateCreated);
+  const empIdRef = useRef(empId);
+  rowsRef.current = rows;
+  addressRef.current = address;
+  dateCreatedRef.current = dateCreated;
+  empIdRef.current = empId;
+  const pm = project ? PMS[project.pm] : null;
+  const emp = EMPLOYEES.find(e => e.id === parseInt(empId));
+  // Load saved state from SharePoint on mount (no-op if URL not yet configured)
+  useEffect(() => {
+    if (!project?.code || !LOAD_VALVE_TAGS_URL) return;
+    setLoading(true);
+    fetch(LOAD_VALVE_TAGS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        code: project.code,
+        name: project.name
+      })
+    }).then(r => {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(resp => {
+      if (resp && resp.data) {
+        try {
+          const d = JSON.parse(resp.data);
+          if (d.rows && Array.isArray(d.rows)) setRows(d.rows);
+          if (d.address) setAddress(d.address);
+          if (d.dateCreated) setDateCreated(d.dateCreated);
+          if (d.empId != null) setEmpId(String(d.empId));
+        } catch (e) {}
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [project?.code]);
+  const doSave = overrideRows => {
+    if (!SAVE_VALVE_TAGS_URL) {
+      onToast("Save flow not configured yet — add SAVE_VALVE_TAGS_URL", false);
+      return;
+    }
+    if (!project?.code) return;
+    setSaving(true);
+    setSaveMsg("Saving\u2026");
+    const payload = {
+      code: project.code,
+      name: project.name,
+      data: JSON.stringify({
+        rows: overrideRows || rowsRef.current,
+        address: addressRef.current,
+        dateCreated: dateCreatedRef.current,
+        empId: empIdRef.current
+      })
+    };
+    fetch(SAVE_VALVE_TAGS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }).then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(() => {
+      setSaving(false);
+      setSaveMsg("Saved \u2713");
+      onToast("Valve tag list saved", true);
+      setTimeout(() => setSaveMsg(""), 3000);
+    }).catch(e => {
+      setSaving(false);
+      setSaveMsg("Save failed");
+      onToast("Save failed: " + e.message, false);
+      setTimeout(() => setSaveMsg(""), 4000);
+    });
+  };
+  const upRow = (i, f, v) => setRows(rs => rs.map((r, x) => x === i ? {
+    ...r,
+    [f]: v
+  } : r));
+  const addRows = () => {
+    const updated = [...rowsRef.current, ...Array.from({
+      length: 20
+    }, mkRow)];
+    setRows(updated);
+    // Auto-save on row-add — pass updated array directly to beat stale-closure
+    if (SAVE_VALVE_TAGS_URL) setTimeout(() => doSave(updated), 50);
+  };
+  const fmtDate = iso => iso ? iso.slice(5, 7) + "/" + iso.slice(8, 10) + "/" + iso.slice(2, 4) : "";
+  const submit = () => {
+    const hasData = rows.some(r => r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim());
+    if (!project?.code) {
+      onToast("No project selected", false);
+      return;
+    }
+    if (!hasData) {
+      onToast("No entries to submit", false);
+      return;
+    }
+    const subj = project.code + " " + project.name + " Valve Tag List";
+    let body = "VALVE TAG LIST\n";
+    body += "Job #: " + project.code + "\n";
+    body += "Job Name: " + project.name + "\n";
+    if (address.trim()) body += "Address: " + address.trim() + "\n";
+    body += "Date Created: " + fmtDate(dateCreated) + "\n";
+    if (emp) body += "Foreman: " + emp.name + (emp.phone ? " \xB7 " + emp.phone : "") + "\n";
+    body += "\nTAG #  TYPE       PURPOSE                          UNIT #   LOCATION\n";
+    body += "-----  ---------  -------------------------------  -------  --------\n";
+    rows.forEach((r, i) => {
+      if (r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
+      body += String(i + 1).padEnd(5) + "  " + (r.ch === "---" ? "       " : r.ch).padEnd(9) + "  " + (r.purpose || "").padEnd(31) + "  " + (r.unit || "").padEnd(7) + "  " + (r.location || "") + "\n";
+    });
+    body += "\nSent from Horner Field App";
+    // Routing: TO project PM, CC commercial admin (matches PDF original intent with dynamic PM)
+    setPreview({
+      to: pm?.email || "",
+      cc: CONTACTS.admin,
+      subject: subj,
+      body
+    });
+  };
+  const sendEmail = () => {
+    if (!preview) return;
+    const url = "mailto:" + preview.to + "?cc=" + encodeURIComponent(preview.cc) + "&subject=" + encodeURIComponent(preview.subject) + "&body=" + encodeURIComponent(preview.body);
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => setPreview(null), 150);
+  };
+  const reset = () => {
+    if (!window.confirm("Reset the valve tag list? All entries will be cleared.")) return;
+    setAddress("");
+    setDateCreated(isoToday());
+    setEmpId("");
+    setRows(Array.from({
+      length: 20
+    }, mkRow));
+    setSaveMsg("");
+  };
+  const canSubmit = !!(project?.code && rows.some(r => r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim()));
+  // Table cell input styles — compact for dense rows
+  const vtInp = {
+    width: "100%",
+    height: 36,
+    padding: "0 5px",
+    borderRadius: 4,
+    border: "1.5px solid #DDE3ED",
+    fontSize: 13,
+    outline: "none",
+    background: "white",
+    boxSizing: "border-box"
+  };
+  const vtSel = {
+    width: "100%",
+    height: 36,
+    padding: "0 4px",
+    borderRadius: 4,
+    border: "1.5px solid #DDE3ED",
+    fontSize: 12,
+    fontWeight: 600,
+    outline: "none",
+    background: "white",
+    boxSizing: "border-box"
+  };
+  const thVT = {
+    padding: "8px 5px",
+    fontSize: 10,
+    fontWeight: 700,
+    color: "white",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    textAlign: "center",
+    borderRight: "1px solid rgba(255,255,255,0.15)"
+  };
+  const actBtn = {
+    border: "none",
+    borderRadius: 8,
+    padding: "10px 10px",
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    color: "white",
+    height: 44
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
+    onClose: () => setPreview(null),
+    onSend: sendEmail
+  })), /*#__PURE__*/React.createElement("button", {
+    className: "fab",
+    onClick: () => window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    }),
+    style: {
+      position: "fixed",
+      bottom: 24,
+      left: 20,
+      zIndex: 90,
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: "50%",
+      width: 60,
+      height: 60,
+      fontSize: 22,
+      cursor: "pointer",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.28)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      lineHeight: 1
+    }
+  }, "\u2191", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: .5,
+      marginTop: 1
+    }
+  }, "TOP")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderBottom: "1.5px solid #DDE3ED",
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      color: NAVY,
+      fontSize: 14,
+      textAlign: "center",
+      marginBottom: 4
+    }
+  }, "VALVE TAG LIST"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      color: NAVY,
+      fontSize: 15,
+      textAlign: "center",
+      marginBottom: 12,
+      lineHeight: 1.4
+    }
+  }, project ? project.code + " \u2014 " + project.name : "\u2014"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: "1 / -1"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Address"), /*#__PURE__*/React.createElement("input", {
+    value: address,
+    onChange: e => setAddress(e.target.value),
+    placeholder: "Job site address\u2026",
+    style: inp
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Date Created"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: dateCreated,
+    onChange: e => setDateCreated(e.target.value),
+    style: inp
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Foreman"), /*#__PURE__*/React.createElement("select", {
+    value: empId,
+    onChange: e => setEmpId(e.target.value),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Select name\u2026"), EMPLOYEES.map(e => /*#__PURE__*/React.createElement("option", {
+    key: e.id,
+    value: e.id
+  }, e.name)))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      padding: "10px 14px",
+      background: "white",
+      borderBottom: "1.5px solid #DDE3ED",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => doSave(),
+    disabled: saving,
+    style: {
+      ...actBtn,
+      flex: 1,
+      background: saving ? "#bbb" : BLUE
+    }
+  }, saving ? "Saving\u2026" : "\uD83D\uDCBE Save"), saveMsg ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      whiteSpace: "nowrap",
+      color: saveMsg.includes("fail") ? RED : GREEN
+    }
+  }, saveMsg) : null, /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    disabled: !canSubmit,
+    style: {
+      ...actBtn,
+      flex: 2,
+      background: canSubmit ? RED : "#bbb"
+    }
+  }, "\uD83D\uDCE7 Submit List"), /*#__PURE__*/React.createElement("button", {
+    onClick: reset,
+    style: {
+      ...actBtn,
+      flex: 1,
+      background: "#7F8C9A"
+    }
+  }, "\uD83D\uDD04 Reset")), loading && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px",
+      textAlign: "center",
+      color: "#7F8C9A",
+      fontSize: 13
+    }
+  }, "Loading saved data\u2026"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowX: "auto"
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    style: {
+      width: "100%",
+      borderCollapse: "collapse",
+      minWidth: 460
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    style: {
+      background: NAVY
+    }
+  }, /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...thVT,
+      width: 40,
+      textAlign: "center"
+    }
+  }, "TAG #"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...thVT,
+      width: 94
+    }
+  }, "TYPE"), /*#__PURE__*/React.createElement("th", {
+    style: thVT
+  }, "PURPOSE"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...thVT,
+      width: 72
+    }
+  }, "UNIT #"), /*#__PURE__*/React.createElement("th", {
+    style: {
+      ...thVT,
+      borderRight: "none"
+    }
+  }, "LOCATION"))), /*#__PURE__*/React.createElement("tbody", null, rows.map((r, i) => /*#__PURE__*/React.createElement("tr", {
+    key: i,
+    style: {
+      borderBottom: "1px solid #F0F4FA",
+      background: i % 2 === 0 ? "white" : "#F8FAFD"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    style: {
+      textAlign: "center",
+      fontSize: 11,
+      fontWeight: 700,
+      color: "#7F8C9A",
+      padding: "3px 4px",
+      minWidth: 40
+    }
+  }, i + 1), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "2px 3px"
+    }
+  }, /*#__PURE__*/React.createElement("select", {
+    value: r.ch,
+    onChange: e => upRow(i, "ch", e.target.value),
+    style: {
+      ...vtSel,
+      color: r.ch === "COLD" ? "#2980B9" : r.ch === "HOT" ? "#C0392B" : r.ch === "RECIRC" ? "#8E44AD" : "#7F8C9A"
+    }
+  }, /*#__PURE__*/React.createElement("option", null, "---"), /*#__PURE__*/React.createElement("option", null, "COLD"), /*#__PURE__*/React.createElement("option", null, "HOT"), /*#__PURE__*/React.createElement("option", null, "RECIRC"))), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "2px 3px"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: r.purpose,
+    onChange: e => upRow(i, "purpose", e.target.value),
+    placeholder: "Purpose\u2026",
+    style: vtInp
+  })), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "2px 3px"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: r.unit,
+    onChange: e => upRow(i, "unit", e.target.value),
+    placeholder: "Unit #",
+    style: vtInp
+  })), /*#__PURE__*/React.createElement("td", {
+    style: {
+      padding: "2px 3px"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: r.location,
+    onChange: e => upRow(i, "location", e.target.value),
+    placeholder: "Location\u2026",
+    style: vtInp
+  }))))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "14px",
+      display: "flex",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: addRows,
+    style: {
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: 8,
+      padding: "10px 24px",
+      fontSize: 13,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "+ Add 20 More Rows (" + rows.length + " total)")));
 }
 function Sec({
   title,
