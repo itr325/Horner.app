@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_70";
+const BUILD_ID = "index_71";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10199,7 +10199,8 @@ function App() {
   const [newJob, setNewJob] = useState({
     code: "",
     name: "",
-    pm: "corey"
+    pm: "corey",
+    foreman: ""
   });
   const [editPm, setEditPm] = useState({ code: "", pm: "" });
   const [toast, setToast] = useState(null);
@@ -11759,7 +11760,21 @@ function App() {
   }, Object.entries(PMS).map(([k, v]) => /*#__PURE__*/React.createElement("option", {
     key: k,
     value: k
-  }, v.name)))), /*#__PURE__*/React.createElement("button", {
+  }, v.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Foreman (optional)"), /*#__PURE__*/React.createElement("select", {
+    value: newJob.foreman,
+    onChange: e => setNewJob({
+      ...newJob,
+      foreman: e.target.value
+    }),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "— Unassigned —"), EMPLOYEES.filter(emp => emp.position === "Foreman").sort((a, b) => a.name.localeCompare(b.name)).map(emp => /*#__PURE__*/React.createElement("option", {
+    key: emp.id,
+    value: emp.name
+  }, emp.name)))), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       if (!newJob.code || !newJob.name) {
         showToast("Job Code and Name required", false);
@@ -11772,7 +11787,8 @@ function App() {
         body: JSON.stringify({
           code: newJob.code,
           name: newJob.name,
-          pm: PMS[newJob.pm]?.name || newJob.pm
+          pm: PMS[newJob.pm]?.name || newJob.pm,
+          foreman: newJob.foreman || ""
         })
       })
         .then(r => r.ok ? r : Promise.reject(r.status))
@@ -11797,7 +11813,8 @@ function App() {
           setNewJob({
             code: "",
             name: "",
-            pm: "corey"
+            pm: "corey",
+            foreman: ""
           });
         })
         .catch(() => {
