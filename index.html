@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_71";
+const BUILD_ID = "index_72";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -182,6 +182,7 @@ const CONTACTS = {
 const PROJECTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aa5cb91c782f4b8b89e06f3441595c68/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=RwoZXivyVk7EY3kRWvPdQumUigq_hsyDWIAvcP4ZsY4";
 const CREATE_JOB_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E";
 const UPDATE_PM_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4f704ea9da2f4eeda6518a676ac2bb0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gS73UO7R4CbO13dGN1sKBICk3bog6_ZCDQjThKPHDDY";
+const UPDATE_FOREMAN_URL = "PLACEHOLDER_FOREMAN_URL";
 const PROJECTS_CACHE_KEY = "horner.projects.cache.v1";
 // Fetch Folder Contents flow — called every time the user navigates into a project or folder.
 // Body: { code, path }. Response: { folders: [{name}], files: [{name, url}] }.
@@ -10203,6 +10204,7 @@ function App() {
     foreman: ""
   });
   const [editPm, setEditPm] = useState({ code: "", pm: "" });
+  const [editForeman, setEditForeman] = useState({ code: "", foreman: "" });
   const [toast, setToast] = useState(null);
   // Projects state — start with cached list if available, else empty.
   // SharePoint (via PROJECTS_FETCH_URL) is the source of truth; cache only exists for fast initial render.
@@ -10266,6 +10268,7 @@ function App() {
   }, []);
   useEffect(() => {
     if (view === "admin") setEditPm({ code: "", pm: "" });
+    if (view === "admin") setEditForeman({ code: "", foreman: "" });
   }, [view]);
   // ---- Folder contents (SharePoint) ----------------------------------------
   // folderContents: latest fetched { folders, files } for the current project + path.
@@ -11919,6 +11922,93 @@ function App() {
       cursor: "pointer"
     }
   }, "Update PM in SharePoint \u2192"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderRadius: 14,
+      padding: 18,
+      border: "1.5px solid #DDE3ED",
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 14,
+      color: NAVY,
+      marginBottom: 14
+    }
+  }, "\u270F\uFE0F Change Foreman"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 11
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Job"), /*#__PURE__*/React.createElement("select", {
+    value: editForeman.code,
+    onChange: e => setEditForeman({ code: e.target.value, foreman: "" }),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", { value: "" }, "\u2014 Select a job \u2014"), projects.map(p => /*#__PURE__*/React.createElement("option", {
+    key: p.code,
+    value: p.code
+  }, "(" + p.code + ") " + p.name + " \u2014 " + (p.foreman || "Unassigned"))))), editForeman.code && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "New Foreman"), /*#__PURE__*/React.createElement("select", {
+    value: editForeman.foreman,
+    onChange: e => setEditForeman({ ...editForeman, foreman: e.target.value }),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", { value: "" }, "\u2014 Select a Foreman \u2014"), EMPLOYEES.filter(e => e.position === "Foreman").sort((a, b) => a.name.localeCompare(b.name)).map(e => /*#__PURE__*/React.createElement("option", {
+    key: e.name,
+    value: e.name
+  }, e.name)))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (!editForeman.code || !editForeman.foreman) {
+        showToast("Select a job and a new Foreman", false);
+        return;
+      }
+      const proj = projects.find(p => p.code === editForeman.code);
+      if (!proj) return;
+      if (proj.foreman === editForeman.foreman) {
+        showToast("That Foreman is already assigned", false);
+        return;
+      }
+      const oldForemanName = proj.foreman || "Unassigned";
+      const newForemanName = editForeman.foreman;
+      if (!window.confirm("Change Foreman on (" + proj.code + ") " + proj.name + " from " + oldForemanName + " \u2192 " + newForemanName + "?")) return;
+      showToast("Updating Foreman in SharePoint\u2026", true);
+      fetch(UPDATE_FOREMAN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: "(" + proj.code + ") " + proj.name,
+          foreman: newForemanName
+        })
+      })
+        .then(r => r.ok ? r : Promise.reject(r.status))
+        .then(() => {
+          showToast("Foreman updated for (" + proj.code + ")", true);
+          setProjects(prev => {
+            const next = prev.map(p => p.code === editForeman.code ? { ...p, foreman: editForeman.foreman } : p);
+            try { localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(next)); } catch (e) {}
+            return next;
+          });
+          setEditForeman({ code: "", foreman: "" });
+        })
+        .catch(() => {
+          showToast("SharePoint error \u2014 please try again", false);
+        });
+    },
+    style: {
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: "13px",
+      fontSize: 15,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "Update Foreman in SharePoint \u2192"))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 14,
