@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_74";
+const BUILD_ID = "index_75";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -222,6 +222,8 @@ const DOWNLOAD_FILE_URL = "https://defaultef466c747a134920854c210669ea3c.84.envi
 // Save Markup flow URL — deployed flow (workflow id 5bf390d1…). The HTTP-trigger sig
 // is a capability URL; treat it like a secret (same posture as the other flow URLs above).
 const SAVE_MARKUP_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5bf390d164134ddd85f35a8ec22435ed/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=slRF_p1Gd6pUZuc8rmWNF1oKbw6janepdQibFEYW1Mc";
+// Toolbox Talks signed PDF save — Patrick to replace with real flow URL when built.
+const SAVE_TBT_URL = "PASTE_TBT_SAVE_URL_HERE";
 // Valve Tag List persistence flows — POST {code, name, data} to save; POST {code, name} to load.
 // Saves/loads valve_tag_list.json inside Active Projects/(JOB)/VALVE TAG/.
 // Stub URLs — replace with real Power Automate trigger URLs once flows are built.
@@ -10185,6 +10187,113 @@ function PdfMarkupView(props) {
     }, saveError + "  (tap to dismiss)")
   );
 }
+// ---- ToolboxTalksList: Toolbox Talks PDF list for a specific year folder ----
+// Renders inside folder-contents when folder==="SAFETY" && subPath=["Toolbox Talks","YYYY"].
+// Parses the file list to find original TBT PDFs and their _SIGNED counterparts.
+// Sorted by TBT number, each row shows display name + signed/unsigned status badge.
+function ToolboxTalksList({ files, onMarkup }) {
+  // Separate signed files from originals.
+  const signedMap = {}; // base (lowercase, no ext, no _SIGNED_*) → true
+  const originalFiles = [];
+  (files || []).forEach(f => {
+    const name = f.name || "";
+    if (/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i.test(name)) {
+      const base = name.replace(/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i, "").toLowerCase();
+      signedMap[base] = true;
+    } else if (/^TBT-\d+/i.test(name) && /\.pdf$/i.test(name)) {
+      originalFiles.push(f);
+    }
+  });
+  // Sort by numeric TBT prefix.
+  originalFiles.sort((a, b) => {
+    const nA = parseInt(((a.name || "").match(/^TBT-(\d+)/i) || [])[1] || 0, 10);
+    const nB = parseInt(((b.name || "").match(/^TBT-(\d+)/i) || [])[1] || 0, 10);
+    return nA - nB;
+  });
+  // Derive human-readable display name from filename.
+  const displayName = (filename) => {
+    const noExt = filename.replace(/\.pdf$/i, "");
+    const noPrefix = noExt.replace(/^TBT-\d+\s*/i, "");
+    return noPrefix.replace(/\b\w/g, c => c.toUpperCase());
+  };
+  const tbtNum = (filename) => {
+    const m = filename.match(/^(TBT-\d+)/i);
+    return m ? m[1].toUpperCase() : "";
+  };
+  const isSigned = (filename) => {
+    const base = filename.replace(/\.pdf$/i, "").toLowerCase();
+    return !!signedMap[base];
+  };
+  // Prefer opening the _SIGNED version if it exists, otherwise the original.
+  const fileToOpen = (orig) => {
+    const base = (orig.name || "").replace(/\.pdf$/i, "").toLowerCase();
+    if (signedMap[base]) {
+      // Find the actual signed file object so we have its URL.
+      const signed = (files || []).find(f => {
+        const n = f.name || "";
+        return /_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i.test(n) &&
+               n.replace(/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i, "").toLowerCase() === base;
+      });
+      return signed || orig;
+    }
+    return orig;
+  };
+  if (originalFiles.length === 0) {
+    return React.createElement("div", {
+      style: { textAlign: "center", padding: "40px 20px", color: "#7F8C9A", fontSize: 13 }
+    }, React.createElement("div", { style: { fontSize: 36, marginBottom: 10 } }, "📋"),
+    "No Toolbox Talk PDFs found in this folder.");
+  }
+  return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+    React.createElement("div", {
+      style: { fontSize: 12, fontWeight: 700, color: "#2C3E50", textTransform: "uppercase",
+        letterSpacing: 0.5, marginBottom: 4 }
+    }, originalFiles.length + " Toolbox Talks"),
+    originalFiles.map(f => {
+      const signed = isSigned(f.name || "");
+      const num = tbtNum(f.name || "");
+      const label = displayName(f.name || "");
+      return React.createElement("button", {
+        key: f.name,
+        onClick: () => onMarkup && onMarkup(fileToOpen(f)),
+        style: {
+          background: "white",
+          border: "1.5px solid " + (signed ? "#27AE60" : "#DDE3ED"),
+          borderRadius: 12,
+          padding: "13px 14px",
+          textAlign: "left",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12
+        }
+      },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 } },
+          React.createElement("div", {
+            style: {
+              width: 38, height: 38, flexShrink: 0,
+              background: signed ? "#E8F8EE" : "#F5F7FA",
+              borderRadius: 9,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: signed ? 20 : 18
+            }
+          }, signed ? "✅" : "📄"),
+          React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+            React.createElement("div", {
+              style: { fontWeight: 700, color: "#2C3E50", fontSize: 14,
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+            }, label),
+            React.createElement("div", {
+              style: { color: "#7F8C9A", fontSize: 11, marginTop: 2 }
+            }, num + (signed ? " · Signed" : " · Not yet signed"))
+          )
+        ),
+        React.createElement("span", { style: { color: "#2980B9", fontSize: 18, flexShrink: 0 } }, "›")
+      );
+    })
+  );
+}
 function App() {
   const [view, setView] = useState("projects");
   const [project, setProject] = useState(null);
@@ -10284,6 +10393,9 @@ function App() {
   const sharePointPath = !folder ? "" : (subPath.length === 0 ? folder : folder + "/" + subPath.join("/"));
   // pathKey is the same path but with " > " separators — used for FORM_FOLDERS lookup since those keys are flat.
   const pathKey = folder ? (subPath.length === 0 ? folder : folder + " > " + subPath.join(" > ")) : null;
+  // Toolbox Talks year view: inside SAFETY > Toolbox Talks > YYYY.
+  const isToolboxTalksYearView = folder === "SAFETY" && subPath.length === 2 &&
+    subPath[0].toLowerCase() === "toolbox talks";
   // Form-tile overlay: only on app-created projects (App=X), only at folder paths listed in FORM_FOLDERS.
   const currentForms = (pathKey && project && project.app) ? FORM_FOLDERS[pathKey] : null;
   // Synthetic top-level form folders. For app-managed projects (App=X), any FORM_FOLDERS key
@@ -10595,6 +10707,69 @@ function App() {
       }
       showToast("Couldn't save markup \u2014 " + detail, false);
       return Promise.reject(new Error("Upload failed \u2014 " + detail));
+    });
+  };
+  // Toolbox Talks PDF save. Saves the signed PDF as [BaseName]_SIGNED_YYYY-MM-DD.pdf,
+  // overwriting any existing _SIGNED version (same name for re-saves on the same day,
+  // new name on a new day which effectively makes a new entry — per spec: date updates on re-sign).
+  const handleTbtSave = (contentBase64) => {
+    const src = markupPdf;
+    const folderPath = markupPdfFolder || "";
+    if (!src) return Promise.reject(new Error("No active TBT markup session."));
+    if (!SAVE_TBT_URL || SAVE_TBT_URL.indexOf("PASTE_") === 0) {
+      showToast("TBT save flow not configured yet — SAVE_TBT_URL is unset", false);
+      return Promise.reject(new Error("SAVE_TBT_URL not configured"));
+    }
+    const rawName = src.name || "tbt.pdf";
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    // Strip any existing _SIGNED_* suffix (re-save), then append today's date.
+    const baseName = rawName.replace(/\.pdf$/i, "").replace(/_SIGNED_\d{4}-\d{2}-\d{2}$/i, "");
+    const signedFilename = baseName + "_SIGNED_" + today + ".pdf";
+    showToast("Saving Toolbox Talk to SharePoint\u2026", true);
+    return fetch(SAVE_TBT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: project.code,
+        name: project.name,
+        folder: folderPath,
+        filename: signedFilename,
+        contentBase64: contentBase64
+      })
+    }).then(r => {
+      if (!r.ok) {
+        return r.text().then(
+          t => {
+            let msg = "the flow returned HTTP " + r.status;
+            if (t) {
+              try { const j = JSON.parse(t); if (j.error) msg = j.error; else msg += " \u2014 " + String(t).slice(0, 300); }
+              catch(e) { msg += " \u2014 " + String(t).slice(0, 300); }
+            }
+            return Promise.reject(new Error(msg));
+          },
+          () => Promise.reject(new Error("the flow returned HTTP " + r.status))
+        );
+      }
+      return r.text().then(t => {
+        try { return t ? JSON.parse(t) : {}; }
+        catch (e) { return { filename: signedFilename }; }
+      });
+    }).then(() => {
+      delete folderCacheRef.current[project.code + ":" + folderPath];
+      if (sharePointPath === folderPath) fetchCurrentFolder(true);
+      showToast("Saved \u2013 " + signedFilename, true);
+      closePdfMarkup();
+    }).catch(err => {
+      let detail;
+      if (err && err.message) {
+        detail = /failed to fetch|networkerror|load failed/i.test(err.message)
+          ? "couldn\u2019t reach the flow (network or CORS issue)"
+          : err.message;
+      } else {
+        detail = "an unexpected error";
+      }
+      showToast("Couldn\u2019t save TBT \u2014 " + detail, false);
+      return Promise.reject(new Error("TBT upload failed \u2014 " + detail));
     });
   };
   const showToast = (msg, ok = true) => {
@@ -11593,7 +11768,12 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCC1 ", f.name), /*#__PURE__*/React.createElement("span", { style: { color: BLUE, fontSize: 18 } }, "\u203A")))),
   // Files from SharePoint
-  !folderLoading && !folderError && folderContents && folderContents.files.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  !folderLoading && !folderError && folderContents && folderContents.files.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, isToolboxTalksYearView ?
+    /*#__PURE__*/React.createElement(ToolboxTalksList, {
+      files: folderContents.files,
+      onMarkup: openPdfMarkup
+    }) :
+    /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       fontWeight: 700,
@@ -11608,7 +11788,7 @@ function App() {
     isLatest: !!latestVersionNames[f.name],
     onOpen: openFile,
     onMarkup: openPdfMarkup
-  }))),
+  })))),
   // Empty state — only when nothing else is showing
   !folderLoading && !folderError && folderContents && !currentForms && folderContents.folders.length === 0 && folderContents.files.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -12076,7 +12256,7 @@ function App() {
   }), markupPdf && /*#__PURE__*/React.createElement(PdfMarkupView, {
     file: markupPdf,
     onClose: closePdfMarkup,
-    onSave: handlePdfMarkupSave
+    onSave: (markupPdfFolder && markupPdfFolder.toLowerCase().includes("toolbox talks")) ? handleTbtSave : handlePdfMarkupSave
   }));
 }
 function JobPicker({
