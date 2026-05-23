@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_79";
+const BUILD_ID = "index_80";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -224,6 +224,8 @@ const DOWNLOAD_FILE_URL = "https://defaultef466c747a134920854c210669ea3c.84.envi
 const SAVE_MARKUP_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5bf390d164134ddd85f35a8ec22435ed/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=slRF_p1Gd6pUZuc8rmWNF1oKbw6janepdQibFEYW1Mc";
 // Toolbox Talks signed PDF save — Patrick to replace with real flow URL when built.
 const SAVE_TBT_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fdde887177b94dc0a60b802b204d3b59/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XZTM0DqLGWSrzU4ABQKzglgvbx_Mv2GeOythntmCb9Y";
+// December Rollover — creates next-year Toolbox Talks folder in every active job and copies templates.
+const ROLLOVER_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/7ee8849dc33c44d6b1f20b08a3a6a002/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=MMyfmi-sS5tgkk1XETn9zPJu-dJzddmhkIUz2mpSmho";
 // Valve Tag List persistence flows — POST {code, name, data} to save; POST {code, name} to load.
 // Saves/loads valve_tag_list.json inside Active Projects/(JOB)/VALVE TAG/.
 // Stub URLs — replace with real Power Automate trigger URLs once flows are built.
@@ -12191,6 +12193,52 @@ function App() {
       cursor: "pointer"
     }
   }, "Update Foreman in SharePoint \u2192"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderRadius: 14,
+      padding: 18,
+      border: "1.5px solid #DDE3ED",
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 14,
+      color: NAVY,
+      marginBottom: 6
+    }
+  }, "\uD83D\uDCC5 Toolbox Talks Rollover"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "#555",
+      marginBottom: 14,
+      lineHeight: 1.5
+    }
+  }, "Creates next year\u2019s Toolbox Talks folder in every active job and copies all templates into it. Run this each December before the new year."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (!window.confirm("Run Toolbox Talks Rollover?\n\nThis will create a new Toolbox Talks year folder in every active job and copy all templates into it.")) return;
+      showToast("Running rollover\u2026 this may take a minute.", true);
+      fetch(ROLLOVER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      })
+        .then(r => r.json())
+        .then(() => showToast("Rollover complete \u2714", true))
+        .catch(() => showToast("Rollover failed \u2014 please try again", false));
+    },
+    style: {
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: "13px",
+      fontSize: 15,
+      fontWeight: 700,
+      cursor: "pointer",
+      width: "100%"
+    }
+  }, "Toolbox Talks Rollover \u2192")), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 14,
