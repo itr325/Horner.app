@@ -10472,7 +10472,7 @@ function App() {
   const [newJob, setNewJob] = useState({
     code: "",
     name: "",
-    pm: "corey",
+    pm: "",
     foreman: ""
   });
   const [editPm, setEditPm] = useState({ code: "", pm: "" });
@@ -11410,7 +11410,16 @@ function App() {
       fontSize: 11,
       fontWeight: 700
     }
-  }, PMS[p.pm].name), !p.app && /*#__PURE__*/React.createElement("div", {
+  }, "PM: ", PMS[p.pm].name), p.foreman && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#FFF3E0",
+      color: "#E65100",
+      borderRadius: 6,
+      padding: "3px 9px",
+      fontSize: 11,
+      fontWeight: 700
+    }
+  }, "Foreman: ", p.foreman), !p.app && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#E8ECF1",
       color: "#7F8C9A",
@@ -11498,7 +11507,16 @@ function App() {
       fontSize: 12,
       fontWeight: 700
     }
-  }, "PM: ", PMS[project.pm].name), /*#__PURE__*/React.createElement("span", {
+  }, "PM: ", PMS[project.pm].name), project.foreman && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: "#FFF3E0",
+      color: "#E65100",
+      borderRadius: 6,
+      padding: "3px 10px",
+      fontSize: 12,
+      fontWeight: 700
+    }
+  }, "Foreman: ", project.foreman), /*#__PURE__*/React.createElement("span", {
     style: {
       background: "#E8F5E9",
       color: GREEN,
