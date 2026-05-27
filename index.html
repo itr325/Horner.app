@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_81";
+const BUILD_ID = "index_82";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10556,8 +10556,8 @@ function App() {
   const sharePointPath = !folder ? "" : (subPath.length === 0 ? folder : folder + "/" + subPath.join("/"));
   // pathKey is the same path but with " > " separators — used for FORM_FOLDERS lookup since those keys are flat.
   const pathKey = folder ? (subPath.length === 0 ? folder : folder + " > " + subPath.join(" > ")) : null;
-  // Toolbox Talks year view: inside Toolbox Talks > YYYY (top-level folder, next to Time Cards).
-  const isToolboxTalksYearView = (folder || "").toLowerCase() === "toolbox talks" && subPath.length === 1;
+  // Toolbox Talks year view: inside SAFETY > Toolbox Talks > YYYY.
+  const isToolboxTalksYearView = (folder || "").toLowerCase() === "safety" && subPath.length === 2 && (subPath[0] || "").toLowerCase() === "toolbox talks";
   // Form-tile overlay: only on app-created projects (App=X), only at folder paths listed in FORM_FOLDERS.
   const currentForms = (pathKey && project && project.app) ? FORM_FOLDERS[pathKey] : null;
   // Synthetic top-level form folders. For app-managed projects (App=X), any FORM_FOLDERS key
