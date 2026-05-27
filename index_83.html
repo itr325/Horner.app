@@ -11136,7 +11136,7 @@ function App() {
       boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       borderBottom: "1px solid #DDE3ED"
     }
-  }}, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => go("home"),
     style: {
       flex: 1,
@@ -11179,19 +11179,24 @@ function App() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      gap: 24,
       paddingTop: 32
     }
   },
-    /*#__PURE__*/React.createElement("button", {
+    /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: "100%",
+        maxWidth: 700,
+        display: "flex",
+        justifyContent: "flex-start"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
       onClick: () => {
         if (window.confirm("Reload App? Unsaved markups will be lost.")) {
           window.location.href = window.location.pathname + "?v=" + Date.now();
         }
       },
       style: {
-        position: "absolute",
-        top: 14,
-        left: 14,
         background: "none",
         border: "1.5px solid #DDE3ED",
         borderRadius: 8,
@@ -11199,17 +11204,19 @@ function App() {
         fontSize: 12,
         fontWeight: 600,
         color: "#2C3E50",
-        cursor: "pointer"
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: 6
       }
-    }, "\u21BB Reload App"),
+    }, "\u21BB Reload App")),
     /*#__PURE__*/React.createElement("div", {
       style: {
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr",
         gap: 16,
         width: "100%",
-        maxWidth: 700,
-        marginTop: 8
+        maxWidth: 700
       }
     },
       [{
@@ -11435,7 +11442,7 @@ function App() {
       letterSpacing: 0.3,
       textTransform: "uppercase"
     }
-  }, "Imported")))))), projects.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Imported")))))), view === "projects" && projects.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "48px 24px",
