@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_85";
+const BUILD_ID = "index_86";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -252,7 +252,7 @@ const FOLDER_STYLES = {
 };
 const DEFAULT_FOLDER_STYLE = { icon: "📁", color: "#5A6B7E" };
 const getFolderStyle = (name) => FOLDER_STYLES[(name || "").toUpperCase()] || DEFAULT_FOLDER_STYLE;
-// FORM_FOLDERS: which fillable forms overlay inside which folder (only shown on app-created projects).
+// FORM_FOLDERS: which fillable forms overlay inside which folder.
 // Keys match top-level folder names; forms appear at the immediate first level inside that folder.
 const FORM_FOLDERS = {
   "ORDER SHEETS": ['2" Water Meter Order Sheet', '3" Water Meter Order Sheet', '4" Water Meter Order Sheet', "Blank Order Sheet", "BLK-GAL-BRA Order Sheet", "Case Quantity Reference Sheet", "CPVC Order Sheet", "Finish Order Sheet", "MISC Order Sheet", "PEX Order Sheet", "Pipe Insulation Order Sheet", "PVC Order Sheet", "SCH80 Corzan Order Sheet", "Shop Order Sheet"],
@@ -10515,9 +10515,6 @@ function App() {
             name: p.name,
             pm: p.pm && PMS[p.pm] ? p.pm : "unassigned",
             foreman: p.foreman || "",
-            // app=true → created by this app (App column = "X" in SharePoint), form tiles shown.
-            // app=false → folder was dragged in / imported, app shows only real SharePoint contents.
-            app: p.app === "X"
           }))
           .sort((a, b) => a.code.localeCompare(b.code));
         // 1-to-1 sync: even an empty result is committed (replaces cache).
@@ -10558,19 +10555,14 @@ function App() {
   const pathKey = folder ? (subPath.length === 0 ? folder : folder + " > " + subPath.join(" > ")) : null;
   // Toolbox Talks year view: inside SAFETY > Toolbox Talks > YYYY.
   const isToolboxTalksYearView = (folder || "").toLowerCase() === "safety" && subPath.length === 2 && (subPath[0] || "").toLowerCase() === "toolbox talks";
-  // Form-tile overlay: only on app-created projects (App=X), only at folder paths listed in FORM_FOLDERS.
-  const currentForms = (pathKey && project && project.app) ? FORM_FOLDERS[pathKey] : null;
-  // Synthetic top-level form folders. For app-managed projects (App=X), any FORM_FOLDERS key
-  // that doesn't physically exist in SharePoint is surfaced as a tile at the project root anyway.
-  // Tap → routes to folder-contents view, fetchCurrentFolder below short-circuits the SharePoint call,
-  // and the currentForms overlay handles the rendering. This is how new jobs get FORMS / ORDER SHEETS /
-  // RETURNS / T&M / TIME CARDS without those folders existing in SharePoint. SAFETY is a real
-  // SharePoint folder (in the Create New Project Folder template) so it's not duplicated here.
-  // Imported folders (project.app === false) get no synthetics — pure SharePoint mirror.
+  // Form-tile overlay: at folder paths listed in FORM_FOLDERS.
+  const currentForms = (pathKey && project) ? FORM_FOLDERS[pathKey] : null;
+  // Synthetic top-level form folders: any FORM_FOLDERS key that doesn't physically exist in
+  // SharePoint is surfaced as a tile at the project root. SAFETY is a real SharePoint folder.
   const rootRealFolderNames = (folderContents && folderContents.folders)
     ? folderContents.folders.map(f => (f.name || "").toUpperCase())
     : [];
-  const rootSyntheticFolders = (project && project.app)
+  const rootSyntheticFolders = project
     ? Object.keys(FORM_FOLDERS)
         .filter(k => !rootRealFolderNames.includes(k.toUpperCase()))
         .map(name => ({ name: name, synthetic: true }))
@@ -10610,12 +10602,9 @@ function App() {
   const fetchCurrentFolder = (force) => {
     if (!project) return;
     if (view !== "folders" && view !== "folder-contents") return;
-    // Synthetic top-level form folder: project is app-managed, we're at depth 1 (a top-level folder, no subPath),
-    // folder name is a FORM_FOLDERS key, and the project-root cache shows it doesn't exist in SharePoint.
-    // Short-circuit the SharePoint call — render an empty {folders, files} so the currentForms overlay
-    // owns the screen. The root cache will always be populated here because you can't see the tile to tap
-    // unless the project-root view rendered first, which means root was fetched and cached.
-    if (view === "folder-contents" && subPath.length === 0 && folder && project.app && FORM_FOLDERS[folder]) {
+    // Synthetic top-level form folder: render empty {folders, files} so the currentForms overlay
+    // owns the screen (folder doesn't physically exist in SharePoint).
+    if (view === "folder-contents" && subPath.length === 0 && folder && FORM_FOLDERS[folder]) {
       const rootCache = folderCacheRef.current[project.code + ":"];
       const existsInSharePoint = rootCache && rootCache.folders.some(f => (f.name || "").toUpperCase() === folder.toUpperCase());
       if (!existsInSharePoint) {
@@ -11456,18 +11445,7 @@ function App() {
       fontSize: 11,
       fontWeight: 700
     }
-  }, "Foreman: ", p.foreman), !p.app && /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "#E8ECF1",
-      color: "#7F8C9A",
-      borderRadius: 6,
-      padding: "2px 7px",
-      fontSize: 9,
-      fontWeight: 700,
-      letterSpacing: 0.3,
-      textTransform: "uppercase"
-    }
-  }, "Imported")))))), view === "projects" && projects.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Foreman: ", p.foreman)))))), view === "projects" && projects.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "48px 24px",
@@ -11562,18 +11540,7 @@ function App() {
       fontSize: 12,
       fontWeight: 700
     }
-  }, "\u25CF Active"), !project.app && /*#__PURE__*/React.createElement("span", {
-    style: {
-      background: "#E8ECF1",
-      color: "#7F8C9A",
-      borderRadius: 6,
-      padding: "3px 10px",
-      fontSize: 11,
-      fontWeight: 700,
-      letterSpacing: 0.3,
-      textTransform: "uppercase"
-    }
-  }, "Imported"))), project.app && /*#__PURE__*/React.createElement("div", {
+  }, "\u25CF Active"))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#7F8C9A",
@@ -11669,7 +11636,7 @@ function App() {
     }
   }, rootDisplayFolders.map(f => {
     const fs = getFolderStyle(f.name);
-    const hF = project.app && !!FORM_FOLDERS[f.name];
+    const hF = !!FORM_FOLDERS[f.name];
     return /*#__PURE__*/React.createElement("button", {
       key: f.name,
       onClick: () => go("folder-contents", undefined, f.name),
@@ -11861,7 +11828,7 @@ function App() {
     }
   }, folderLoading ? "Refreshing\u2026" : "\u21BB Refresh")),
   // Sub-folders, files, and form-tile overlay — all rendered from dynamic SharePoint fetch.
-  // Form tiles only show on app-created projects (project.app === true) where pathKey matches FORM_FOLDERS.
+  // Form tiles show at folder paths listed in FORM_FOLDERS.
   currentForms && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 8,
@@ -12206,9 +12173,7 @@ function App() {
             code: newJob.code,
             name: newJob.name,
             pm: newJob.pm,
-            // Create Job sets App=X in SharePoint, so optimistically mark this project as app-managed
-            // to avoid a brief flash of the "Imported" badge before the next refresh.
-            app: true
+            foreman: newJob.foreman || ""
           };
           setProjects(prev => {
             if (prev.some(p => p.code === added.code)) return prev;
