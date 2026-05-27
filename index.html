@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_83";
+const BUILD_ID = "index_84";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10978,21 +10978,45 @@ function App() {
     return "ordersheet";
   };
   const Crumb = () => {
+    const backBtn = {
+      background: "none",
+      border: "1.5px solid #DDE3ED",
+      borderRadius: 8,
+      padding: "5px 10px",
+      fontSize: 12,
+      fontWeight: 600,
+      color: NAVY,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 5,
+      flexShrink: 0
+    };
+    const backAction =
+      view === "home" ? null :
+      view === "projects" ? () => go("home") :
+      view === "admin" ? () => go("home") :
+      view === "folders" ? () => go("projects", null, null, null) :
+      view === "folder-contents" && subPath.length > 0 ? () => go("folder-contents", undefined, folder, null, subPath.slice(0, -1)) :
+      view === "folder-contents" ? () => go("folders") :
+      () => go("folder-contents", undefined, folder, null, subPath);
+    const backButton = backAction ? /*#__PURE__*/React.createElement("button", { onClick: backAction, style: backBtn }, "\u2190 Back") : null;
+    if (view === "home") return null;
     if (view === "admin") return /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "8px 16px",
         fontSize: 13,
         color: "#7F8C9A",
         background: "white",
-        borderBottom: "1px solid #DDE3ED"
+        borderBottom: "1px solid #DDE3ED",
+        display: "flex",
+        alignItems: "center",
+        gap: 10
       }
-    }, /*#__PURE__*/React.createElement("button", {
+    }, backButton, /*#__PURE__*/React.createElement("button", {
       onClick: () => go("home"),
       style: crumbBtn
-    }, "Home"), " \u203A ", /*#__PURE__*/React.createElement("button", {
-      onClick: () => go("projects", null),
-      style: crumbBtn
-    }, "Projects"), " \u203A ", /*#__PURE__*/React.createElement("span", {
+    }, "Home"), " \u203A ", /*#__PURE__*/React.createElement("span", {
       style: {
         color: "#2C3E50",
         fontWeight: 600
@@ -11070,7 +11094,7 @@ function App() {
         }
       }, activeForm.name));
     }
-    return view !== "projects" ? /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "8px 16px",
         fontSize: 13,
@@ -11079,9 +11103,10 @@ function App() {
         borderBottom: "1px solid #DDE3ED",
         display: "flex",
         alignItems: "center",
+        gap: 10,
         flexWrap: "wrap"
       }
-    }, cr) : null;
+    }, backButton, cr);
   };
   const formViews = ["ordersheet", "insulation", "cpvc", "pvc", "blank", "shop", "pex", "finish", "misc_os", "sch80", "wm2", "wm3", "wm4", "timecard", "case_qty", "dailylog", "tmlog", "safety"];
   return /*#__PURE__*/React.createElement("div", {
@@ -11305,7 +11330,7 @@ function App() {
       marginBottom: 12,
       letterSpacing: 0.3
     }
-  }, "Active Projects"), projects.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Active Projects"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -12138,7 +12163,7 @@ function App() {
       pm: e.target.value
     }),
     style: inp
-  }, Object.entries(PMS).map(([k, v]) => /*#__PURE__*/React.createElement("option", {
+  }, /*#__PURE__*/React.createElement("option", { value: "" }, "— Unassigned —"), Object.entries(PMS).map(([k, v]) => /*#__PURE__*/React.createElement("option", {
     key: k,
     value: k
   }, v.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -12194,7 +12219,7 @@ function App() {
           setNewJob({
             code: "",
             name: "",
-            pm: "corey",
+            pm: "",
             foreman: ""
           });
         })
