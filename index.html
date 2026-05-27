@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_86";
+const BUILD_ID = "index_87";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10196,16 +10196,25 @@ function PdfMarkupView(props) {
 // Sorted by TBT number, each row shows display name + signed/unsigned status badge.
 function ToolboxTalksList({ files, onMarkup }) {
   // Separate signed files from originals.
-  const signedMap = {}; // base (lowercase, no ext, no _SIGNED_*) → true
+  // signedMap: base (lowercase, no ext, no _SIGNED_*) → signed file object
+  const signedMap = {};
   const originalFiles = [];
   (files || []).forEach(f => {
     const name = f.name || "";
     if (/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i.test(name)) {
       const base = name.replace(/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i, "").toLowerCase();
-      signedMap[base] = true;
+      signedMap[base] = f; // store file object so fileToOpen can return it directly
     } else if (/^TBT-\d+/i.test(name) && /\.pdf$/i.test(name)) {
       originalFiles.push(f);
     }
+  });
+  // If the flow deleted the original after signing, only the _SIGNED_ file exists.
+  // Add it to originalFiles so it still shows in the list.
+  Object.entries(signedMap).forEach(([base, signedFile]) => {
+    const hasOriginal = originalFiles.some(f =>
+      (f.name || "").replace(/\.pdf$/i, "").toLowerCase() === base
+    );
+    if (!hasOriginal) originalFiles.push(signedFile);
   });
   // Sort by numeric TBT prefix.
   originalFiles.sort((a, b) => {
@@ -10213,9 +10222,9 @@ function ToolboxTalksList({ files, onMarkup }) {
     const nB = parseInt(((b.name || "").match(/^TBT-(\d+)/i) || [])[1] || 0, 10);
     return nA - nB;
   });
-  // Derive human-readable display name from filename.
+  // Derive human-readable display name — strip _SIGNED_DATE suffix before removing prefix.
   const displayName = (filename) => {
-    const noExt = filename.replace(/\.pdf$/i, "");
+    const noExt = filename.replace(/\.pdf$/i, "").replace(/_SIGNED_\d{4}-\d{2}-\d{2}$/i, "");
     const noPrefix = noExt.replace(/^TBT-\d+\s*/i, "");
     return noPrefix.replace(/\b\w/g, c => c.toUpperCase());
   };
@@ -10224,22 +10233,18 @@ function ToolboxTalksList({ files, onMarkup }) {
     return m ? m[1].toUpperCase() : "";
   };
   const isSigned = (filename) => {
+    // Already a signed file (original was deleted by flow)
+    if (/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i.test(filename)) return true;
     const base = filename.replace(/\.pdf$/i, "").toLowerCase();
     return !!signedMap[base];
   };
   // Prefer opening the _SIGNED version if it exists, otherwise the original.
   const fileToOpen = (orig) => {
-    const base = (orig.name || "").replace(/\.pdf$/i, "").toLowerCase();
-    if (signedMap[base]) {
-      // Find the actual signed file object so we have its URL.
-      const signed = (files || []).find(f => {
-        const n = f.name || "";
-        return /_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i.test(n) &&
-               n.replace(/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i, "").toLowerCase() === base;
-      });
-      return signed || orig;
-    }
-    return orig;
+    const name = orig.name || "";
+    // Already the signed file — open it directly
+    if (/_SIGNED_\d{4}-\d{2}-\d{2}\.pdf$/i.test(name)) return orig;
+    const base = name.replace(/\.pdf$/i, "").toLowerCase();
+    return signedMap[base] || orig;
   };
   if (originalFiles.length === 0) {
     return React.createElement("div", {
@@ -11150,7 +11155,8 @@ function App() {
       boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       borderBottom: "1px solid #DDE3ED"
     }
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("div", { style: { width: 36, flexShrink: 0 } }),
+  /*#__PURE__*/React.createElement("button", {
     onClick: () => go("home"),
     style: {
       flex: 1,
