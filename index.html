@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_90";
+const BUILD_ID = "index_93";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10471,13 +10471,23 @@ function SiteWeeklySafety({ project, onToast }) {
 // Used by both Codes & Charts and Admin Docs. Fetches folder contents from
 // a Power Automate flow URL (fetchUrl), navigates breadcrumb-style, and
 // opens files in PDF.js viewer (PDFs) or browser tab (other types).
-function LibraryBrowser({ fetchUrl, title, onOpenPdf }) {
-  const [path, setPath] = useState([]); // array of folder names = breadcrumb trail
-  const [contents, setContents] = useState(null); // { folders, files } or null
+function LibraryBrowser({ fetchUrl, title, onOpenPdf, onPathChange, externalPath }) {
+  const [path, setPath] = useState(externalPath || []);
+  const [contents, setContents] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const cacheRef = useRef({});
 
+  useEffect(() => {
+    if (externalPath && externalPath.join("/") !== path.join("/")) {
+      setPath(externalPath);
+    }
+  }, [externalPath && externalPath.join("/")]);
+
+  const navigateTo = (newPath) => {
+    setPath(newPath);
+    if (onPathChange) onPathChange(newPath);
+  };
   const currentPath = path.join("/");
 
   const fetchContents = (pathArr, force) => {
@@ -10500,8 +10510,21 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf }) {
         // and { folders: [...], files: [...] } (old split format)
         let folders = [], files = [];
         if (Array.isArray(data && data.items)) {
-          folders = data.items.filter(i => i.isFolder === true);
-          files = data.items.filter(i => i.isFolder === false || i.isFolder === undefined && i.url);
+          const currentPathStr = pathArr.join("/");
+          data.items.forEach(i => {
+            const isFolder = i.isFolder === true || i.isFolder === "True";
+            // Decode URL and strip the library base to get relative path
+            try {
+              const decoded = decodeURIComponent((i.url || "").replace(/https:\/\/hornerplumbing\.sharepoint\.com\//i, ""));
+              // Remove the library name prefix (handles "Codes  Charts/" variation)
+              const withoutLib = decoded.replace(/^Codes\s+Charts\//i, "");
+              const parts = withoutLib.split("/").filter(Boolean);
+              const itemParent = parts.slice(0, -1).join("/");
+              if (itemParent !== currentPathStr) return;
+              if (isFolder) folders.push(i);
+              else files.push(i);
+            } catch(e) {}
+          });
         } else {
           folders = Array.isArray(data && data.folders) ? data.folders.slice() : [];
           files = Array.isArray(data && data.files) ? data.files.slice() : [];
@@ -10547,14 +10570,14 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf }) {
       style: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 4, marginBottom: 14, fontSize: 13, color: "#555" }
     },
       /*#__PURE__*/React.createElement("span", {
-        onClick: () => setPath([]),
+        onClick: () => navigateTo([]),
         style: { cursor: "pointer", color: NAVY, fontWeight: 700 }
       }, title),
       path.map((seg, i) =>
         /*#__PURE__*/React.createElement(React.Fragment, { key: i },
           /*#__PURE__*/React.createElement("span", { style: { color: "#aaa", margin: "0 2px" } }, "›"),
           /*#__PURE__*/React.createElement("span", {
-            onClick: () => setPath(path.slice(0, i + 1)),
+            onClick: () => navigateTo(path.slice(0, i + 1)),
             style: { cursor: "pointer", color: i === path.length - 1 ? "#333" : NAVY, fontWeight: i === path.length - 1 ? 600 : 400 }
           }, seg)
         )
@@ -10573,7 +10596,7 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf }) {
       // Folders first
       contents.folders.map(f => /*#__PURE__*/React.createElement("button", {
         key: f.name,
-        onClick: () => setPath([...path, f.name]),
+        onClick: () => navigateTo([...path, f.name]),
         style: {
           display: "flex", alignItems: "center", gap: 12,
           background: "white", border: "1.5px solid #E8EDF5", borderRadius: 12,
@@ -10608,6 +10631,7 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf }) {
 }
 function App() {
   const [view, setView] = useState("home");
+  const [libPath, setLibPath] = useState([]);
   const [project, setProject] = useState(null);
   const [folder, setFolder] = useState(null);
   // subPath: array of nested sub-folder names below `folder`. Examples:
@@ -10687,6 +10711,7 @@ function App() {
   }, []);
   useEffect(() => {
     if (view === "admin") setEditPm({ code: "", pm: "" });
+    if (view !== "codesCharts" && view !== "adminDocs") setLibPath([]);
     if (view === "admin") setEditForeman({ code: "", foreman: "" });
   }, [view]);
   // ---- Folder contents (SharePoint) ----------------------------------------
@@ -11134,8 +11159,8 @@ function App() {
       view === "home" ? null :
       view === "projects" ? () => go("home") :
       view === "admin" ? () => go("home") :
-      view === "codesCharts" ? () => go("home") :
-      view === "adminDocs" ? () => go("home") :
+      view === "codesCharts" ? () => { if (libPath.length > 0) { const np = libPath.slice(0,-1); setLibPath(np); } else go("home"); } :
+      view === "adminDocs" ? () => { if (libPath.length > 0) { const np = libPath.slice(0,-1); setLibPath(np); } else go("home"); } :
       view === "folders" ? () => go("projects", null, null, null) :
       view === "folder-contents" && subPath.length > 0 ? () => go("folder-contents", undefined, folder, null, subPath.slice(0, -1)) :
       view === "folder-contents" ? () => go("folders", undefined, null, null, []) :
@@ -12147,10 +12172,10 @@ function App() {
   }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCC2"), "This folder is empty.")
   ), view === "codesCharts" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
     /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Codes & Charts"),
-    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: CODES_CHARTS_FETCH_URL, title: "Codes & Charts", onOpenPdf: null })
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: CODES_CHARTS_FETCH_URL, title: "Codes & Charts", onOpenPdf: null, onPathChange: setLibPath, externalPath: libPath })
   ), view === "adminDocs" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
     /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Admin Docs"),
-    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: ADMIN_DOCS_FETCH_URL, title: "Admin Docs", onOpenPdf: null })
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: ADMIN_DOCS_FETCH_URL, title: "Admin Docs", onOpenPdf: null, onPathChange: setLibPath, externalPath: libPath })
   ), view === "timecard" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 14
