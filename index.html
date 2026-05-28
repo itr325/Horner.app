@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_89";
+const BUILD_ID = "index_90";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -193,7 +193,7 @@ const FETCH_FOLDER_CONTENTS_URL = "https://defaultef466c747a134920854c210669ea3c
 const SHAREPOINT_HOST = "https://hornerplumbing.sharepoint.com";
 // Codes & Charts document library — 1-to-1 SharePoint sync via Power Automate.
 // Flow accepts { path: string } and returns { folders:[{name,url}], files:[{name,url,modified}] }.
-const CODES_CHARTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0a60561a52264ac881390faf6a0dc988/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=5o-XI09WkjmiKEF5NwNR_lJPqSuQukJpW8iIpz6PIwE";
+const CODES_CHARTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/34eda8b84cfe406c8d3898591ddd7425/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=UjLam6pi8h5lQKvObQNSvPThjjM8MWCPprcayiypDGc";
 // Admin Docs document library — same flow shape, different library.
 const ADMIN_DOCS_FETCH_URL = "PASTE_ADMIN_DOCS_FLOW_URL_HERE";
 // Upload File flow — POST body { code, name, folder, filename, contentBase64 }.
@@ -10496,8 +10496,16 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf }) {
     })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
-        const folders = Array.isArray(data && data.folders) ? data.folders.slice() : [];
-        const files = Array.isArray(data && data.files) ? data.files.slice() : [];
+        // Support both { items: [...] } (new flat format with isFolder flag)
+        // and { folders: [...], files: [...] } (old split format)
+        let folders = [], files = [];
+        if (Array.isArray(data && data.items)) {
+          folders = data.items.filter(i => i.isFolder === true);
+          files = data.items.filter(i => i.isFolder === false || i.isFolder === undefined && i.url);
+        } else {
+          folders = Array.isArray(data && data.folders) ? data.folders.slice() : [];
+          files = Array.isArray(data && data.files) ? data.files.slice() : [];
+        }
         folders.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
         files.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
         const result = { folders, files };
