@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_107c";
+const BUILD_ID = "index_107d";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9378,7 +9378,7 @@ function PdfMarkupView(props) {
     // dpr2 = cw/cssW = devicePixelRatio for annotation canvas,
     //                = zoom*dpr for detail canvas (both cancel correctly).
     const lw    = 1.5  * dpr2 / _zf;   // 1.5 CSS px line width
-    const aLen  = 12   * dpr2 / _zf;   // 12 CSS px arrowhead length
+    const aLen  = 20   * dpr2 / _zf;   // 20 CSS px arrowhead length
     const aW    = aLen * 0.25;          // slim 4:1 ratio
     ctx.save();
     ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw; ctx.lineCap = "butt";
@@ -9409,7 +9409,7 @@ function PdfMarkupView(props) {
     ctx.closePath(); ctx.fill();
     // Label
     const mxL = (d1x + d2x) / 2, myL = (d1y + d2y) / 2;
-    const fontSize = 12 * dpr2 / _zf;  // 12 CSS px label text
+    const fontSize = 14 * dpr2 / _zf;  // 14 CSS px label text
     ctx.font = "600 " + fontSize + "px Arial, sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const tw = ctx.measureText(m.label).width;
