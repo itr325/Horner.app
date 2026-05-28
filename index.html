@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_87";
+const BUILD_ID = "index_88";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -191,6 +191,11 @@ const FETCH_FOLDER_CONTENTS_URL = "https://defaultef466c747a134920854c210669ea3c
 // SharePoint URLs returned by the flow are server-relative (e.g. "/Active Projects/.../file.pdf").
 // Prepend this host to get a clickable URL.
 const SHAREPOINT_HOST = "https://hornerplumbing.sharepoint.com";
+// Codes & Charts document library — 1-to-1 SharePoint sync via Power Automate.
+// Flow accepts { path: string } and returns { folders:[{name,url}], files:[{name,url,modified}] }.
+const CODES_CHARTS_FETCH_URL = "PASTE_CODES_CHARTS_FLOW_URL_HERE";
+// Admin Docs document library — same flow shape, different library.
+const ADMIN_DOCS_FETCH_URL = "PASTE_ADMIN_DOCS_FLOW_URL_HERE";
 // Upload File flow — POST body { code, name, folder, filename, contentBase64 }.
 // Flow ensures both the SITE PHOTOS & VIDEO parent and the date subfolder exist before creating the file.
 // Response { url, filename }.
@@ -10462,6 +10467,137 @@ function SiteWeeklySafety({ project, onToast }) {
     )
   );
 }
+// ---- LibraryBrowser: generic SharePoint document library browser ----
+// Used by both Codes & Charts and Admin Docs. Fetches folder contents from
+// a Power Automate flow URL (fetchUrl), navigates breadcrumb-style, and
+// opens files in PDF.js viewer (PDFs) or browser tab (other types).
+function LibraryBrowser({ fetchUrl, title, onOpenPdf }) {
+  const [path, setPath] = useState([]); // array of folder names = breadcrumb trail
+  const [contents, setContents] = useState(null); // { folders, files } or null
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const cacheRef = useRef({});
+
+  const currentPath = path.join("/");
+
+  const fetchContents = (pathArr, force) => {
+    const key = pathArr.join("/");
+    if (!force && cacheRef.current[key]) {
+      setContents(cacheRef.current[key]);
+      setError(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    fetch(fetchUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: pathArr.join("/") })
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        const folders = Array.isArray(data && data.folders) ? data.folders.slice() : [];
+        const files = Array.isArray(data && data.files) ? data.files.slice() : [];
+        folders.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+        files.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+        const result = { folders, files };
+        cacheRef.current[key] = result;
+        setContents(result);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Couldn't load folder contents from SharePoint.");
+        setContents(null);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => { fetchContents(path, false); }, [path.join("/")]);
+
+  const openFile = (url, name) => {
+    if (!url) return;
+    const full = url.indexOf("http") === 0 ? url : SHAREPOINT_HOST + url;
+    const ext = (name || "").split(".").pop().toLowerCase();
+    if (ext === "pdf" && onOpenPdf) {
+      onOpenPdf({ url: full, name });
+    } else {
+      window.open(full, "_blank", "noopener");
+    }
+  };
+
+  const iconFor = (name) => {
+    const ext = (name || "").split(".").pop().toLowerCase();
+    if (ext === "pdf") return "📄";
+    if (["xlsx","xls","csv"].includes(ext)) return "📊";
+    if (["docx","doc"].includes(ext)) return "📝";
+    return "📎";
+  };
+
+  return /*#__PURE__*/React.createElement("div", null,
+    // Breadcrumb
+    /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 4, marginBottom: 14, fontSize: 13, color: "#555" }
+    },
+      /*#__PURE__*/React.createElement("span", {
+        onClick: () => setPath([]),
+        style: { cursor: "pointer", color: NAVY, fontWeight: 700 }
+      }, title),
+      path.map((seg, i) =>
+        /*#__PURE__*/React.createElement(React.Fragment, { key: i },
+          /*#__PURE__*/React.createElement("span", { style: { color: "#aaa", margin: "0 2px" } }, "›"),
+          /*#__PURE__*/React.createElement("span", {
+            onClick: () => setPath(path.slice(0, i + 1)),
+            style: { cursor: "pointer", color: i === path.length - 1 ? "#333" : NAVY, fontWeight: i === path.length - 1 ? 600 : 400 }
+          }, seg)
+        )
+      )
+    ),
+    // Refresh button
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 10 } },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => { cacheRef.current = {}; fetchContents(path, true); },
+        style: { background: "none", border: "1.5px solid #DDE3ED", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#2C3E50", cursor: "pointer" }
+      }, "↻ Refresh")
+    ),
+    loading && /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", padding: 32, color: "#888" } }, "Loading…"),
+    error && /*#__PURE__*/React.createElement("div", { style: { padding: 20, color: RED, background: "#FFF5F5", borderRadius: 10, textAlign: "center" } }, error),
+    contents && /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+      // Folders first
+      contents.folders.map(f => /*#__PURE__*/React.createElement("button", {
+        key: f.name,
+        onClick: () => setPath([...path, f.name]),
+        style: {
+          display: "flex", alignItems: "center", gap: 12,
+          background: "white", border: "1.5px solid #E8EDF5", borderRadius: 12,
+          padding: "12px 14px", cursor: "pointer", textAlign: "left",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+        }
+      },
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 22 } }, "📁"),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: "#2C3E50" } }, f.name)
+      )),
+      // Then files
+      contents.files.map(f => /*#__PURE__*/React.createElement("button", {
+        key: f.name,
+        onClick: () => openFile(f.url, f.name),
+        style: {
+          display: "flex", alignItems: "center", gap: 12,
+          background: "white", border: "1.5px solid #E8EDF5", borderRadius: 12,
+          padding: "12px 14px", cursor: "pointer", textAlign: "left",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+        }
+      },
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 22 } }, iconFor(f.name)),
+        /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+          /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: "#2C3E50", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, f.name),
+          f.modified && /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "#999", marginTop: 2 } }, f.modified)
+        )
+      )),
+      contents.folders.length === 0 && contents.files.length === 0 &&
+        /*#__PURE__*/React.createElement("div", { style: { padding: 24, textAlign: "center", color: "#aaa", fontSize: 14 } }, "This folder is empty.")
+    )
+  );
+}
 function App() {
   const [view, setView] = useState("home");
   const [project, setProject] = useState(null);
@@ -10990,6 +11126,8 @@ function App() {
       view === "home" ? null :
       view === "projects" ? () => go("home") :
       view === "admin" ? () => go("home") :
+      view === "codesCharts" ? () => go("home") :
+      view === "adminDocs" ? () => go("home") :
       view === "folders" ? () => go("projects", null, null, null) :
       view === "folder-contents" && subPath.length > 0 ? () => go("folder-contents", undefined, folder, null, subPath.slice(0, -1)) :
       view === "folder-contents" ? () => go("folders", undefined, null, null, []) :
@@ -11016,6 +11154,12 @@ function App() {
         fontWeight: 600
       }
     }, "Admin"));
+    if (view === "codesCharts") return /*#__PURE__*/React.createElement("div", {
+      style: { padding: "8px 16px", fontSize: 13, color: "#7F8C9A", background: "white", borderBottom: "1px solid #DDE3ED", display: "flex", alignItems: "center", gap: 10 }
+    }, backButton, /*#__PURE__*/React.createElement("button", { onClick: () => go("home"), style: crumbBtn }, "Home"), " \u203A ", /*#__PURE__*/React.createElement("span", { style: { color: "#2C3E50", fontWeight: 600 } }, "Codes & Charts"));
+    if (view === "adminDocs") return /*#__PURE__*/React.createElement("div", {
+      style: { padding: "8px 16px", fontSize: 13, color: "#7F8C9A", background: "white", borderBottom: "1px solid #DDE3ED", display: "flex", alignItems: "center", gap: 10 }
+    }, backButton, /*#__PURE__*/React.createElement("button", { onClick: () => go("home"), style: crumbBtn }, "Home"), " \u203A ", /*#__PURE__*/React.createElement("span", { style: { color: "#2C3E50", fontWeight: 600 } }, "Admin Docs"));
     const cr = [/*#__PURE__*/React.createElement("button", {
       key: "h",
       onClick: () => go("home"),
@@ -11248,12 +11392,12 @@ function App() {
         icon: "\uD83D\uDCCA",
         label: "Codes & Charts",
         color: "#16A085",
-        action: () => showToast("Coming soon — SharePoint integration pending", true)
+        action: () => go("codesCharts")
       }, {
         icon: "\uD83D\uDCC1",
         label: "Admin Docs",
         color: "#8E44AD",
-        action: () => showToast("Coming soon — SharePoint integration pending", true)
+        action: () => go("adminDocs")
       }].map(tile => /*#__PURE__*/React.createElement("button", {
         key: tile.label,
         onClick: tile.action,
@@ -11993,6 +12137,12 @@ function App() {
       fontSize: 13
     }
   }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCC2"), "This folder is empty.")
+  ), view === "codesCharts" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
+    /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Codes & Charts"),
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: CODES_CHARTS_FETCH_URL, title: "Codes & Charts", onOpenPdf: null })
+  ), view === "adminDocs" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
+    /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Admin Docs"),
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: ADMIN_DOCS_FETCH_URL, title: "Admin Docs", onOpenPdf: null })
   ), view === "timecard" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 14
