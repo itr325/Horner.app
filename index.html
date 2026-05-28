@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_99";
+const BUILD_ID = "index_100";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9458,6 +9458,23 @@ function PdfMarkupView(props) {
     // Draw saved measurements (index_99)
     (measurements[pageNum]||[]).forEach(function(m){drawMeasurementSingle(ctx,m,d.w,d.h,m.id===selectedMeasId);});
     const _lp = liveMeasPtRef.current;
+    // Live cursor crosshair at finger position (index_99b)
+    if (tool === "measure" && _lp) {
+      const _isCalibPhase = calibState === "placing1" || calibState === "placing2";
+      const _clr = _isCalibPhase ? "#FFD54F" : "#00E5FF";
+      const _dprC = d.w / (d.cssW || 1);
+      const _cxC = _lp.x * d.w, _cyC = _lp.y * d.h;
+      const _crC = 5 * _dprC, _armC = 13 * _dprC;
+      ctx.save();
+      ctx.strokeStyle = _clr; ctx.lineWidth = 1.5 * _dprC; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.arc(_cxC, _cyC, _crC, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(_cxC - _armC, _cyC); ctx.lineTo(_cxC - _crC, _cyC);
+      ctx.moveTo(_cxC + _crC, _cyC); ctx.lineTo(_cxC + _armC, _cyC);
+      ctx.moveTo(_cxC, _cyC - _armC); ctx.lineTo(_cxC, _cyC - _crC);
+      ctx.moveTo(_cxC, _cyC + _crC); ctx.lineTo(_cxC, _cyC + _armC);
+      ctx.stroke(); ctx.restore();
+    }
     if (tool === "measure" && measurePt1) {
       if (_lp) {
         ctx.save(); ctx.strokeStyle="#00E5FF"; ctx.globalAlpha=0.7;
@@ -9465,9 +9482,21 @@ function PdfMarkupView(props) {
         ctx.beginPath(); ctx.moveTo(measurePt1.x*d.w,measurePt1.y*d.h); ctx.lineTo(_lp.x*d.w,_lp.y*d.h);
         ctx.stroke(); ctx.setLineDash([]); ctx.restore();
       }
-      ctx.save(); ctx.strokeStyle="#00E5FF"; ctx.fillStyle="rgba(0,229,255,0.25)"; ctx.lineWidth=Math.max(2,d.w*0.003);
-      const _r=Math.max(7,d.w*0.01);
-      ctx.beginPath(); ctx.arc(measurePt1.x*d.w,measurePt1.y*d.h,_r,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore();
+      // Crosshair at first point — small and precise, no fill obscuring the tap spot
+      (function() {
+        const _dpr = d.w / (d.cssW || 1);
+        const _cx = measurePt1.x * d.w, _cy = measurePt1.y * d.h;
+        const _cr = 5 * _dpr, _arm = 11 * _dpr, _lw = 1.5 * _dpr;
+        ctx.save();
+        ctx.strokeStyle = "#00E5FF"; ctx.lineWidth = _lw; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.arc(_cx, _cy, _cr, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(_cx - _arm, _cy); ctx.lineTo(_cx - _cr, _cy);
+        ctx.moveTo(_cx + _cr, _cy); ctx.lineTo(_cx + _arm, _cy);
+        ctx.moveTo(_cx, _cy - _arm); ctx.lineTo(_cx, _cy - _cr);
+        ctx.moveTo(_cx, _cy + _cr); ctx.lineTo(_cx, _cy + _arm);
+        ctx.stroke(); ctx.restore();
+      })();
     }
     if (tool === "measure" && calibState === "placing2" && calibPt1 && _lp) {
       ctx.save(); ctx.strokeStyle="#FFD54F"; ctx.globalAlpha=0.8;
@@ -9476,9 +9505,21 @@ function PdfMarkupView(props) {
       ctx.stroke(); ctx.setLineDash([]); ctx.restore();
     }
     if (tool === "measure" && calibPt1 && (calibState==="placing1"||calibState==="placing2")) {
-      ctx.save(); ctx.strokeStyle="#FFD54F"; ctx.fillStyle="rgba(255,213,79,0.3)"; ctx.lineWidth=Math.max(2,d.w*0.003);
-      const _rc=Math.max(7,d.w*0.01);
-      ctx.beginPath(); ctx.arc(calibPt1.x*d.w,calibPt1.y*d.h,_rc,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore();
+      // Crosshair at calibration first point
+      (function() {
+        const _dpr = d.w / (d.cssW || 1);
+        const _cx = calibPt1.x * d.w, _cy = calibPt1.y * d.h;
+        const _cr = 5 * _dpr, _arm = 11 * _dpr, _lw = 1.5 * _dpr;
+        ctx.save();
+        ctx.strokeStyle = "#FFD54F"; ctx.lineWidth = _lw; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.arc(_cx, _cy, _cr, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(_cx - _arm, _cy); ctx.lineTo(_cx - _cr, _cy);
+        ctx.moveTo(_cx + _cr, _cy); ctx.lineTo(_cx + _arm, _cy);
+        ctx.moveTo(_cx, _cy - _arm); ctx.lineTo(_cx, _cy - _cr);
+        ctx.moveTo(_cx, _cy + _cr); ctx.lineTo(_cx, _cy + _arm);
+        ctx.stroke(); ctx.restore();
+      })();
     }
   }
   useEffect(() => { repaintAnnotations(); });
@@ -9786,12 +9827,11 @@ function PdfMarkupView(props) {
         const v = viewRef.current;
         panRef.current = { x0: t0.clientX, y0: t0.clientY, panX0: v.panX, panY0: v.panY };
       } else if (tool === "measure") {
-        measureTapStartRef.current = {x: touches[0].clientX, y: touches[0].clientY, t0: Date.now()};
-        if (measurePt1 === null && !calibState) {
-          hideDetail();
-          const _t0 = touches[0], _v = viewRef.current;
-          panRef.current = {x0: _t0.clientX, y0: _t0.clientY, panX0: _v.panX, panY0: _v.panY};
-        }
+        // Drag-to-place: show cursor immediately at touch down (index_99b)
+        measureTapStartRef.current = {x: touches[0].clientX, y: touches[0].clientY};
+        liveMeasPtRef.current = getNormPoint(touches[0]);
+        hideDetail();
+        rerender();
       } else {
         startDraw(touches[0]);
       }
@@ -9825,13 +9865,8 @@ function PdfMarkupView(props) {
       return;
     }
     if (tool === "measure") {
-      if (panRef.current && touches.length === 1 && measurePt1 === null && !calibState) {
-        const _mp = panRef.current;
-        setView({zoom:viewRef.current.zoom,panX:_mp.panX0+(touches[0].clientX-_mp.x0),panY:_mp.panY0+(touches[0].clientY-_mp.y0)});
-        e.preventDefault(); return;
-      }
-      if (touches.length === 1 && (measurePt1 !== null || calibState === "placing2")) {
-        liveMeasPtRef.current = getNormPoint(touches[0]); rerender(); e.preventDefault(); return;
+      if (touches.length === 1) {
+        liveMeasPtRef.current = getNormPoint(touches[0]); rerender(); e.preventDefault();
       }
       return;
     }
@@ -9842,19 +9877,28 @@ function PdfMarkupView(props) {
   }
   function onTouchEnd(e) {
     const touches = e.touches; // remaining touches
-    if (tool === "measure" && measureTapStartRef.current) {
-      const _ts = measureTapStartRef.current;
-      measureTapStartRef.current = null;
+    if (tool === "measure") {
       const _ch = e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null;
       if (_ch && touches.length === 0) {
-        const _dist = Math.hypot(_ch.clientX - _ts.x, _ch.clientY - _ts.y);
-        const _isTap = _dist < 20 || measurePt1 !== null || !!calibState;
-        if (_isTap) {
-          panRef.current = null;
-          handleMeasureTap(getNormPoint(_ch));
-          scheduleDetail(); e.preventDefault(); return;
+        const pt = getNormPoint(_ch);
+        liveMeasPtRef.current = null;
+        const _start = measureTapStartRef.current;
+        measureTapStartRef.current = null;
+        // Calibration placement
+        if (calibState === "placing1") { setCalibPt1(pt); setCalibState("placing2"); scheduleDetail(); e.preventDefault(); return; }
+        if (calibState === "placing2") { setCalibPt2(pt); setCalibState("dialog"); scheduleDetail(); e.preventDefault(); return; }
+        // Quick tap on existing measurement → select / deselect (don't place a point)
+        const _wasTap = _start && Math.hypot(_ch.clientX - _start.x, _ch.clientY - _start.y) < 15;
+        if (_wasTap) {
+          const hit = findMeasurementHit(pt);
+          if (hit) { setSelectedMeasId(function(p){return p===hit.id?null:hit.id;}); scheduleDetail(); e.preventDefault(); return; }
         }
+        // Place point at drag-end position
+        setSelectedMeasId(null);
+        if (measurePt1) { completeMeasurement(pt); } else { setMeasurePt1(pt); }
+        scheduleDetail(); e.preventDefault();
       }
+      return;
     }
     if (panRef.current && touches.length === 0) {
       panRef.current = null;
@@ -10418,7 +10462,18 @@ function PdfMarkupView(props) {
     },
       calibState === null && /*#__PURE__*/React.createElement(React.Fragment, null,
         measurePt1 !== null
-          ? /*#__PURE__*/React.createElement("span", {style:{color:"#00E5FF",fontSize:13,fontWeight:700}}, "Tap 2nd point")
+          ? (function() {
+              // Live distance readout while finger is down dragging 2nd point (index_99b)
+              const _liveLP = liveMeasPtRef.current;
+              const _ppf = getPxPerFoot(pageNum);
+              const _d2 = dimsRef.current;
+              const _liveDist = (_liveLP && _ppf && _d2.cssW)
+                ? formatFeetInches(Math.hypot((_liveLP.x-measurePt1.x)*_d2.cssW, (_liveLP.y-measurePt1.y)*_d2.cssH), _ppf)
+                : null;
+              return /*#__PURE__*/React.createElement("span", {
+                style:{color:"#00E5FF", fontSize: _liveDist ? 15 : 13, fontWeight:700, fontVariantNumeric:"tabular-nums", minWidth:80, textAlign:"center"}
+              }, _liveDist || "Drag 2nd point");
+            })()
           : /*#__PURE__*/React.createElement(React.Fragment, null,
               /*#__PURE__*/React.createElement("span", {style:{color:"#9AA5B4",fontSize:12,fontWeight:600,flexShrink:0}}, "Scale:"),
               /*#__PURE__*/React.createElement("select", {
