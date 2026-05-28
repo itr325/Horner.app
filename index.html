@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_100";
+const BUILD_ID = "index_101";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9343,24 +9343,45 @@ function PdfMarkupView(props) {
     const x1 = m.x1 * cw, y1 = m.y1 * ch, x2 = m.x2 * cw, y2 = m.y2 * ch;
     const color = isSelected ? "#FF6B35" : "#00E5FF";
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const ux = (x2 - x1) / len, uy = (y2 - y1) / len; // unit vec pt1→pt2
+    const px = -uy, py = ux;                             // perpendicular unit vec
+    const lw    = Math.max(1, cw * 0.001);
+    const aLen  = Math.max(14, cw * 0.013);  // arrowhead length
+    const aW    = aLen * 0.28;               // slim arrow half-width
+    const tick  = aLen * 1.1;               // perpendicular tick length
     ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = Math.max(1.5, cw * 0.002);
-    ctx.setLineDash([Math.max(6, cw * 0.008), Math.max(3, cw * 0.004)]);
-    ctx.lineCap = "round";
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = lw; ctx.lineCap = "butt";
+    // Main dimension line
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = color;
-    const dotR = Math.max(4, cw * 0.005);
-    [{x:x1,y:y1},{x:x2,y:y2}].forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,dotR,0,Math.PI*2);ctx.fill();});
+    // Perpendicular tick marks centered on each endpoint
+    ctx.beginPath();
+    ctx.moveTo(x1 - px * tick * 0.5, y1 - py * tick * 0.5);
+    ctx.lineTo(x1 + px * tick * 0.5, y1 + py * tick * 0.5);
+    ctx.moveTo(x2 - px * tick * 0.5, y2 - py * tick * 0.5);
+    ctx.lineTo(x2 + px * tick * 0.5, y2 + py * tick * 0.5);
+    ctx.stroke();
+    // Arrowhead at pt1 — tip at pt1, pointing INWARD toward pt2
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + ux * aLen - uy * aW, y1 + uy * aLen + ux * aW);
+    ctx.lineTo(x1 + ux * aLen + uy * aW, y1 + uy * aLen - ux * aW);
+    ctx.closePath(); ctx.fill();
+    // Arrowhead at pt2 — tip at pt2, pointing INWARD toward pt1
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * aLen - uy * aW, y2 - uy * aLen + ux * aW);
+    ctx.lineTo(x2 - ux * aLen + uy * aW, y2 - uy * aLen - ux * aW);
+    ctx.closePath(); ctx.fill();
+    // Label — plain text, subtle background for readability over light PDFs
     const fontSize = Math.max(11, Math.min(ch * 0.022, 18));
-    ctx.font = "700 " + fontSize + "px Arial, sans-serif";
+    ctx.font = "600 " + fontSize + "px Arial, sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const tw = ctx.measureText(m.label).width;
-    const pad = fontSize * 0.55, ph = fontSize + pad * 1.2;
-    ctx.fillStyle = "rgba(0,0,0,0.82)";
-    roundRect(ctx, mx - tw/2 - pad, my - ph/2, tw + pad*2, ph, ph/3);
-    ctx.fill();
+    const pad = fontSize * 0.45;
+    ctx.fillStyle = "rgba(15,20,35,0.72)";
+    ctx.fillRect(mx - tw / 2 - pad, my - fontSize * 0.65, tw + pad * 2, fontSize * 1.3);
     ctx.fillStyle = color;
     ctx.fillText(m.label, mx, my);
     ctx.restore();
@@ -9464,15 +9485,14 @@ function PdfMarkupView(props) {
       const _clr = _isCalibPhase ? "#FFD54F" : "#00E5FF";
       const _dprC = d.w / (d.cssW || 1);
       const _cxC = _lp.x * d.w, _cyC = _lp.y * d.h;
-      const _crC = 5 * _dprC, _armC = 13 * _dprC;
+      const _armC = 14 * _dprC, _gapC = 3 * _dprC;
       ctx.save();
       ctx.strokeStyle = _clr; ctx.lineWidth = 1.5 * _dprC; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.arc(_cxC, _cyC, _crC, 0, Math.PI*2); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(_cxC - _armC, _cyC); ctx.lineTo(_cxC - _crC, _cyC);
-      ctx.moveTo(_cxC + _crC, _cyC); ctx.lineTo(_cxC + _armC, _cyC);
-      ctx.moveTo(_cxC, _cyC - _armC); ctx.lineTo(_cxC, _cyC - _crC);
-      ctx.moveTo(_cxC, _cyC + _crC); ctx.lineTo(_cxC, _cyC + _armC);
+      ctx.moveTo(_cxC - _armC, _cyC); ctx.lineTo(_cxC - _gapC, _cyC);
+      ctx.moveTo(_cxC + _gapC, _cyC); ctx.lineTo(_cxC + _armC, _cyC);
+      ctx.moveTo(_cxC, _cyC - _armC); ctx.lineTo(_cxC, _cyC - _gapC);
+      ctx.moveTo(_cxC, _cyC + _gapC); ctx.lineTo(_cxC, _cyC + _armC);
       ctx.stroke(); ctx.restore();
     }
     if (tool === "measure" && measurePt1) {
@@ -9482,19 +9502,18 @@ function PdfMarkupView(props) {
         ctx.beginPath(); ctx.moveTo(measurePt1.x*d.w,measurePt1.y*d.h); ctx.lineTo(_lp.x*d.w,_lp.y*d.h);
         ctx.stroke(); ctx.setLineDash([]); ctx.restore();
       }
-      // Crosshair at first point — small and precise, no fill obscuring the tap spot
+      // Fixed crosshair at first placed point
       (function() {
         const _dpr = d.w / (d.cssW || 1);
         const _cx = measurePt1.x * d.w, _cy = measurePt1.y * d.h;
-        const _cr = 5 * _dpr, _arm = 11 * _dpr, _lw = 1.5 * _dpr;
+        const _arm = 12 * _dpr, _gap = 3 * _dpr, _lw = 1.5 * _dpr;
         ctx.save();
         ctx.strokeStyle = "#00E5FF"; ctx.lineWidth = _lw; ctx.lineCap = "round";
-        ctx.beginPath(); ctx.arc(_cx, _cy, _cr, 0, Math.PI*2); ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(_cx - _arm, _cy); ctx.lineTo(_cx - _cr, _cy);
-        ctx.moveTo(_cx + _cr, _cy); ctx.lineTo(_cx + _arm, _cy);
-        ctx.moveTo(_cx, _cy - _arm); ctx.lineTo(_cx, _cy - _cr);
-        ctx.moveTo(_cx, _cy + _cr); ctx.lineTo(_cx, _cy + _arm);
+        ctx.moveTo(_cx - _arm, _cy); ctx.lineTo(_cx - _gap, _cy);
+        ctx.moveTo(_cx + _gap, _cy); ctx.lineTo(_cx + _arm, _cy);
+        ctx.moveTo(_cx, _cy - _arm); ctx.lineTo(_cx, _cy - _gap);
+        ctx.moveTo(_cx, _cy + _gap); ctx.lineTo(_cx, _cy + _arm);
         ctx.stroke(); ctx.restore();
       })();
     }
@@ -9505,19 +9524,18 @@ function PdfMarkupView(props) {
       ctx.stroke(); ctx.setLineDash([]); ctx.restore();
     }
     if (tool === "measure" && calibPt1 && (calibState==="placing1"||calibState==="placing2")) {
-      // Crosshair at calibration first point
+      // Fixed crosshair at calibration first point
       (function() {
         const _dpr = d.w / (d.cssW || 1);
         const _cx = calibPt1.x * d.w, _cy = calibPt1.y * d.h;
-        const _cr = 5 * _dpr, _arm = 11 * _dpr, _lw = 1.5 * _dpr;
+        const _arm = 12 * _dpr, _gap = 3 * _dpr, _lw = 1.5 * _dpr;
         ctx.save();
         ctx.strokeStyle = "#FFD54F"; ctx.lineWidth = _lw; ctx.lineCap = "round";
-        ctx.beginPath(); ctx.arc(_cx, _cy, _cr, 0, Math.PI*2); ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(_cx - _arm, _cy); ctx.lineTo(_cx - _cr, _cy);
-        ctx.moveTo(_cx + _cr, _cy); ctx.lineTo(_cx + _arm, _cy);
-        ctx.moveTo(_cx, _cy - _arm); ctx.lineTo(_cx, _cy - _cr);
-        ctx.moveTo(_cx, _cy + _cr); ctx.lineTo(_cx, _cy + _arm);
+        ctx.moveTo(_cx - _arm, _cy); ctx.lineTo(_cx - _gap, _cy);
+        ctx.moveTo(_cx + _gap, _cy); ctx.lineTo(_cx + _arm, _cy);
+        ctx.moveTo(_cx, _cy - _arm); ctx.lineTo(_cx, _cy - _gap);
+        ctx.moveTo(_cx, _cy + _gap); ctx.lineTo(_cx, _cy + _arm);
         ctx.stroke(); ctx.restore();
       })();
     }
@@ -9750,6 +9768,12 @@ function PdfMarkupView(props) {
       y: (pt.clientY - rect.top) / rect.height
     };
   }
+  // Offset crosshair: place point 60 screen-px above the finger so the
+  // crosshair is visible and not hidden under the fingertip (index_100).
+  const MEASURE_OFFSET_Y = 60;
+  function getMeasurePoint(touch) {
+    return getNormPoint({ clientX: touch.clientX, clientY: touch.clientY - MEASURE_OFFSET_Y });
+  }
   function startDraw(pt) {
     // Hide the detail overlay while drawing — live strokes land on the wrapper's
     // annotation canvas (below the overlay), so the overlay would otherwise cover
@@ -9829,7 +9853,7 @@ function PdfMarkupView(props) {
       } else if (tool === "measure") {
         // Drag-to-place: show cursor immediately at touch down (index_99b)
         measureTapStartRef.current = {x: touches[0].clientX, y: touches[0].clientY};
-        liveMeasPtRef.current = getNormPoint(touches[0]);
+        liveMeasPtRef.current = getMeasurePoint(touches[0]);
         hideDetail();
         rerender();
       } else {
@@ -9866,7 +9890,7 @@ function PdfMarkupView(props) {
     }
     if (tool === "measure") {
       if (touches.length === 1) {
-        liveMeasPtRef.current = getNormPoint(touches[0]); rerender(); e.preventDefault();
+        liveMeasPtRef.current = getMeasurePoint(touches[0]); rerender(); e.preventDefault();
       }
       return;
     }
@@ -9880,7 +9904,7 @@ function PdfMarkupView(props) {
     if (tool === "measure") {
       const _ch = e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null;
       if (_ch && touches.length === 0) {
-        const pt = getNormPoint(_ch);
+        const pt = getMeasurePoint(_ch);
         liveMeasPtRef.current = null;
         const _start = measureTapStartRef.current;
         measureTapStartRef.current = null;
