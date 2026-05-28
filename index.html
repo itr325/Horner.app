@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_109";
+const BUILD_ID = "index_109b";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9980,9 +9980,11 @@ function PdfMarkupView(props) {
   function onTouchStart(e) {
     if (loading || error) return;
     const touches = e.touches;
-    // Keep per-touch positions fresh for gestureXY (index_108)
-    for (let _i = 0; _i < touches.length; _i++) {
-      const _t = touches[_i];
+    // Only record NEWLY added touches — using e.touches here would overwrite the
+    // last-known good position for fingers already down with iOS's stale coords (index_109)
+    const _newTouches = e.changedTouches;
+    for (let _i = 0; _i < _newTouches.length; _i++) {
+      const _t = _newTouches[_i];
       lastTouchPosRef.current[_t.identifier] = { clientX: _t.clientX, clientY: _t.clientY };
     }
     const stylus = findStylus(touches);
@@ -10029,8 +10031,10 @@ function PdfMarkupView(props) {
   function onTouchMove(e) {
     if (loading || error) return;
     const touches = e.touches;
-    for (let _i = 0; _i < touches.length; _i++) {
-      const _t = touches[_i];
+    // Only update positions for touches that actually moved this frame (index_109)
+    const _movedTouches = e.changedTouches;
+    for (let _i = 0; _i < _movedTouches.length; _i++) {
+      const _t = _movedTouches[_i];
       lastTouchPosRef.current[_t.identifier] = { clientX: _t.clientX, clientY: _t.clientY };
     }
     const stylus = findStylus(touches);
