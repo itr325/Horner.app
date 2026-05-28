@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_93";
+const BUILD_ID = "index_95";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -195,7 +195,7 @@ const SHAREPOINT_HOST = "https://hornerplumbing.sharepoint.com";
 // Flow accepts { path: string } and returns { folders:[{name,url}], files:[{name,url,modified}] }.
 const CODES_CHARTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/34eda8b84cfe406c8d3898591ddd7425/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=UjLam6pi8h5lQKvObQNSvPThjjM8MWCPprcayiypDGc";
 // Admin Docs document library — same flow shape, different library.
-const ADMIN_DOCS_FETCH_URL = "PASTE_ADMIN_DOCS_FLOW_URL_HERE";
+const ADMIN_DOCS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f63a5174735b41ce8f09502c5ebec443/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=V-fWcWi5sHz47gxFFxcFohTpl2nYWmLgg5XRl-aer0s";
 // Upload File flow — POST body { code, name, folder, filename, contentBase64 }.
 // Flow ensures both the SITE PHOTOS & VIDEO parent and the date subfolder exist before creating the file.
 // Response { url, filename }.
@@ -10516,8 +10516,8 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf, onPathChange, externalPath
             // Decode URL and strip the library base to get relative path
             try {
               const decoded = decodeURIComponent((i.url || "").replace(/https:\/\/hornerplumbing\.sharepoint\.com\//i, ""));
-              // Remove the library name prefix (handles "Codes  Charts/" variation)
-              const withoutLib = decoded.replace(/^Codes\s+Charts\//i, "");
+              // Remove the library name prefix (first path segment = library name)
+              const withoutLib = decoded.split("/").slice(1).join("/");
               const parts = withoutLib.split("/").filter(Boolean);
               const itemParent = parts.slice(0, -1).join("/");
               if (itemParent !== currentPathStr) return;
