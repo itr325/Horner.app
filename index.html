@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_107d";
+const BUILD_ID = "index_107e";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9377,9 +9377,9 @@ function PdfMarkupView(props) {
     // Fixed screen sizes regardless of zoom or canvas resolution.
     // dpr2 = cw/cssW = devicePixelRatio for annotation canvas,
     //                = zoom*dpr for detail canvas (both cancel correctly).
-    const lw    = 1.5  * dpr2 / _zf;   // 1.5 CSS px line width
+    const lw    = 1.0  * dpr2 / _zf;   // 1.0 CSS px line width
     const aLen  = 20   * dpr2 / _zf;   // 20 CSS px arrowhead length
-    const aW    = aLen * 0.25;          // slim 4:1 ratio
+    const aW    = aLen * 0.22;          // slim 4:1 ratio
     ctx.save();
     ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw; ctx.lineCap = "butt";
     // Extension lines (when offset is non-trivial)
