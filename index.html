@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_98";
+const BUILD_ID = "index_99";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9008,6 +9008,20 @@ function PdfMarkupView(props) {
   }
   const [, setTick] = useState(0);
   const rerender = () => setTick(t => t + 1);
+  // ---- measure tool state (index_99) ----------------------------------------
+  const [measurements, setMeasurements] = useState({});
+  const [measurePt1, setMeasurePt1] = useState(null);
+  const [calibState, setCalibState] = useState(null);
+  const [calibPt1, setCalibPt1] = useState(null);
+  const [calibPt2, setCalibPt2] = useState(null);
+  const [calibInputFt, setCalibInputFt] = useState("");
+  const [calibInputIn, setCalibInputIn] = useState("");
+  const [measureScalePerPage, setMeasureScalePerPage] = useState({});
+  const [scaleDropdownVal, setScaleDropdownVal] = useState("4");
+  const [selectedMeasId, setSelectedMeasId] = useState(null);
+  const liveMeasPtRef = useRef(null);
+  const measureTapStartRef = useRef(null);
+  const measurementsRef = useRef({});
   // ---- diagnostics (index_46) ----------------------------------------------
   // On-screen readout so issue #2 can be debugged on-device without a Mac:
   // build id, devicePixelRatio, page-canvas buffer dimensions + megapixels (the
@@ -9105,6 +9119,18 @@ function PdfMarkupView(props) {
       }
     }, 60);
   }
+  const SCALE_OPTIONS = [
+    { label: '1" = 1\'-0"',    value: "1",       feetPerInch: 1       },
+    { label: '3/4" = 1\'-0"',  value: "1.3333",  feetPerInch: 4/3     },
+    { label: '1/2" = 1\'-0"',  value: "2",       feetPerInch: 2       },
+    { label: '3/8" = 1\'-0"',  value: "2.6667",  feetPerInch: 8/3     },
+    { label: '1/4" = 1\'-0"',  value: "4",       feetPerInch: 4       },
+    { label: '3/16" = 1\'-0"', value: "5.3333",  feetPerInch: 16/3    },
+    { label: '1/8" = 1\'-0"',  value: "8",       feetPerInch: 8       },
+    { label: '3/32" = 1\'-0"', value: "10.6667", feetPerInch: 32/3    },
+    { label: '1/16" = 1\'-0"', value: "16",      feetPerInch: 16      },
+    { label: "NTS",             value: "nts",     feetPerInch: null    },
+  ];
   const COLORS_BY_TOOL = {
     pen: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
     arrow: ["#E53935", "#FDD835", "#1E88E5", "#000000", "#FFFFFF"],
@@ -9238,6 +9264,13 @@ function PdfMarkupView(props) {
     });
     return () => { cancelled = true; hideDetail(); };
   }, [pageNum, loading, error, resizeTick]);
+  useEffect(function() {
+    if (tool !== "measure") {
+      setMeasurePt1(null); liveMeasPtRef.current = null;
+      setCalibState(null); setCalibPt1(null); setCalibPt2(null);
+      setSelectedMeasId(null); measureTapStartRef.current = null;
+    }
+  }, [tool]);
   // Re-fit on viewport resize / rotation.
   useEffect(() => {
     const onResize = () => setResizeTick(t => t + 1);
@@ -9297,6 +9330,120 @@ function PdfMarkupView(props) {
     }
     ctx.restore();
   }
+  // ---- measurement drawing helpers (index_99) --------------------------------
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r); ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r); ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r); ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
+  }
+  function drawMeasurementSingle(ctx, m, cw, ch, isSelected) {
+    const x1 = m.x1 * cw, y1 = m.y1 * ch, x2 = m.x2 * cw, y2 = m.y2 * ch;
+    const color = isSelected ? "#FF6B35" : "#00E5FF";
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.5, cw * 0.002);
+    ctx.setLineDash([Math.max(6, cw * 0.008), Math.max(3, cw * 0.004)]);
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color;
+    const dotR = Math.max(4, cw * 0.005);
+    [{x:x1,y:y1},{x:x2,y:y2}].forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,dotR,0,Math.PI*2);ctx.fill();});
+    const fontSize = Math.max(11, Math.min(ch * 0.022, 18));
+    ctx.font = "700 " + fontSize + "px Arial, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const tw = ctx.measureText(m.label).width;
+    const pad = fontSize * 0.55, ph = fontSize + pad * 1.2;
+    ctx.fillStyle = "rgba(0,0,0,0.82)";
+    roundRect(ctx, mx - tw/2 - pad, my - ph/2, tw + pad*2, ph, ph/3);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillText(m.label, mx, my);
+    ctx.restore();
+  }
+  function distToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay, len2 = dx*dx + dy*dy;
+    if (len2 === 0) return Math.hypot(px - ax, py - ay);
+    const t = Math.max(0, Math.min(1, ((px-ax)*dx + (py-ay)*dy) / len2));
+    return Math.hypot(px - (ax + t*dx), py - (ay + t*dy));
+  }
+  function findMeasurementHit(normPt) {
+    const d = dimsRef.current, v = viewRef.current;
+    const px = normPt.x * d.cssW, py = normPt.y * d.cssH;
+    const threshold = 24 / (v.zoom || 1);
+    const list = measurements[pageNum] || [];
+    for (let i = list.length - 1; i >= 0; i--) {
+      const m = list[i];
+      if (distToSegment(px, py, m.x1*d.cssW, m.y1*d.cssH, m.x2*d.cssW, m.y2*d.cssH) < threshold) return m;
+    }
+    return null;
+  }
+  function getPxPerFoot(pgNum) {
+    const ps = measureScalePerPage[pgNum];
+    if (ps) return ps.pxPerFoot;
+    const opt = SCALE_OPTIONS.find(function(o){return o.value===scaleDropdownVal;});
+    if (!opt || !opt.feetPerInch) return null;
+    const d = dimsRef.current;
+    if (!d.fit) return null;
+    return (d.fit * 72) / opt.feetPerInch;
+  }
+  function formatFeetInches(distPx, pxPerFoot) {
+    const totalFt = distPx / pxPerFoot;
+    const feet = Math.floor(totalFt);
+    let inches = Math.round((totalFt - feet) * 12);
+    if (inches === 12) return (feet + 1) + "'-0\"";
+    if (feet === 0) return inches + '"';
+    if (inches === 0) return feet + "'-0\"";
+    return feet + "'-" + inches + '"';
+  }
+  function completeMeasurement(pt2) {
+    if (!measurePt1) return;
+    const pt1 = measurePt1;
+    const pxPerFoot = getPxPerFoot(pageNum);
+    let label;
+    if (!pxPerFoot) { label = "NTS"; } else {
+      const d = dimsRef.current;
+      label = formatFeetInches(Math.hypot((pt2.x-pt1.x)*d.cssW, (pt2.y-pt1.y)*d.cssH), pxPerFoot);
+    }
+    const meas = {id: Date.now()+Math.random(), x1:pt1.x, y1:pt1.y, x2:pt2.x, y2:pt2.y, label:label};
+    setMeasurements(function(prev){const copy=Object.assign({},prev);copy[pageNum]=(copy[pageNum]||[]).concat([meas]);return copy;});
+    setMeasurePt1(null); liveMeasPtRef.current = null;
+  }
+  function handleMeasureTap(pt) {
+    if (calibState === "placing1") { setCalibPt1(pt); setCalibState("placing2"); return; }
+    if (calibState === "placing2") { setCalibPt2(pt); setCalibState("dialog"); liveMeasPtRef.current = null; return; }
+    const hit = findMeasurementHit(pt);
+    if (hit) { setSelectedMeasId(function(prev){return prev===hit.id?null:hit.id;}); setMeasurePt1(null); liveMeasPtRef.current=null; return; }
+    setSelectedMeasId(null);
+    if (measurePt1) { completeMeasurement(pt); } else { setMeasurePt1(pt); }
+  }
+  function confirmCalib() {
+    if (!calibPt1 || !calibPt2) return;
+    const ft = parseFloat(calibInputFt) || 0, inVal = parseFloat(calibInputIn) || 0;
+    const totalFt = ft + inVal / 12;
+    if (totalFt <= 0) return;
+    const d = dimsRef.current;
+    const distPx = Math.hypot((calibPt2.x-calibPt1.x)*d.cssW, (calibPt2.y-calibPt1.y)*d.cssH);
+    if (distPx < 1) return;
+    const pxPerFoot = distPx / totalFt;
+    const lbl = (ft>0&&inVal>0)?ft+"'-"+inVal+'"':ft>0?ft+"'":inVal+'"';
+    setMeasureScalePerPage(function(prev){return Object.assign({},prev,{[pageNum]:{pxPerFoot:pxPerFoot,label:"Calib("+lbl+")"}});});
+    setScaleDropdownVal("custom");
+    setCalibState(null); setCalibPt1(null); setCalibPt2(null); setCalibInputFt(""); setCalibInputIn("");
+  }
+  function cancelCalib() {
+    setCalibState(null); setCalibPt1(null); setCalibPt2(null); setCalibInputFt(""); setCalibInputIn("");
+    liveMeasPtRef.current = null;
+  }
+  function deleteMeasurement() {
+    if (!selectedMeasId) return;
+    setMeasurements(function(prev){const copy=Object.assign({},prev);copy[pageNum]=(copy[pageNum]||[]).filter(function(m){return m.id!==selectedMeasId;});return copy;});
+    setSelectedMeasId(null);
+  }
   // Repaint the annotation overlay for the current page.
   function repaintAnnotations() {
     const canvas = annotCanvasRef.current;
@@ -9308,11 +9455,37 @@ function PdfMarkupView(props) {
     const cur = currentRef.current;
     const all = cur ? pageAnns.concat([cur]) : pageAnns;
     all.forEach(a => drawAnnotation(ctx, a, d.w, d.h));
+    // Draw saved measurements (index_99)
+    (measurements[pageNum]||[]).forEach(function(m){drawMeasurementSingle(ctx,m,d.w,d.h,m.id===selectedMeasId);});
+    const _lp = liveMeasPtRef.current;
+    if (tool === "measure" && measurePt1) {
+      if (_lp) {
+        ctx.save(); ctx.strokeStyle="#00E5FF"; ctx.globalAlpha=0.7;
+        ctx.lineWidth=Math.max(1.5,d.w*0.002); ctx.setLineDash([Math.max(6,d.w*0.008),Math.max(3,d.w*0.004)]); ctx.lineCap="round";
+        ctx.beginPath(); ctx.moveTo(measurePt1.x*d.w,measurePt1.y*d.h); ctx.lineTo(_lp.x*d.w,_lp.y*d.h);
+        ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+      }
+      ctx.save(); ctx.strokeStyle="#00E5FF"; ctx.fillStyle="rgba(0,229,255,0.25)"; ctx.lineWidth=Math.max(2,d.w*0.003);
+      const _r=Math.max(7,d.w*0.01);
+      ctx.beginPath(); ctx.arc(measurePt1.x*d.w,measurePt1.y*d.h,_r,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    if (tool === "measure" && calibState === "placing2" && calibPt1 && _lp) {
+      ctx.save(); ctx.strokeStyle="#FFD54F"; ctx.globalAlpha=0.8;
+      ctx.lineWidth=Math.max(1.5,d.w*0.002); ctx.setLineDash([Math.max(6,d.w*0.008),Math.max(3,d.w*0.004)]); ctx.lineCap="round";
+      ctx.beginPath(); ctx.moveTo(calibPt1.x*d.w,calibPt1.y*d.h); ctx.lineTo(_lp.x*d.w,_lp.y*d.h);
+      ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    }
+    if (tool === "measure" && calibPt1 && (calibState==="placing1"||calibState==="placing2")) {
+      ctx.save(); ctx.strokeStyle="#FFD54F"; ctx.fillStyle="rgba(255,213,79,0.3)"; ctx.lineWidth=Math.max(2,d.w*0.003);
+      const _rc=Math.max(7,d.w*0.01);
+      ctx.beginPath(); ctx.arc(calibPt1.x*d.w,calibPt1.y*d.h,_rc,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
   }
   useEffect(() => { repaintAnnotations(); });
   // Keep the mirror refs in sync so the debounced renderDetail always sees current data.
   annotationsRef.current = annotations;
   pageNumRef.current = pageNum;
+  measurementsRef.current = measurements;
   // Pointer → normalized (0..1) coordinates on the annotation canvas.
   function getNormPoint(e) {
     const canvas = annotCanvasRef.current;
@@ -9462,6 +9635,13 @@ function PdfMarkupView(props) {
         pageAnns.forEach(a => drawAnnotation(dctx, a, fullW, fullH));
         dctx.restore();
       }
+      const _pageMeas = measurementsRef.current[pageNumRef.current] || [];
+      if (_pageMeas.length) {
+        dctx.save(); dctx.translate(offX, offY);
+        const _fw = d.cssW * pxPerCss, _fh = d.cssH * pxPerCss;
+        _pageMeas.forEach(function(m){drawMeasurementSingle(dctx,m,_fw,_fh,false);});
+        dctx.restore();
+      }
       // Position as a SCREEN-SPACE overlay in the doc area. The region's top-left
       // in page-CSS (rx,ry) maps to screen (panX+rx*zoom, panY+ry*zoom); its
       // on-screen size is regCss*zoom. The buffer is regCss*zoom*dpr, so the CSS
@@ -9605,12 +9785,20 @@ function PdfMarkupView(props) {
         const t0 = touches[0];
         const v = viewRef.current;
         panRef.current = { x0: t0.clientX, y0: t0.clientY, panX0: v.panX, panY0: v.panY };
+      } else if (tool === "measure") {
+        measureTapStartRef.current = {x: touches[0].clientX, y: touches[0].clientY, t0: Date.now()};
+        if (measurePt1 === null && !calibState) {
+          hideDetail();
+          const _t0 = touches[0], _v = viewRef.current;
+          panRef.current = {x0: _t0.clientX, y0: _t0.clientY, panX0: _v.panX, panY0: _v.panY};
+        }
       } else {
         startDraw(touches[0]);
       }
       e.preventDefault();
     } else if (touches.length >= 2) {
       if (drawingRef.current) cancelDraw();
+      if (tool === "measure" && measurePt1 !== null) { setMeasurePt1(null); liveMeasPtRef.current = null; }
       beginGesture(touches);
       e.preventDefault();
     }
@@ -9636,6 +9824,17 @@ function PdfMarkupView(props) {
       e.preventDefault();
       return;
     }
+    if (tool === "measure") {
+      if (panRef.current && touches.length === 1 && measurePt1 === null && !calibState) {
+        const _mp = panRef.current;
+        setView({zoom:viewRef.current.zoom,panX:_mp.panX0+(touches[0].clientX-_mp.x0),panY:_mp.panY0+(touches[0].clientY-_mp.y0)});
+        e.preventDefault(); return;
+      }
+      if (touches.length === 1 && (measurePt1 !== null || calibState === "placing2")) {
+        liveMeasPtRef.current = getNormPoint(touches[0]); rerender(); e.preventDefault(); return;
+      }
+      return;
+    }
     if (drawingRef.current && touches.length === 1) {
       moveDraw(touches[0]);
       e.preventDefault();
@@ -9643,6 +9842,20 @@ function PdfMarkupView(props) {
   }
   function onTouchEnd(e) {
     const touches = e.touches; // remaining touches
+    if (tool === "measure" && measureTapStartRef.current) {
+      const _ts = measureTapStartRef.current;
+      measureTapStartRef.current = null;
+      const _ch = e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null;
+      if (_ch && touches.length === 0) {
+        const _dist = Math.hypot(_ch.clientX - _ts.x, _ch.clientY - _ts.y);
+        const _isTap = _dist < 20 || measurePt1 !== null || !!calibState;
+        if (_isTap) {
+          panRef.current = null;
+          handleMeasureTap(getNormPoint(_ch));
+          scheduleDetail(); e.preventDefault(); return;
+        }
+      }
+    }
     if (panRef.current && touches.length === 0) {
       panRef.current = null;
       scheduleDetail();
@@ -9662,6 +9875,7 @@ function PdfMarkupView(props) {
     }
   }
   function onTouchCancel(e) {
+    measureTapStartRef.current = null;
     if (drawingRef.current) cancelDraw();
     const touches = e.touches;
     if (touches && touches.length >= 2) beginGesture(touches);
@@ -9703,6 +9917,7 @@ function PdfMarkupView(props) {
   function goPage(n) {
     if (n < 1 || n > numPages) return;
     if (textDraft) commitText();
+    setMeasurePt1(null); liveMeasPtRef.current = null; setSelectedMeasId(null);
     drawingRef.current = false;
     currentRef.current = null;
     gestureRef.current = null;
@@ -9967,6 +10182,16 @@ function PdfMarkupView(props) {
         color: "white", fontSize: 20, cursor: "pointer"
       }
     }, "\u270B"),
+    // Measure tool (index_99)
+    /*#__PURE__*/React.createElement("button", {
+      onClick: function() { setTool("measure"); },
+      title: "Measure distance",
+      style: {
+        width: 44, height: 44, borderRadius: 8, border: "none",
+        background: tool === "measure" ? "#1B6FB3" : "#2E3850",
+        color: "white", fontSize: 20, cursor: "pointer"
+      }
+    }, "\uD83D\uDCCF"),
     // Tools
     TOOLS.map(t => /*#__PURE__*/React.createElement("button", {
       key: t.id,
@@ -10181,6 +10406,68 @@ function PdfMarkupView(props) {
               style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#2A2F3A", color: "#9AA5B4", fontSize: 14 }
             }, "Loading PDF\u2026")
           )
+    ,
+    tool === "measure" && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
+        background: "rgba(12,18,32,0.94)", borderRadius: 10, padding: "8px 14px",
+        display: "flex", alignItems: "center", gap: 10, zIndex: 200, pointerEvents: "auto",
+        boxShadow: "0 2px 16px rgba(0,0,0,0.6)", maxWidth: "calc(100vw - 80px)",
+        whiteSpace: "nowrap", userSelect: "none"
+      }
+    },
+      calibState === null && /*#__PURE__*/React.createElement(React.Fragment, null,
+        measurePt1 !== null
+          ? /*#__PURE__*/React.createElement("span", {style:{color:"#00E5FF",fontSize:13,fontWeight:700}}, "Tap 2nd point")
+          : /*#__PURE__*/React.createElement(React.Fragment, null,
+              /*#__PURE__*/React.createElement("span", {style:{color:"#9AA5B4",fontSize:12,fontWeight:600,flexShrink:0}}, "Scale:"),
+              /*#__PURE__*/React.createElement("select", {
+                value: measureScalePerPage[pageNum] ? "custom" : scaleDropdownVal,
+                onChange: function(ev) {
+                  setScaleDropdownVal(ev.target.value);
+                  setMeasureScalePerPage(function(p){const cp=Object.assign({},p);delete cp[pageNum];return cp;});
+                },
+                style: {background:"#2E3850",color:"white",border:"1px solid #39435A",borderRadius:6,padding:"5px 8px",fontSize:13,cursor:"pointer",outline:"none"}
+              },
+                SCALE_OPTIONS.map(function(o){return /*#__PURE__*/React.createElement("option",{key:o.value,value:o.value},o.label);}),
+                measureScalePerPage[pageNum] && /*#__PURE__*/React.createElement("option",{value:"custom"},measureScalePerPage[pageNum].label||"Custom")
+              ),
+              /*#__PURE__*/React.createElement("button", {
+                onClick: function(){setCalibState("placing1");setMeasurePt1(null);liveMeasPtRef.current=null;},
+                style:{background:"#2E3850",color:"#FFD54F",border:"1px solid #39435A",borderRadius:6,padding:"5px 11px",fontSize:13,fontWeight:600,cursor:"pointer"}
+              }, "Calibrate"),
+              selectedMeasId && /*#__PURE__*/React.createElement("button", {
+                onClick: deleteMeasurement,
+                style:{background:"#7F1D1D",color:"#FCA5A5",border:"none",borderRadius:6,padding:"5px 11px",fontSize:13,fontWeight:600,cursor:"pointer"}
+              }, "\uD83D\uDDD1 Delete")
+            )
+      ),
+      calibState === "placing1" && /*#__PURE__*/React.createElement("span",{style:{color:"#FFD54F",fontSize:13,fontWeight:700}},"Tap START of a known dimension"),
+      calibState === "placing2" && /*#__PURE__*/React.createElement("span",{style:{color:"#FFD54F",fontSize:13,fontWeight:700}},"Tap END of the dimension"),
+      calibState !== null && /*#__PURE__*/React.createElement("button",{onClick:cancelCalib,style:{background:"transparent",color:"#9AA5B4",border:"none",fontSize:17,cursor:"pointer",padding:"2px 6px",marginLeft:4,lineHeight:1}},"\u2715")
+    ),
+    calibState === "dialog" && /*#__PURE__*/React.createElement("div", {
+      style:{position:"absolute",inset:0,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,pointerEvents:"auto"}
+    },
+      /*#__PURE__*/React.createElement("div",{style:{background:"#1A1F2B",borderRadius:14,padding:"24px 28px",width:280,boxShadow:"0 8px 32px rgba(0,0,0,0.7)"}},
+        /*#__PURE__*/React.createElement("div",{style:{color:"white",fontWeight:700,fontSize:16,marginBottom:6}},"Set Scale"),
+        /*#__PURE__*/React.createElement("div",{style:{color:"#9AA5B4",fontSize:13,marginBottom:18,lineHeight:1.4}},"Enter the real-world distance between the two tapped points."),
+        /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:12,marginBottom:22}},
+          /*#__PURE__*/React.createElement("div",{style:{flex:1}},
+            /*#__PURE__*/React.createElement("label",{style:{color:"#9AA5B4",fontSize:12,display:"block",marginBottom:5}},"Feet"),
+            /*#__PURE__*/React.createElement("input",{type:"number",min:"0",value:calibInputFt,onChange:function(ev){setCalibInputFt(ev.target.value);},style:{width:"100%",background:"#2E3850",color:"white",border:"1px solid #39435A",borderRadius:8,padding:"8px 10px",fontSize:15,outline:"none",boxSizing:"border-box"}})
+          ),
+          /*#__PURE__*/React.createElement("div",{style:{flex:1}},
+            /*#__PURE__*/React.createElement("label",{style:{color:"#9AA5B4",fontSize:12,display:"block",marginBottom:5}},"Inches"),
+            /*#__PURE__*/React.createElement("input",{type:"number",min:"0",max:"11",value:calibInputIn,onChange:function(ev){setCalibInputIn(ev.target.value);},style:{width:"100%",background:"#2E3850",color:"white",border:"1px solid #39435A",borderRadius:8,padding:"8px 10px",fontSize:15,outline:"none",boxSizing:"border-box"}})
+          )
+        ),
+        /*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:10}},
+          /*#__PURE__*/React.createElement("button",{onClick:cancelCalib,style:{flex:1,background:"#2E3850",color:"#9AA5B4",border:"none",borderRadius:8,padding:"10px",fontSize:14,cursor:"pointer"}},"Cancel"),
+          /*#__PURE__*/React.createElement("button",{onClick:confirmCalib,disabled:!((parseFloat(calibInputFt)||0)+(parseFloat(calibInputIn)||0)>0),style:{flex:1,background:"#1B6FB3",color:"white",border:"none",borderRadius:8,padding:"10px",fontSize:14,fontWeight:700,cursor:"pointer"}},"Set Scale")
+        )
+      )
+    )
     ),
     toolbar,
     // Live save-progress indicator (index_57). Shows the current stage while saving
