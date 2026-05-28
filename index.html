@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_104";
+const BUILD_ID = "index_104b";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10034,6 +10034,7 @@ function PdfMarkupView(props) {
         } else {
           // Phase 1 → set pt1
           setMeasurePt1(pt);
+          scheduleDetail(); // restore sharp PDF after hiding detail on touchstart
         }
         e.preventDefault();
       }
