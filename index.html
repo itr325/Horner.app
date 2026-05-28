@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_97";
+const BUILD_ID = "index_98";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9512,7 +9512,7 @@ function PdfMarkupView(props) {
     const a = gestureXY(touches[0]), b = gestureXY(touches[1]);
     const d1 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
     const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    const zoom1 = Math.max(1, Math.min(15, g.zoom0 * (d1 / g.d0)));
+    const zoom1 = Math.max(1, Math.min(25, g.zoom0 * (d1 / g.d0)));
     // The content point under the original midpoint should stay under the current midpoint.
     const cx = (g.m0.x - g.panX0) / g.zoom0;
     const cy = (g.m0.y - g.panY0) / g.zoom0;
