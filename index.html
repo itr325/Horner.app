@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_95";
+const BUILD_ID = "index_96";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -236,6 +236,20 @@ const ROLLOVER_URL = "https://defaultef466c747a134920854c210669ea3c.84.environme
 // Stub URLs — replace with real Power Automate trigger URLs once flows are built.
 const SAVE_VALVE_TAGS_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f52f767d8f3b4522974577b0d8e74a96/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8qZ2IUm2yu0HdOpdmzr7BU86zZ4cesQlyPr5kCF-ZcA";
 const LOAD_VALVE_TAGS_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b9269ca9025144b0b336231848e4c5d1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=6BcAn7ZKyHCnwhwOMwkawhTVzmAXP31C_IB5iNbTKhE";
+// Shared secret — included in every flow POST body. Each flow checks this value and returns 401 if it doesn't match.
+// This prevents anonymous callers who find the flow URLs from triggering them.
+// Rotate: change this value here AND update the matching value in every Power Automate flow condition.
+const APP_SECRET = "HPA-fefd03ad30f354b01bab2d2e750d2c4d";
+// All Power Automate calls go through flowPost so the secret is injected consistently.
+// Usage: flowPost(URL, { field1, field2, ... }).then(r => r.ok ? r.json() : Promise.reject(r.status))
+function flowPost(url, body) {
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, secret: APP_SECRET })
+  });
+}
+
 // Icon + color styling for known top-level folder names. Unknown folders fall back to DEFAULT_FOLDER_STYLE.
 // Match is case-insensitive at lookup time. Used only for visual decoration; folder existence comes from SharePoint.
 const FOLDER_STYLES = {
@@ -9114,11 +9128,7 @@ function PdfMarkupView(props) {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch(DOWNLOAD_FILE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: file.url || "" })
-    }).then(r => {
+    flowPost(DOWNLOAD_FILE_URL, { path: file.url || "" }).then(r => {
       if (!r.ok) return Promise.reject(r.status);
       return r.text();
     }).then(text => {
@@ -10499,11 +10509,7 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf, onPathChange, externalPath
     }
     setLoading(true);
     setError(null);
-    fetch(fetchUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: pathArr.join("/") })
-    })
+    flowPost(fetchUrl, { path: pathArr.join("/") })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
         // Support both { items: [...] } (new flat format with isFolder flag)
@@ -10675,7 +10681,7 @@ function App() {
       // (folderCacheRef is empty on mount anyway).
       if (folderCacheRef && folderCacheRef.current) folderCacheRef.current = {};
     }
-    return fetch(PROJECTS_FETCH_URL, { method: "POST" })
+    return flowPost(PROJECTS_FETCH_URL, {})
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
         // Power Automate returns the Select output array directly.
@@ -10797,11 +10803,7 @@ function App() {
     }
     setFolderLoading(true);
     setFolderError(null);
-    fetch(FETCH_FOLDER_CONTENTS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: project.code, path: sharePointPath })
-    })
+    flowPost(FETCH_FOLDER_CONTENTS_URL, { code: project.code, path: sharePointPath })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
         const folders = Array.isArray(data && data.folders) ? data.folders.slice() : [];
@@ -10866,17 +10868,13 @@ function App() {
   // POST a single file to the Upload File flow. Resolves to { url, filename } on success.
   const uploadFile = (file, targetFolder) => {
     return fileToBase64(file).then(base64 => {
-      return fetch(UPLOAD_FILE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      return flowPost(UPLOAD_FILE_URL, {
           code: project.code,
           name: project.name,
           folder: targetFolder,
           filename: generateUploadFilename(file),
           contentBase64: base64
-        })
-      }).then(r => r.ok ? r.json() : Promise.reject(r.status));
+        }).then(r => r.ok ? r.json() : Promise.reject(r.status));
     });
   };
   // Handle a FileList from either the capture or library input. Sequential uploads with
@@ -10979,18 +10977,14 @@ function App() {
     // versions against "FloorPlan" — i.e. the next save becomes "FloorPlan_v4.pdf".
     const rawName = src.name || "markup.pdf";
     const baseName = rawName.replace(/\.pdf$/i, "").replace(/_v\d+$/i, "");
-    return fetch(SAVE_MARKUP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    return flowPost(SAVE_MARKUP_URL, {
         code: project.code,
         name: project.name,
         folder: folderPath,
         baseName: baseName,
         sourceFilename: rawName,
         contentBase64: contentBase64
-      })
-    }).then(r => {
+      }).then(r => {
       // Non-2xx: read the body if we can — the flow's error text is the useful part.
       if (!r.ok) {
         return r.text().then(
@@ -11051,18 +11045,14 @@ function App() {
     const baseName = rawName.replace(/\.pdf$/i, "").replace(/_SIGNED_\d{4}-\d{2}-\d{2}$/i, "");
     const signedFilename = baseName + "_SIGNED_" + today + ".pdf";
     showToast("Saving Toolbox Talk to SharePoint\u2026", true);
-    return fetch(SAVE_TBT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    return flowPost(SAVE_TBT_URL, {
         code: project.code,
         name: project.name,
         folder: folderPath,
         filename: signedFilename,
         originalFilename: rawName,
         contentBase64: contentBase64
-      })
-    }).then(r => {
+      }).then(r => {
       if (!r.ok) {
         return r.text().then(
           t => {
@@ -12343,16 +12333,12 @@ function App() {
         return;
       }
       showToast("Creating job in SharePoint…", true);
-      fetch(CREATE_JOB_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      flowPost(CREATE_JOB_URL, {
           code: newJob.code,
           name: newJob.name,
           pm: PMS[newJob.pm]?.name || newJob.pm,
           foreman: newJob.foreman || ""
         })
-      })
         .then(r => r.ok ? r : Promise.reject(r.status))
         .then(() => {
           showToast("(" + newJob.code + ") created in SharePoint!", true);
@@ -12446,14 +12432,10 @@ function App() {
       const newPmName = PMS[editPm.pm]?.name || editPm.pm;
       if (!window.confirm("Change PM on (" + proj.code + ") " + proj.name + " from " + oldPmName + " \u2192 " + newPmName + "?\n\nAll future forms for this job will route to " + newPmName + ".")) return;
       showToast("Updating PM in SharePoint\u2026", true);
-      fetch(UPDATE_PM_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      flowPost(UPDATE_PM_URL, {
           path: "(" + proj.code + ") " + proj.name,
           pm: newPmName
         })
-      })
         .then(r => r.ok ? r : Promise.reject(r.status))
         .then(() => {
           showToast("PM updated for (" + proj.code + ")", true);
@@ -12533,14 +12515,10 @@ function App() {
       const newForemanName = editForeman.foreman;
       if (!window.confirm("Change Foreman on (" + proj.code + ") " + proj.name + " from " + oldForemanName + " \u2192 " + newForemanName + "?")) return;
       showToast("Updating Foreman in SharePoint\u2026", true);
-      fetch(UPDATE_FOREMAN_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      flowPost(UPDATE_FOREMAN_URL, {
           path: "(" + proj.code + ") " + proj.name,
           foreman: newForemanName
         })
-      })
         .then(r => r.ok ? r : Promise.reject(r.status))
         .then(() => {
           showToast("Foreman updated for (" + proj.code + ")", true);
@@ -12591,11 +12569,7 @@ function App() {
     onClick: () => {
       if (!window.confirm("Run Toolbox Talks Rollover?\n\nThis will create a new Toolbox Talks year folder in every active job and copy all templates into it.")) return;
       showToast("Running rollover\u2026 this may take a minute.", true);
-      fetch(ROLLOVER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({})
-      })
+      flowPost(ROLLOVER_URL, {})
         .then(r => r.json())
         .then(() => showToast("Rollover complete \u2714", true))
         .catch(() => showToast("Rollover failed \u2014 please try again", false));
@@ -14318,16 +14292,10 @@ function ValveTagList({
   useEffect(() => {
     if (!project?.code || !LOAD_VALVE_TAGS_URL) return;
     setLoading(true);
-    fetch(LOAD_VALVE_TAGS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
+    flowPost(LOAD_VALVE_TAGS_URL, {
         code: project.code,
         name: project.name
-      })
-    }).then(r => {
+      }).then(r => {
       if (r.status === 404) return null;
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
@@ -14362,13 +14330,7 @@ function ValveTagList({
         empId: empIdRef.current
       })
     };
-    fetch(SAVE_VALVE_TAGS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    }).then(r => {
+    flowPost(SAVE_VALVE_TAGS_URL, payload).then(r => {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     }).then(() => {
