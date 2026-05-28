@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_107";
+const BUILD_ID = "index_107b";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9784,7 +9784,7 @@ function PdfMarkupView(props) {
           if (!item.pt) return;
           var _bx = item.pt.x * d.cssW * pxPerCss + offX;
           var _by = item.pt.y * d.cssH * pxPerCss + offY;
-          var _arm = 10 * pxPerCss, _lw2 = 1.5 * pxPerCss;
+          var _arm = 10 * pxPerCss / zoom, _lw2 = 1.5 * pxPerCss / zoom;
           dctx.save();
           dctx.strokeStyle = item.clr; dctx.lineWidth = _lw2; dctx.lineCap = "round";
           dctx.beginPath();
@@ -10693,7 +10693,7 @@ function PdfMarkupView(props) {
               })()
           : /*#__PURE__*/React.createElement(React.Fragment, null,
               (measurements[pageNum]||[]).length > 0 && /*#__PURE__*/React.createElement("button", {
-                onClick:function(){setMeasurements(function(prev){const cp=Object.assign({},prev);cp[pageNum]=(cp[pageNum]||[]).slice(0,-1);return cp;});setSelectedMeasId(null);},
+                onClick:function(){setMeasurements(function(prev){const cp=Object.assign({},prev);cp[pageNum]=(cp[pageNum]||[]).slice(0,-1);return cp;});setSelectedMeasId(null);setMeasurePt1(null);liveMeasPtRef.current=null;hideCursor();hideRubberBand();},
                 title:"Undo last measurement",
                 style:{background:"#2E3850",color:"white",border:"1px solid #39435A",borderRadius:6,padding:"5px 10px",fontSize:14,cursor:"pointer"}
               },"\u21B6"),
