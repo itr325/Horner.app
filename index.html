@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_110c";
+const BUILD_ID = "index_110d";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -10112,8 +10112,23 @@ function PdfMarkupView(props) {
       return;
     }
     if (gestureRef.current && gestureRef.current.active) {
-      if (touches.length >= 2) beginGesture(touches); // re-baseline with remaining fingers
-      else { gestureRef.current = null; scheduleDetail(); } // gesture settled — sharpen the visible region
+      if (touches.length >= 2) {
+        beginGesture(touches); // re-baseline with remaining fingers
+      } else {
+        // Final gesture update using lifted finger + any remaining finger (index_110c)
+        // Handles quick pinch where iOS fires 0 touchmove events between down and up
+        const _ct = e.changedTouches;
+        if (_ct && _ct.length > 0) {
+          const _finalPair = touches.length >= 1
+            ? [touches[0], _ct[0]]           // one remaining + one lifted
+            : _ct.length >= 2
+              ? [_ct[0], _ct[1]]             // both lifted simultaneously
+              : null;
+          if (_finalPair) updateGesture(_finalPair);
+        }
+        gestureRef.current = null;
+        scheduleDetail();
+      }
       e.preventDefault();
       return;
     }
