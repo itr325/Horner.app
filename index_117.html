@@ -12463,27 +12463,29 @@ function App() {
       /*#__PURE__*/React.createElement("div", {
         style: { fontWeight:700, fontSize:14, color:"#1B2A4A", marginBottom:12 }
       }, "\uD83D\uDCE7 Team Email Routing"),
-      [
-        { role:"Time Cards / HR",    email:CONTACTS.timecards },
-        { role:"Purchasing",         email:CONTACTS.purchasing },
-        { role:"Returns",            email:CONTACTS.returns },
-        { role:"Safety",             email:CONTACTS.safety },
-        { role:"Admin",              email:CONTACTS.admin },
-        { role:"Dept. Head - Craig", email:CONTACTS.craig }
-      ].concat(Object.values(PMS).filter(pm=>pm.email).map(pm=>({ role:"PM - "+pm.name, email:pm.email })))
-      .map(c => /*#__PURE__*/React.createElement("div", {
-        key:c.email,
-        style:{ display:"flex", justifyContent:"space-between", alignItems:"center",
-          padding:"9px 0", borderBottom:"1px solid #F0F4FA" }
-      },
-        /*#__PURE__*/React.createElement("span", {
-          style:{ fontWeight:600, fontSize:13, color:"#2C3E50" }
-        }, c.role),
-        /*#__PURE__*/React.createElement("a", {
-          href:"mailto:"+c.email,
-          style:{ fontSize:13, color:"#2E86C1", textDecoration:"none", fontWeight:500 }
-        }, c.email)
-      ))
+      /*#__PURE__*/React.createElement("div", null,
+        [
+          { role:"Time Cards / HR",    email:CONTACTS.timecards },
+          { role:"Purchasing",         email:CONTACTS.purchasing },
+          { role:"Returns",            email:CONTACTS.returns },
+          { role:"Safety",             email:CONTACTS.safety },
+          { role:"Admin",              email:CONTACTS.admin },
+          { role:"Dept. Head - Craig", email:CONTACTS.craig }
+        ].concat(Object.values(PMS).filter(pm=>pm.email).map(pm=>({ role:"PM - "+pm.name, email:pm.email })))
+        .map(c => /*#__PURE__*/React.createElement("div", {
+          key:c.email,
+          style:{ display:"flex", justifyContent:"space-between", alignItems:"center",
+            padding:"9px 0", borderBottom:"1px solid #F0F4FA" }
+        },
+          /*#__PURE__*/React.createElement("span", {
+            style:{ fontWeight:600, fontSize:13, color:"#2C3E50" }
+          }, c.role),
+          /*#__PURE__*/React.createElement("a", {
+            href:"mailto:"+c.email,
+            style:{ fontSize:13, color:"#2E86C1", textDecoration:"none", fontWeight:500 }
+          }, c.email)
+        ))
+      )
     )
   ), view === "projects" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
