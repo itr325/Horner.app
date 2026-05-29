@@ -12469,9 +12469,9 @@ function App() {
         { role:"Returns",            email:CONTACTS.returns },
         { role:"Safety",             email:CONTACTS.safety },
         { role:"Admin",              email:CONTACTS.admin },
-        { role:"Dept. Head - Craig", email:CONTACTS.craig },
-        ...Object.values(PMS).filter(pm=>pm.email).map(pm=>({ role:"PM - "+pm.name, email:pm.email }))
-      ].map(c => /*#__PURE__*/React.createElement("div", {
+        { role:"Dept. Head - Craig", email:CONTACTS.craig }
+      ].concat(Object.values(PMS).filter(pm=>pm.email).map(pm=>({ role:"PM - "+pm.name, email:pm.email })))
+      .map(c => /*#__PURE__*/React.createElement("div", {
         key:c.email,
         style:{ display:"flex", justifyContent:"space-between", alignItems:"center",
           padding:"9px 0", borderBottom:"1px solid #F0F4FA" }
