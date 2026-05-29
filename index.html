@@ -11408,7 +11408,11 @@ function AdminEmployeesView({ employees, onEmployeesChange, onToast }) {
         /*#__PURE__*/React.createElement("div", { style:{flex:"1 1 140px"} },
           /*#__PURE__*/React.createElement("label", { style:lbl }, "Phone"),
           /*#__PURE__*/React.createElement("input", { style:inp, value:form.phone, placeholder:"(414) 555-0000", type:"tel",
-            onChange:e=>setForm(f=>({...f,phone:e.target.value})) }))
+            onChange:e=>{
+              const digits = e.target.value.replace(/\D/g,'').slice(0,10);
+              const fmt = digits.length <= 3 ? digits : digits.length <= 6 ? digits.slice(0,3)+'-'+digits.slice(3) : digits.slice(0,3)+'-'+digits.slice(3,6)+'-'+digits.slice(6);
+              setForm(f=>({...f,phone:fmt}));
+            } }))
       ),
       /*#__PURE__*/React.createElement("button", {
         style:{ marginTop:14, background:"#16A085", color:"white", border:"none", borderRadius:8,
