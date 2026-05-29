@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-29 (Session 20)_
+_Last updated: 2026-05-29 (Session 21)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_114.html` |
+| **Current build** | `index_116.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -22,7 +22,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 ### Features / Work Items (rough priority order)
 - [ ] **Timecard — custom job entry** — allow foreman to type a custom job name/code on the timecard instead of only selecting from the project list.
-- [ ] **Admin Panel — Add/Remove Employee** — add/remove from a master employee list that populates timecards and foremen dropdowns across all forms. Need to define fields (name, position, phone, email, etc.). Long-term replaces hardcoded `EMPLOYEES` array.
+- [x] **Admin Panel — Add/Remove Employee** — ✅ index_116. Full add/edit/remove UI. employees.csv stored in Templates library via 2 new Power Automate flows. firstName sort on all dropdowns.
 - [x] **Admin Panel — tile landing** — ✅ index_114. Admin panel now has a 2×2 tile grid (New Job, Change PM/Foreman, Toolbox Talks Rollover, Add/Remove Employees). Each tile opens its own sub-view with back button + breadcrumb.
 - [ ] **Admin Panel — Close Job** — move a job OUT of Active Projects to a specified archive location. Needs a Power Automate flow to move the SharePoint folder.
 - [ ] **Photos — save extension as .jpg** — currently uploads preserve original extension (HEIC on iPad). Force `.jpg` output on capture.
@@ -123,6 +123,34 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 21 — 2026-05-29 | index_114 → index_116
+
+**Topic:** Add/Remove/Edit Employees admin panel + SharePoint CSV persistence
+
+**Closed:**
+| Item | Resolution |
+|---|---|
+| Admin — Add/Remove Employee | Full feature built. Add form: First Name, Last Name, Position (optional), Department (required), Email, Phone (auto-formats to 111-111-1111). Edit inline on any row. Remove with confirm step. Search + department filter. |
+| Employee CSV persistence | employees.csv stored in Templates library on SharePoint. Load flow (15) fetches on app startup — falls back to hardcoded DEFAULT_EMPLOYEES if file missing. Save flow (16) writes full CSV on every add/edit/remove. |
+| firstName sort | All employee dropdowns across the entire app now sort by firstName. BILLING_EMPLOYEES converted to getBillingEmployees() function to stay live. |
+| Build number discipline | Established rule: every push must bump BUILD_ID. |
+
+**What changed (index_116):**
+- `DEFAULT_EMPLOYEES` hardcoded fallback + runtime `EMPLOYEES` (loaded from SharePoint)
+- `parseEmployeeCSV()` / `serializeEmployeeCSV()` helpers
+- `loadEmployeesFromSharePoint()` called at app startup
+- `LOAD_EMPLOYEES_URL` / `SAVE_EMPLOYEES_URL` constants wired
+- `getBillingEmployees()` replaces static `BILLING_EMPLOYEES`
+- `AdminEmployeesView` component — full add/edit/remove UI
+- Phone auto-formatter (111-111-1111) on add and edit forms
+- All employee dropdowns sort by `firstName`
+
+**New flows:**
+- Flow 15: Load Employees — GET employees.csv from Templates library → returns `{csvData}`
+- Flow 16: Save Employees — POST `{csvData}` → writes employees.csv to Templates library
 
 ---
 
