@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_105";
+const BUILD_ID = "index_114";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -8900,8 +8900,10 @@ function MarkupView(props) {
 function FileRow(props) {
   const f = props.file;
   const isPdf = /\.pdf$/i.test(f.name || "");
+  const _ext = (f.name || "").split(".").pop().toLowerCase();
+  const isImage = ["jpg","jpeg","png","gif","heic","heif","webp","bmp","tif","tiff"].includes(_ext);
   return /*#__PURE__*/React.createElement("button", {
-    onClick: () => { if (isPdf) props.onMarkup(f); else props.onOpen(f.url); },
+    onClick: () => { if (isPdf) props.onMarkup(f); else props.onOpen(f.url, f.name); },
     style: {
       background: "white",
       border: "1.5px solid #DDE3ED",
@@ -8918,11 +8920,13 @@ function FileRow(props) {
   },
     /*#__PURE__*/React.createElement("div", {
       style: {
-        width: 38, height: 38, background: isPdf ? "#E7EEF9" : "#FFEAEA", borderRadius: 9,
+        width: 38, height: 38,
+        background: isPdf ? "#E7EEF9" : isImage ? "#FFF3E0" : "#FFEAEA",
+        borderRadius: 9,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 18, flexShrink: 0
       }
-    }, "\uD83D\uDCC4"),
+    }, isPdf ? "\uD83D\uDCC4" : isImage ? "\uD83D\uDDBC\uFE0F" : "\uD83D\uDCC4"),
     /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
       /*#__PURE__*/React.createElement("div", {
         style: { display: "flex", alignItems: "center", gap: 6 }
@@ -8943,11 +8947,11 @@ function FileRow(props) {
         }, "LATEST")
       ),
       /*#__PURE__*/React.createElement("div", { style: { color: "#7F8C9A", fontSize: 11 } },
-        isPdf ? "Tap to mark up" : "Opens in SharePoint")
+        isPdf ? "Tap to mark up" : isImage ? "Tap to view" : "Opens in SharePoint")
     ),
     /*#__PURE__*/React.createElement("span", {
-      style: { color: isPdf ? "#1B3A6B" : "#BDC3C7", fontSize: 18 }
-    }, isPdf ? "\u270F\uFE0F" : "\u203A")
+      style: { color: isPdf ? "#1B3A6B" : isImage ? "#E67E22" : "#BDC3C7", fontSize: 18 }
+    }, isPdf ? "\u270F\uFE0F" : isImage ? "\u203A" : "\u203A")
   );
 }
 // ---- PdfMarkupView: in-app PDF annotation editor ---------------------------
@@ -9025,6 +9029,10 @@ function PdfMarkupView(props) {
   const [measurePt2, setMeasurePt2] = useState(null);
   const liveOffsetRef = useRef(null);
   const draggingMeasRef = useRef(null); // {id, meas} while drag-repositioning
+
+  const cursorOverlayRef = useRef(null);    // DOM crosshair, screen-space (index_107)
+  const rubberBandSvgRef = useRef(null);    // SVG rubber-band line
+  const rubberBandLineRef = useRef(null);   // <line> element inside SVG
   // ---- diagnostics (index_46) ----------------------------------------------
   // On-screen readout so issue #2 can be debugged on-device without a Mac:
   // build id, devicePixelRatio, page-canvas buffer dimensions + megapixels (the
@@ -9064,6 +9072,8 @@ function PdfMarkupView(props) {
   // the up-to-date markups instead of a one-version-behind (or empty) snapshot.
   const annotationsRef = useRef(annotations);
   const pageNumRef = useRef(pageNum);
+  const measurePt1Ref = useRef(null); // mirrors measurePt1 for detail canvas render (index_106)
+  const measurePt2Ref = useRef(null);
   // ---- canvas-ceiling probe (index_47) -------------------------------------
   // Measures THIS device's real canvas wall instead of guessing from index_40/41.
   // For each step it allocates a canvas, fills it, draws a sentinel marker in the
@@ -9272,6 +9282,7 @@ function PdfMarkupView(props) {
       setMeasurePt1(null); setMeasurePt2(null); liveMeasPtRef.current = null; liveOffsetRef.current = null; draggingMeasRef.current = null;
       setCalibState(null); setCalibPt1(null); setCalibPt2(null);
       setSelectedMeasId(null); measureTapStartRef.current = null;
+      hideCursor(); hideRubberBand();
     }
   }, [tool]);
   // Re-fit on viewport resize / rotation.
@@ -9349,7 +9360,11 @@ function PdfMarkupView(props) {
     const d2 = dimsRef.current;
     const cssW2 = d2.cssW || 1, cssH2 = d2.cssH || 1;
     const dpr2 = cw / cssW2;
-    const _zf = zoom || 1; // zoom correction factor
+    const _z = zoom || 1; // current view zoom
+    // Sizes scale WITH zoom (like drawing content) but capped so they don't
+    // become huge at max zoom. Formula: min(base * zoom, cap) * dpr2 / zoom
+    // → scales linearly until cap, then stays fixed. Works on both annotation
+    // canvas (dpr2=dpr) and detail canvas (dpr2=zoom*dpr). (index_109)
     // Buffer coords of measured points
     const x1 = m.x1 * cw, y1 = m.y1 * ch;
     const x2 = m.x2 * cw, y2 = m.y2 * ch;
@@ -9368,9 +9383,12 @@ function PdfMarkupView(props) {
     const dlen = Math.hypot(dlx, dly) || 1;
     const ux = dlx/dlen, uy = dly/dlen;
     const color = isSelected ? "#FF6B35" : "#00E5FF";
-    const lw = Math.max(0.5, cw * 0.001 / _zf);
-    const aLen = Math.max(8, cw * 0.010 / _zf);
-    const aW = aLen * 0.30;
+    // Fixed screen sizes regardless of zoom or canvas resolution.
+    // dpr2 = cw/cssW = devicePixelRatio for annotation canvas,
+    //                = zoom*dpr for detail canvas (both cancel correctly).
+    const lw    = Math.min(1.5 * _z, 2.0) * dpr2 / _z;  // 1.5px→2.0px screen
+    const aLen  = Math.min(10  * _z, 40 ) * dpr2 / _z;  // 10px→40px screen
+    const aW    = aLen * 0.28;
     ctx.save();
     ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw; ctx.lineCap = "butt";
     // Extension lines (when offset is non-trivial)
@@ -9400,7 +9418,7 @@ function PdfMarkupView(props) {
     ctx.closePath(); ctx.fill();
     // Label
     const mxL = (d1x + d2x) / 2, myL = (d1y + d2y) / 2;
-    const fontSize = Math.max(9, Math.min(ch * 0.022 / _zf, 16));
+    const fontSize = Math.min(12 * _z, 18) * dpr2 / _z;  // 12px→18px screen
     ctx.font = "600 " + fontSize + "px Arial, sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const tw = ctx.measureText(m.label).width;
@@ -9545,29 +9563,18 @@ function PdfMarkupView(props) {
       }
     });
     const _lp = liveMeasPtRef.current;
-    // Live cursor crosshair — zoom-corrected, full lines (index_103)
-    if (tool === "measure" && _lp) {
-      const _isCalibPhase = calibState === "placing1" || calibState === "placing2";
-      const _clr = _isCalibPhase ? "#FFD54F" : "#00E5FF";
+    // Calibration cursor only — normal measure cursor is a DOM overlay (index_107)
+    if (tool === "measure" && _lp && (calibState === "placing1" || calibState === "placing2")) {
       const _dprC = d.w / (d.cssW || 1);
       const _zoom = viewRef.current.zoom || 1;
       const _cxC = _lp.x * d.w, _cyC = _lp.y * d.h;
       const _armC = 14 * _dprC / _zoom;
       ctx.save();
-      ctx.strokeStyle = _clr; ctx.lineWidth = 1.5 * _dprC / _zoom; ctx.lineCap = "round";
+      ctx.strokeStyle = "#FFD54F"; ctx.lineWidth = 1.5 * _dprC / _zoom; ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(_cxC - _armC, _cyC); ctx.lineTo(_cxC + _armC, _cyC);
       ctx.moveTo(_cxC, _cyC - _armC); ctx.lineTo(_cxC, _cyC + _armC);
       ctx.stroke(); ctx.restore();
-    }
-    if (tool === "measure" && measurePt1 && !measurePt2) {
-      // Phase 2: rubber-band from pt1 to cursor
-      if (_lp) {
-        ctx.save(); ctx.strokeStyle="#00E5FF"; ctx.globalAlpha=0.7;
-        ctx.lineWidth=Math.max(1.5,d.w*0.002); ctx.setLineDash([Math.max(6,d.w*0.008),Math.max(3,d.w*0.004)]); ctx.lineCap="round";
-        ctx.beginPath(); ctx.moveTo(measurePt1.x*d.w,measurePt1.y*d.h); ctx.lineTo(_lp.x*d.w,_lp.y*d.h);
-        ctx.stroke(); ctx.setLineDash([]); ctx.restore();
-      }
     }
     // Crosshair helper — zoom-corrected, full lines (index_103)
     function _xhair(xb, yb, clr) {
@@ -9621,6 +9628,8 @@ function PdfMarkupView(props) {
   annotationsRef.current = annotations;
   pageNumRef.current = pageNum;
   measurementsRef.current = measurements;
+  measurePt1Ref.current = measurePt1;
+  measurePt2Ref.current = measurePt2;
   // Pointer → normalized (0..1) coordinates on the annotation canvas.
   function getNormPoint(e) {
     const canvas = annotCanvasRef.current;
@@ -9774,9 +9783,28 @@ function PdfMarkupView(props) {
       if (_pageMeas.length) {
         dctx.save(); dctx.translate(offX, offY);
         const _fw = d.cssW * pxPerCss, _fh = d.cssH * pxPerCss;
-        _pageMeas.forEach(function(m){drawMeasurementSingle(dctx,m,_fw,_fh,false,1);});
+        _pageMeas.forEach(function(m){drawMeasurementSingle(dctx,m,_fw,_fh,false,zoom);});
         dctx.restore();
       }
+      // Draw pt1/pt2 crosshairs on detail canvas so they appear sharp (index_106)
+      (function() {
+        var _pts = [
+          {pt: measurePt1Ref.current, clr: "#00E5FF"},
+          {pt: measurePt2Ref.current, clr: "#00E5FF"}
+        ];
+        _pts.forEach(function(item) {
+          if (!item.pt) return;
+          var _bx = item.pt.x * d.cssW * pxPerCss + offX;
+          var _by = item.pt.y * d.cssH * pxPerCss + offY;
+          var _arm = 10 * pxPerCss / zoom, _lw2 = 1.5 * pxPerCss / zoom;
+          dctx.save();
+          dctx.strokeStyle = item.clr; dctx.lineWidth = _lw2; dctx.lineCap = "round";
+          dctx.beginPath();
+          dctx.moveTo(_bx - _arm, _by); dctx.lineTo(_bx + _arm, _by);
+          dctx.moveTo(_bx, _by - _arm); dctx.lineTo(_bx, _by + _arm);
+          dctx.stroke(); dctx.restore();
+        });
+      })();
       // Position as a SCREEN-SPACE overlay in the doc area. The region's top-left
       // in page-CSS (rx,ry) maps to screen (panX+rx*zoom, panY+ry*zoom); its
       // on-screen size is regCss*zoom. The buffer is regCss*zoom*dpr, so the CSS
@@ -9804,23 +9832,20 @@ function PdfMarkupView(props) {
   }
   function beginGesture(touches) {
     if (!touches || touches.length < 2) return;
-    // A gesture is starting. The detail layer is a screen-space overlay — it
-    // can't follow the page while the wrapper transform changes — so hide it
-    // (this also cancels any pending/in-flight render). It's re-rendered fresh
-    // and re-shown when the gesture settles.
     hideDetail();
     const a = gestureXY(touches[0]), b = gestureXY(touches[1]);
     const v = viewRef.current;
     gestureRef.current = {
       active: true,
-      d0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+      // Clamp d0 to at least 40px so fingers starting very close together
+      // can't produce a runaway zoom ratio (index_110b)
+      d0: Math.max(40, Math.hypot(a.x - b.x, a.y - b.y)),
       m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
       zoom0: v.zoom,
       panX0: v.panX,
       panY0: v.panY
     };
   }
-  // Pinch: scale around the finger midpoint; two-finger drag pans.
   function updateGesture(touches) {
     const g = gestureRef.current;
     if (!g || !g.active || !touches || touches.length < 2) return;
@@ -9828,7 +9853,6 @@ function PdfMarkupView(props) {
     const d1 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
     const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     const zoom1 = Math.max(1, Math.min(25, g.zoom0 * (d1 / g.d0)));
-    // The content point under the original midpoint should stay under the current midpoint.
     const cx = (g.m0.x - g.panX0) / g.zoom0;
     const cy = (g.m0.y - g.panY0) / g.zoom0;
     setView({ zoom: zoom1, panX: m1.x - cx * zoom1, panY: m1.y - cy * zoom1 });
@@ -9849,6 +9873,41 @@ function PdfMarkupView(props) {
   const MEASURE_OFFSET_Y = 60;
   function getMeasurePoint(touch) {
     return getNormPoint({ clientX: touch.clientX, clientY: touch.clientY - MEASURE_OFFSET_Y });
+  }
+  // Imperatively update the screen-space cursor crosshair (index_107)
+  function showCursor(touch) {
+    const el = cursorOverlayRef.current;
+    const da = docAreaRef.current;
+    if (!el || !da) return;
+    const r = da.getBoundingClientRect();
+    el.style.left  = (touch.clientX - r.left) + "px";
+    el.style.top   = (touch.clientY - r.top - MEASURE_OFFSET_Y) + "px";
+    el.style.display = "block";
+  }
+  function hideCursor() {
+    const el = cursorOverlayRef.current;
+    if (el) el.style.display = "none";
+  }
+  // Imperatively update the rubber-band SVG line from pt1 to current touch (index_107)
+  function showRubberBand(touch, pt1) {
+    const svg = rubberBandSvgRef.current;
+    const ln  = rubberBandLineRef.current;
+    const da  = docAreaRef.current;
+    if (!svg || !ln || !da || !pt1) return;
+    const r = da.getBoundingClientRect();
+    const d = dimsRef.current;
+    const v = viewRef.current;
+    const x1 = pt1.x * d.cssW * v.zoom + v.panX;
+    const y1 = pt1.y * d.cssH * v.zoom + v.panY;
+    const x2 = touch.clientX - r.left;
+    const y2 = touch.clientY - r.top - MEASURE_OFFSET_Y;
+    ln.setAttribute("x1", x1); ln.setAttribute("y1", y1);
+    ln.setAttribute("x2", x2); ln.setAttribute("y2", y2);
+    svg.style.display = "block";
+  }
+  function hideRubberBand() {
+    const svg = rubberBandSvgRef.current;
+    if (svg) svg.style.display = "none";
   }
   function startDraw(pt) {
     // Hide the detail overlay while drawing — live strokes land on the wrapper's
@@ -9914,6 +9973,7 @@ function PdfMarkupView(props) {
   function onTouchStart(e) {
     if (loading || error) return;
     const touches = e.touches;
+
     const stylus = findStylus(touches);
     if (stylus) {
       if (!drawingRef.current) startDraw(stylus);
@@ -9941,7 +10001,7 @@ function PdfMarkupView(props) {
         }
         if (!_startedDrag) {
           liveMeasPtRef.current = getMeasurePoint(touches[0]);
-          hideDetail();
+          showCursor(touches[0]); // screen-space DOM cursor, always visible (index_107)
         }
         rerender();
       } else {
@@ -9958,6 +10018,7 @@ function PdfMarkupView(props) {
   function onTouchMove(e) {
     if (loading || error) return;
     const touches = e.touches;
+
     const stylus = findStylus(touches);
     if (stylus) {
       if (drawingRef.current) { moveDraw(stylus); e.preventDefault(); }
@@ -9979,10 +10040,11 @@ function PdfMarkupView(props) {
     if (tool === "measure") {
       if (touches.length === 1) {
         if (draggingMeasRef.current) {
-          // Drag-reposition existing dimension
           liveOffsetRef.current = computeOffsetForMeas(touches[0], draggingMeasRef.current.meas);
         } else {
           liveMeasPtRef.current = getMeasurePoint(touches[0]);
+          showCursor(touches[0]);
+          if (measurePt1) showRubberBand(touches[0], measurePt1); // pt1 set → show rubber-band
         }
         rerender(); e.preventDefault();
       }
@@ -9995,6 +10057,7 @@ function PdfMarkupView(props) {
   }
   function onTouchEnd(e) {
     const touches = e.touches; // remaining touches
+
     if (tool === "measure") {
       const _ch = e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null;
       if (_ch && touches.length === 0) {
@@ -10005,8 +10068,8 @@ function PdfMarkupView(props) {
           const _start2 = measureTapStartRef.current;
           measureTapStartRef.current = null;
           const _wasTap2 = _start2 && Math.hypot(_ch.clientX - _start2.x, _ch.clientY - _start2.y) < 12;
+          hideCursor(); hideRubberBand();
           if (_wasTap2) {
-            // Tap → select/deselect
             setSelectedMeasId(function(p){return p===_dm.id?null:_dm.id;});
             liveOffsetRef.current = null;
           } else {
@@ -10023,6 +10086,7 @@ function PdfMarkupView(props) {
           detailTimerRef.current = setTimeout(renderDetail, 0);
           e.preventDefault(); return;
         }
+        hideCursor(); hideRubberBand();
         const pt = getMeasurePoint(_ch);
         liveMeasPtRef.current = null;
         const _start = measureTapStartRef.current;
@@ -10052,8 +10116,23 @@ function PdfMarkupView(props) {
       return;
     }
     if (gestureRef.current && gestureRef.current.active) {
-      if (touches.length >= 2) beginGesture(touches); // re-baseline with remaining fingers
-      else { gestureRef.current = null; scheduleDetail(); } // gesture settled — sharpen the visible region
+      if (touches.length >= 2) {
+        beginGesture(touches); // re-baseline with remaining fingers
+      } else {
+        // Final gesture update using lifted finger + any remaining finger (index_110c)
+        // Handles quick pinch where iOS fires 0 touchmove events between down and up
+        const _ct = e.changedTouches;
+        if (_ct && _ct.length > 0) {
+          const _finalPair = touches.length >= 1
+            ? [touches[0], _ct[0]]           // one remaining + one lifted
+            : _ct.length >= 2
+              ? [_ct[0], _ct[1]]             // both lifted simultaneously
+              : null;
+          if (_finalPair) updateGesture(_finalPair);
+        }
+        gestureRef.current = null;
+        scheduleDetail();
+      }
       e.preventDefault();
       return;
     }
@@ -10107,6 +10186,7 @@ function PdfMarkupView(props) {
     if (n < 1 || n > numPages) return;
     if (textDraft) commitText();
     setMeasurePt1(null); setMeasurePt2(null); liveMeasPtRef.current = null; liveOffsetRef.current = null; draggingMeasRef.current = null; setSelectedMeasId(null);
+    hideCursor(); hideRubberBand();
     drawingRef.current = false;
     currentRef.current = null;
     gestureRef.current = null;
@@ -10596,6 +10676,24 @@ function PdfMarkupView(props) {
             }, "Loading PDF\u2026")
           )
     ,
+    // Measure cursor crosshair — screen-space DOM, always above canvases (index_107)
+    /*#__PURE__*/React.createElement("div", {
+      ref: cursorOverlayRef,
+      style: { position:"absolute", display:"none", pointerEvents:"none", zIndex:500, transform:"translate(-50%,-50%)" }
+    },
+      /*#__PURE__*/React.createElement("div", {style:{position:"absolute",width:28,height:2,background:"#00E5FF",left:-14,top:-1}}),
+      /*#__PURE__*/React.createElement("div", {style:{position:"absolute",width:2,height:28,background:"#00E5FF",left:-1,top:-14}})
+    ),
+    // Rubber-band SVG line (index_107)
+    /*#__PURE__*/React.createElement("svg", {
+      ref: rubberBandSvgRef,
+      style:{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:499,display:"none",overflow:"visible"}
+    },
+      /*#__PURE__*/React.createElement("line", {
+        ref: rubberBandLineRef,
+        stroke:"#00E5FF", strokeWidth:1.5, strokeDasharray:"6 4", strokeLinecap:"round", opacity:0.8
+      })
+    ),
     tool === "measure" && /*#__PURE__*/React.createElement("div", {
       style: {
         position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
@@ -10621,7 +10719,7 @@ function PdfMarkupView(props) {
               })()
           : /*#__PURE__*/React.createElement(React.Fragment, null,
               (measurements[pageNum]||[]).length > 0 && /*#__PURE__*/React.createElement("button", {
-                onClick:function(){setMeasurements(function(prev){const cp=Object.assign({},prev);cp[pageNum]=(cp[pageNum]||[]).slice(0,-1);return cp;});setSelectedMeasId(null);},
+                onClick:function(){setMeasurements(function(prev){const cp=Object.assign({},prev);cp[pageNum]=(cp[pageNum]||[]).slice(0,-1);return cp;});setSelectedMeasId(null);setMeasurePt1(null);liveMeasPtRef.current=null;hideCursor();hideRubberBand();},
                 title:"Undo last measurement",
                 style:{background:"#2E3850",color:"white",border:"1px solid #39435A",borderRadius:6,padding:"5px 10px",fontSize:14,cursor:"pointer"}
               },"\u21B6"),
@@ -10973,7 +11071,7 @@ function SiteWeeklySafety({ project, onToast }) {
 // Used by both Codes & Charts and Admin Docs. Fetches folder contents from
 // a Power Automate flow URL (fetchUrl), navigates breadcrumb-style, and
 // opens files in PDF.js viewer (PDFs) or browser tab (other types).
-function LibraryBrowser({ fetchUrl, title, onOpenPdf, onPathChange, externalPath }) {
+function LibraryBrowser({ fetchUrl, title, onOpenPdf, onOpenDoc, onPathChange, externalPath }) {
   const [path, setPath] = useState(externalPath || []);
   const [contents, setContents] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -11043,12 +11141,15 @@ function LibraryBrowser({ fetchUrl, title, onOpenPdf, onPathChange, externalPath
 
   useEffect(() => { fetchContents(path, false); }, [path.join("/")]);
 
+  const _LIB_DOC_EXTS = ["doc","docx","xls","xlsx","csv","ppt","pptx","odt","ods"];
   const openFile = (url, name) => {
     if (!url) return;
     const full = url.indexOf("http") === 0 ? url : SHAREPOINT_HOST + url;
     const ext = (name || "").split(".").pop().toLowerCase();
     if (ext === "pdf" && onOpenPdf) {
       onOpenPdf({ url: full, name });
+    } else if (_LIB_DOC_EXTS.includes(ext) && onOpenDoc) {
+      onOpenDoc({ url: full, name });
     } else {
       window.open(full, "_blank", "noopener");
     }
@@ -11208,9 +11309,9 @@ function App() {
     refreshProjects(false);
   }, []);
   useEffect(() => {
-    if (view === "admin") setEditPm({ code: "", pm: "" });
+    if (view === "admin" || view === "adminPmForeman") setEditPm({ code: "", pm: "" });
     if (view !== "codesCharts" && view !== "adminDocs") setLibPath([]);
-    if (view === "admin") setEditForeman({ code: "", foreman: "" });
+    if (view === "admin" || view === "adminPmForeman") setEditForeman({ code: "", foreman: "" });
   }, [view]);
   // ---- Folder contents (SharePoint) ----------------------------------------
   // folderContents: latest fetched { folders, files } for the current project + path.
@@ -11331,11 +11432,70 @@ function App() {
     });
     fetchCurrentFolder(true);
   };
-  // Open a file in a new tab. URLs from the flow are server-relative; prepend SHAREPOINT_HOST.
-  const openFile = (url) => {
+  // Open a file: images open in-app via download flow; everything else in browser (index_111)
+  const IMAGE_EXTS = ["jpg","jpeg","png","gif","heic","heif","webp","bmp","tif","tiff"];
+  const DOC_EXTS   = ["doc","docx","xls","xlsx","csv","ppt","pptx","odt","ods"];
+  // Shared doc downloader used by project files AND library browser (index_113)
+  const openDocBlob = function(url, name) {
+    var ext = (name || url || "").split(".").pop().toLowerCase();
+    var path = (url.indexOf("http") === 0) ? url.replace(/^https?:\/\/[^\/]+/, "") : url;
+    showToast("Downloading…", true);
+    flowPost(DOWNLOAD_FILE_URL, {path: path})
+      .then(function(r){ return r.ok ? r.text() : Promise.reject(r.status); })
+      .then(function(text){
+        var b64 = text.replace(/^"|"$/g,"");
+        var binary = atob(b64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+        var mimes = {
+          docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          doc:"application/msword",
+          xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          xls:"application/vnd.ms-excel",
+          csv:"text/csv",
+          pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          ppt:"application/vnd.ms-powerpoint",
+          odt:"application/vnd.oasis.opendocument.text",
+          ods:"application/vnd.oasis.opendocument.spreadsheet"
+        };
+        var mime = mimes[ext] || "application/octet-stream";
+        var blob = new Blob([bytes], {type: mime});
+        var blobUrl = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = name || ("document." + ext);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
+      })
+      .catch(function(){ showToast("Couldn’t open document — check connection", false); });
+  };
+  const openFile = (url, name) => {
     if (!url) return;
+    const ext = (name || url || "").split(".").pop().toLowerCase();
     const full = url.indexOf("http") === 0 ? url : SHAREPOINT_HOST + url;
-    window.open(full, "_blank", "noopener");
+    if (IMAGE_EXTS.includes(ext)) {
+      setInAppViewer({name: name || url, loading: true, error: null, dataUrl: null});
+      flowPost(DOWNLOAD_FILE_URL, {path: url})
+        .then(function(r){ return r.ok ? r.text() : Promise.reject(r.status); })
+        .then(function(text){
+          const b64 = text.replace(/^"|"$/g, "");
+          const mime = ext === "png" ? "image/png" :
+                       ext === "gif" ? "image/gif" :
+                       ext === "webp" ? "image/webp" :
+                       (ext === "tif" || ext === "tiff") ? "image/tiff" :
+                       "image/jpeg";
+          setInAppViewer({name: name || url, loading: false, error: null, dataUrl: "data:" + mime + ";base64," + b64});
+        })
+        .catch(function(){
+          setInAppViewer({name: name || url, loading: false, error: "Couldn't load image. Check connection and try again.", dataUrl: null});
+        });
+    } else if (DOC_EXTS.includes(ext)) {
+      openDocBlob(url, name);
+    } else {
+      window.open(full, "_blank", "noopener");
+    }
   };
   // ---- Site Photos & Video upload ------------------------------------------
   // Two hidden <input> elements wired to refs — the Capture / Library buttons trigger these.
@@ -11355,8 +11515,14 @@ function App() {
   // user navigates underneath the editor (mirrors the markupTarget pattern above).
   const [markupPdf, setMarkupPdf] = useState(null);
   const [markupPdfFolder, setMarkupPdfFolder] = useState(null);
+  // In-app file viewer: images loaded via download flow (index_111)
+  const [inAppViewer, setInAppViewer] = useState(null); // {name, loading, error, dataUrl}
+  const closeInAppViewer = () => setInAppViewer(null);
+
   const openPdfMarkup = (f) => { setMarkupPdf(f); setMarkupPdfFolder(sharePointPath); };
   const closePdfMarkup = () => { setMarkupPdf(null); setMarkupPdfFolder(null); };
+  // For read-only library PDFs (Codes & Charts, Admin Docs) — open in viewer but no folder for save-back
+  const openLibraryPdf = (f) => { setMarkupPdf(f); setMarkupPdfFolder(null); };
   // POST a single file to the Upload File flow. Resolves to { url, filename } on success.
   const uploadFile = (file, targetFolder) => {
     return fileToBase64(file).then(base64 => {
@@ -11641,6 +11807,7 @@ function App() {
       view === "home" ? null :
       view === "projects" ? () => go("home") :
       view === "admin" ? () => go("home") :
+      (view === "adminNewJob" || view === "adminPmForeman" || view === "adminRollover" || view === "adminEmployees") ? () => go("admin") :
       view === "codesCharts" ? () => { if (libPath.length > 0) { const np = libPath.slice(0,-1); setLibPath(np); } else go("home"); } :
       view === "adminDocs" ? () => { if (libPath.length > 0) { const np = libPath.slice(0,-1); setLibPath(np); } else go("home"); } :
       view === "folders" ? () => go("projects", null, null, null) :
@@ -11669,6 +11836,12 @@ function App() {
         fontWeight: 600
       }
     }, "Admin"));
+    if (view === "adminNewJob" || view === "adminPmForeman" || view === "adminRollover" || view === "adminEmployees") {
+      const subLabel = view === "adminNewJob" ? "New Job" : view === "adminPmForeman" ? "Change PM / Foreman" : view === "adminRollover" ? "Toolbox Talks Rollover" : "Add / Remove Employees";
+      return /*#__PURE__*/React.createElement("div", {
+        style: { padding: "8px 16px", fontSize: 13, color: "#7F8C9A", background: "white", borderBottom: "1px solid #DDE3ED", display: "flex", alignItems: "center", gap: 10 }
+      }, backButton, /*#__PURE__*/React.createElement("button", { onClick: () => go("home"), style: crumbBtn }, "Home"), " \u203A ", /*#__PURE__*/React.createElement("button", { onClick: () => go("admin"), style: crumbBtn }, "Admin"), " \u203A ", /*#__PURE__*/React.createElement("span", { style: { color: "#2C3E50", fontWeight: 600 } }, subLabel));
+    }
     if (view === "codesCharts") return /*#__PURE__*/React.createElement("div", {
       style: { padding: "8px 16px", fontSize: 13, color: "#7F8C9A", background: "white", borderBottom: "1px solid #DDE3ED", display: "flex", alignItems: "center", gap: 10 }
     }, backButton, /*#__PURE__*/React.createElement("button", { onClick: () => go("home"), style: crumbBtn }, "Home"), " \u203A ", /*#__PURE__*/React.createElement("span", { style: { color: "#2C3E50", fontWeight: 600 } }, "Codes & Charts"));
@@ -12654,10 +12827,10 @@ function App() {
   }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCC2"), "This folder is empty.")
   ), view === "codesCharts" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
     /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Codes & Charts"),
-    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: CODES_CHARTS_FETCH_URL, title: "Codes & Charts", onOpenPdf: null, onPathChange: setLibPath, externalPath: libPath })
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: CODES_CHARTS_FETCH_URL, title: "Codes & Charts", onOpenPdf: openLibraryPdf, onOpenDoc: function(f){ openDocBlob(f.url, f.name); }, onPathChange: setLibPath, externalPath: libPath })
   ), view === "adminDocs" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
     /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Admin Docs"),
-    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: ADMIN_DOCS_FETCH_URL, title: "Admin Docs", onOpenPdf: null, onPathChange: setLibPath, externalPath: libPath })
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: ADMIN_DOCS_FETCH_URL, title: "Admin Docs", onOpenPdf: openLibraryPdf, onOpenDoc: function(f){ openDocBlob(f.url, f.name); }, onPathChange: setLibPath, externalPath: libPath })
   ), view === "timecard" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 14
@@ -12752,6 +12925,25 @@ function App() {
       marginBottom: 14
     }
   }, "Admin Panel"), /*#__PURE__*/React.createElement("div", {
+    style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", maxWidth: 520, margin: "0 auto 18px" }
+  }, [{
+    icon: "\u2795", label: "New Job", color: "#1A3A5C", action: () => go("adminNewJob")
+  }, {
+    icon: "\u270F\uFE0F", label: "Change PM / Foreman", color: "#2980B9", action: () => go("adminPmForeman")
+  }, {
+    icon: "\uD83D\uDCC5", label: "Toolbox Talks Rollover", color: "#E67E22", action: () => go("adminRollover")
+  }, {
+    icon: "\uD83D\uDC65", label: "Add / Remove Employees", color: "#16A085", action: () => go("adminEmployees")
+  }].map(tile => /*#__PURE__*/React.createElement("button", {
+    key: tile.label,
+    onClick: tile.action,
+    style: { background: "white", border: "2px solid #DDE3ED", borderRadius: 16, padding: "28px 12px 22px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", transition: "box-shadow 0.15s" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { width: 56, height: 56, background: tile.color + "18", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }
+  }, tile.icon), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 13, fontWeight: 700, color: tile.color, textAlign: "center", lineHeight: 1.3 }
+  }, tile.label)))
+  )), view === "adminNewJob" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 14,
@@ -12869,7 +13061,8 @@ function App() {
       fontWeight: 700,
       cursor: "pointer"
     }
-  }, "Create Job in SharePoint \u2192"))), /*#__PURE__*/React.createElement("div", {
+  }, "Create Job in SharePoint \u2192")))
+  ), view === "adminPmForeman" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 14,
@@ -13035,7 +13228,8 @@ function App() {
       fontWeight: 700,
       cursor: "pointer"
     }
-  }, "Update Foreman in SharePoint \u2192"))), /*#__PURE__*/React.createElement("div", {
+  }, "Update Foreman in SharePoint \u2192")))
+  ), view === "adminRollover" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 14,
@@ -13077,7 +13271,21 @@ function App() {
       cursor: "pointer",
       width: "100%"
     }
-  }, "Toolbox Talks Rollover \u2192")), /*#__PURE__*/React.createElement("div", {
+  }, "Toolbox Talks Rollover \u2192"))
+  ), view === "adminEmployees" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: { background: "white", borderRadius: 14, padding: 18, border: "1.5px solid #DDE3ED", marginBottom: 14 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontWeight: 700, fontSize: 14, color: NAVY, marginBottom: 6 }
+  }, "\uD83D\uDC65 Add / Remove Employees"), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 13, color: "#555", lineHeight: 1.5, marginBottom: 14 }
+  }, "Manage the master employee list that populates the timecard and the Foreman dropdowns across every form. Full add/remove editing is coming soon \u2014 employees are currently maintained in the app\u2019s built-in list."), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", flexWrap: "wrap", gap: 8 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { background: "#F0F4FA", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, color: NAVY }
+  }, EMPLOYEES.length + " employees on file"), /*#__PURE__*/React.createElement("div", {
+    style: { background: "#F0F4FA", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, color: NAVY }
+  }, EMPLOYEES.filter(e => e.position === "Foreman").length + " foremen")))
+  ), view === "admin" && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
       borderRadius: 14,
@@ -13132,11 +13340,62 @@ function App() {
       fontSize: 12,
       color: BLUE
     }
-  }, c.email)))))), /*#__PURE__*/React.createElement("div", {
+  }, c.email))))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 30
     }
-  }), markupFile && /*#__PURE__*/React.createElement(MarkupView, {
+  }),
+    // ---- In-app image viewer overlay (index_111) ----------------------------------------
+    inAppViewer && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "fixed", inset: 0, background: "#000", zIndex: 1000,
+        display: "flex", flexDirection: "column"
+      }
+    },
+      // Header bar
+      /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 16px", background: "rgba(0,0,0,0.6)", flexShrink: 0
+        }
+      },
+        /*#__PURE__*/React.createElement("span", {
+          style: {color: "#ccc", fontSize: 14, fontWeight: 600,
+                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "calc(100vw - 80px)"}
+        }, inAppViewer.name || ""),
+        /*#__PURE__*/React.createElement("button", {
+          onClick: closeInAppViewer,
+          style: {
+            background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8,
+            color: "white", fontSize: 20, width: 40, height: 40,
+            cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center"
+          }
+        }, "\u2715")
+      ),
+      // Content area
+      /*#__PURE__*/React.createElement("div", {
+        style: {flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden"}
+      },
+        inAppViewer.loading && /*#__PURE__*/React.createElement("div", {
+          style: {color: "#888", fontSize: 15, textAlign: "center"}
+        }, "Loading\u2026"),
+        inAppViewer.error && /*#__PURE__*/React.createElement("div", {
+          style: {color: "#f87171", fontSize: 14, textAlign: "center", padding: 24}
+        },
+          /*#__PURE__*/React.createElement("div", {style:{fontSize: 32, marginBottom: 12}}, "\u26A0\uFE0F"),
+          inAppViewer.error
+        ),
+        inAppViewer.dataUrl && /*#__PURE__*/React.createElement("img", {
+          src: inAppViewer.dataUrl,
+          style: {
+            maxWidth: "100%", maxHeight: "100%", objectFit: "contain",
+            userSelect: "none", WebkitUserSelect: "none"
+          },
+          alt: inAppViewer.name || "image"
+        })
+      )
+    ),
+    markupFile && /*#__PURE__*/React.createElement(MarkupView, {
     file: markupFile,
     onDone: handleMarkupDone,
     onSkip: handleMarkupSkip,
