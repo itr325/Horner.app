@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-29 (Session 19)_
+_Last updated: 2026-05-29 (Session 20)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_113.html` |
+| **Current build** | `index_114.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -23,6 +23,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ### Features / Work Items (rough priority order)
 - [ ] **Timecard — custom job entry** — allow foreman to type a custom job name/code on the timecard instead of only selecting from the project list.
 - [ ] **Admin Panel — Add/Remove Employee** — add/remove from a master employee list that populates timecards and foremen dropdowns across all forms. Need to define fields (name, position, phone, email, etc.). Long-term replaces hardcoded `EMPLOYEES` array.
+- [x] **Admin Panel — tile landing** — ✅ index_114. Admin panel now has a 2×2 tile grid (New Job, Change PM/Foreman, Toolbox Talks Rollover, Add/Remove Employees). Each tile opens its own sub-view with back button + breadcrumb.
 - [ ] **Admin Panel — Close Job** — move a job OUT of Active Projects to a specified archive location. Needs a Power Automate flow to move the SharePoint folder.
 - [ ] **Photos — save extension as .jpg** — currently uploads preserve original extension (HEIC on iPad). Force `.jpg` output on capture.
 - [ ] **App/Admin Panel — Logins & Permissions** — user authentication and role-based access control. **Blocks the flow URL security fix** — see note below.
@@ -122,6 +123,30 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 20 — 2026-05-29 | index_113 → index_114
+
+**Topic:** Admin Panel tile restructure
+
+**Closed:**
+| Item | Resolution |
+|---|---|
+| Admin Panel — split into tiles | Replaced single long-scroll admin view with a 2×2 tile grid (styled to match home page). Four new sub-views: `adminNewJob`, `adminPmForeman`, `adminRollover`, `adminEmployees`. Each has back button → Admin and breadcrumb Home › Admin › …. Team Email Routing reference card preserved on admin landing. |
+| Add/Remove Employees tile | Placeholder sub-view built showing live counts from `EMPLOYEES` array (47 employees / foreman count). Full feature deferred. |
+
+**What changed (index_114):**
+- Admin landing: `view === "admin"` now renders a 2×2 tile grid + Team Email Routing reference card
+- `view === "adminNewJob"` → Create New Job form
+- `view === "adminPmForeman"` → Change PM card + Change Foreman card (combined)
+- `view === "adminRollover"` → Toolbox Talks Rollover card
+- `view === "adminEmployees"` → placeholder card with live employee/foreman counts
+- Breadcrumb and back-button routing updated for all four sub-views
+- `useEffect` reset for `editPm`/`editForeman` now also fires on `adminPmForeman`
+- `BUILD_ID` bumped to `index_114`
+
+**No new Power Automate flows.**
 
 ---
 
