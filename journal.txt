@@ -1,0 +1,18 @@
+
+=== Journal Entry 2026-05-28T18:04:52.590162+00:00 ===
+2026-05-28-18-04-51-horner-app-dev-session.txt
+[Ongoing iOS field app development session for Horner Plumbing. React single-file app on GitHub Pages with SharePoint/Power Automate backend. Current session adding PDF measurement/dimensioning tool (index_99). Contains architecture decisions, code patches, and feature roadmap.]
+
+
+
+
+=== Journal Entry 2026-05-29T02:05:46.219383+00:00 ===
+2026-05-29-02-05-45-horner-app-dev-session.txt
+[Ongoing iOS field app development session for Horner Plumbing. React single-file app on GitHub Pages with SharePoint/Power Automate backend. Session covers measure tool refinement (dimensions, zoom, crosshairs, drag-to-place), zoom gesture fix, and open-files-in-app feature implementation.]
+
+
+
+
+=== Journal Entry 2026-05-29T05:30:00.000000+00:00 ===
+2026-05-29-02-05-45-horner-app-dev-session.txt (continued — same transcript)
+[Session 19: Open Files In-App (index_110d → index_113). Zoom gesture fix attempt: added final updateGesture call in onTouchEnd using changedTouches + remaining touches to handle quick pinches with zero touchmove events — partial improvement, user accepted remaining edge case. Feature #6 "Open files in-app" implemented: (1) PDFs from Codes & Charts / Admin Docs fixed — onOpenPdf was null, wired to new openLibraryPdf handler that opens without setting markupPdfFolder. (2) Images (jpg/png/heic/gif/webp/etc.) open in full-screen lightbox via download flow → base64 → data URL. FileRow updated with photo icon and "Tap to view" subtitle. (3) Word/Excel/etc. docs: tried iframe overlay first — failed due to SharePoint X-Frame-Options SAMEORIGIN. Replaced with blob download approach: download flow → Uint8Array → Blob with correct MIME → <a download> trigger → iOS "Open in..." sheet hands to Word/Excel/Numbers. openDocBlob() shared helper used by both project folder and LibraryBrowser (via onOpenDoc prop). Current build: index_113.]
