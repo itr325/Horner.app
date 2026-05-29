@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_110b";
+const BUILD_ID = "index_110c";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -9833,31 +9833,21 @@ function PdfMarkupView(props) {
     const v = viewRef.current;
     gestureRef.current = {
       active: true,
-      needsBaseline: true,  // re-baseline on first touchmove (fresh coords, index_110)
-      d0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+      // Clamp d0 to at least 40px so fingers starting very close together
+      // can't produce a runaway zoom ratio (index_110b)
+      d0: Math.max(40, Math.hypot(a.x - b.x, a.y - b.y)),
       m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
       zoom0: v.zoom,
       panX0: v.panX,
       panY0: v.panY
     };
   }
-  // Pinch: scale around the finger midpoint; two-finger drag pans.
   function updateGesture(touches) {
     const g = gestureRef.current;
     if (!g || !g.active || !touches || touches.length < 2) return;
     const a = gestureXY(touches[0]), b = gestureXY(touches[1]);
     const d1 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
     const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    // First touchmove has accurate coords — re-baseline from them, skip this frame (index_110)
-    if (g.needsBaseline) {
-      g.needsBaseline = false;
-      g.d0 = d1;
-      g.m0 = m1;
-      g.zoom0 = viewRef.current.zoom;
-      g.panX0 = viewRef.current.panX;
-      g.panY0 = viewRef.current.panY;
-      return;
-    }
     const zoom1 = Math.max(1, Math.min(25, g.zoom0 * (d1 / g.d0)));
     const cx = (g.m0.x - g.panX0) / g.zoom0;
     const cy = (g.m0.y - g.panY0) / g.zoom0;
