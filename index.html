@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_111";
+const BUILD_ID = "index_111b";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -11478,6 +11478,8 @@ function App() {
   const closeInAppViewer = () => setInAppViewer(null);
   const openPdfMarkup = (f) => { setMarkupPdf(f); setMarkupPdfFolder(sharePointPath); };
   const closePdfMarkup = () => { setMarkupPdf(null); setMarkupPdfFolder(null); };
+  // For read-only library PDFs (Codes & Charts, Admin Docs) — open in viewer but no folder for save-back
+  const openLibraryPdf = (f) => { setMarkupPdf(f); setMarkupPdfFolder(null); };
   // POST a single file to the Upload File flow. Resolves to { url, filename } on success.
   const uploadFile = (file, targetFolder) => {
     return fileToBase64(file).then(base64 => {
@@ -12775,10 +12777,10 @@ function App() {
   }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCC2"), "This folder is empty.")
   ), view === "codesCharts" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
     /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Codes & Charts"),
-    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: CODES_CHARTS_FETCH_URL, title: "Codes & Charts", onOpenPdf: null, onPathChange: setLibPath, externalPath: libPath })
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: CODES_CHARTS_FETCH_URL, title: "Codes & Charts", onOpenPdf: openLibraryPdf, onPathChange: setLibPath, externalPath: libPath })
   ), view === "adminDocs" && /*#__PURE__*/React.createElement("div", { style: { padding: 14 } },
     /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: NAVY, marginBottom: 16 } }, "Admin Docs"),
-    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: ADMIN_DOCS_FETCH_URL, title: "Admin Docs", onOpenPdf: null, onPathChange: setLibPath, externalPath: libPath })
+    /*#__PURE__*/React.createElement(LibraryBrowser, { fetchUrl: ADMIN_DOCS_FETCH_URL, title: "Admin Docs", onOpenPdf: openLibraryPdf, onPathChange: setLibPath, externalPath: libPath })
   ), view === "timecard" && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 14
