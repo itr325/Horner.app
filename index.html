@@ -241,8 +241,8 @@ const ROLLOVER_URL = "https://defaultef466c747a134920854c210669ea3c.84.environme
 // Employee list persistence flows — POST {} to load; POST {csvData} to save.
 // Reads/writes employees.csv in the Templates library.
 // Stub URLs — replace with real Power Automate trigger URLs once flows are built.
-const LOAD_EMPLOYEES_URL = "";
-const SAVE_EMPLOYEES_URL = "";
+const LOAD_EMPLOYEES_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/68f0585a63334935bee7877c8f3a7301/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=aYAv5D8s6vion52QELqnDemglVhVVsdLIZ4IEiUajaA";
+const SAVE_EMPLOYEES_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0f451411a32e4f5fb6120c2c9b1bec0c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=USJ_h97JaNrRm9tIOIGp2bA6vk3PNA_fb_BX5rYC4vA";
 const SAVE_VALVE_TAGS_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f52f767d8f3b4522974577b0d8e74a96/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8qZ2IUm2yu0HdOpdmzr7BU86zZ4cesQlyPr5kCF-ZcA";
 const LOAD_VALVE_TAGS_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b9269ca9025144b0b336231848e4c5d1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=6BcAn7ZKyHCnwhwOMwkawhTVzmAXP31C_IB5iNbTKhE";
 // Shared secret — included in every flow POST body. Each flow checks this value and returns 401 if it doesn't match.
