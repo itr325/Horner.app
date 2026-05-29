@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-29 (Session 21)_
+_Last updated: 2026-05-29 (Session 22)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_116.html` |
+| **Current build** | `index_117.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -123,6 +123,22 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 22 — 2026-05-29 | index_116 → index_117
+
+**Topic:** Team Email card moved to home screen + mailto links
+
+**Closed:**
+| Item | Resolution |
+|---|---|
+| Team Email Routing on home screen | Card moved from Admin panel to home screen, below the 3 tile grid. Each email is a tappable mailto: link that opens native mail app. Admin panel retains a copy. |
+| Build number discipline | Rule enforced: every push must bump BUILD_ID. |
+
+**Notes:**
+- Ran into JS syntax errors from improper arrow functions inside `.map()` in pre-compiled React. Fixed by using `function(c){ return ...; }` form instead of arrow functions in that context.
+- Always validate JS with node before pushing: `node -e "new Function(script)"` on each script tag.
 
 ---
 
