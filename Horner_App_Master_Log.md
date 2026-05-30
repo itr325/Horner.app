@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-29 (Session 22)_
+_Last updated: 2026-05-30 (Session 23)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -123,6 +123,35 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 23 — 2026-05-30 | index_117 (no new build — planning session)
+
+**Topic:** Photo viewer redesign + Microsoft outage resilience
+
+**No code changes this session — planning only.**
+
+**Photo viewer plan (paused — resume next session):**
+- Open existing SharePoint photos in `MarkupView` (same component used post-capture) instead of current lightbox
+- 3 scenarios:
+  1. User opens photo, closes without drawing → nothing uploads, file unchanged
+  2. User opens photo, marks it up, saves → overwrite original file on SharePoint
+  3. User opens already-marked-up photo, adds more edits, saves → overwrite again (canvas flattens old + new markups naturally)
+- Needs **new Flow 17 "Save Photo Markup"** — "Create or update file" action with exact path + filename → guaranteed overwrite
+- Also need to force `.jpg` on all image uploads in `generateUploadFilename` (currently preserves `.heic` from iPad camera)
+- Skip button hidden when opening existing photo (no re-upload of original needed)
+
+**Bigger issue raised — Microsoft outage resilience:**
+- Power Automate was fully down today → entire app offline for field crews
+- This is unacceptable for a mission-critical field app
+- Options discussed:
+  - **(a) Startup health check + banner** — ping flows on load, show clear "Server unavailable — read-only mode" message instead of silent failures. Quick win.
+  - **(b) Offline read-only cache** — cache project list + recent files locally so crews can view data during outages. Moderate effort.
+  - **(c) Backend migration** — replace Power Automate with Azure Functions or similar. Eliminates Microsoft-outage dependency. High effort.
+- **Decision: address resilience strategy before resuming photo viewer work.**
+
+**No new Power Automate flows.**
 
 ---
 
