@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_121";
+const BUILD_ID = "index_122";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -89,55 +89,7 @@ const SHOW_DIAG = false;
 // Active commercial-field employees — fallback list used if SharePoint CSV cannot be loaded.
 // Source of truth is employees.csv in the Templates library (loaded at app startup).
 // Fields: id (timestamp), firstName, lastName, name (derived), position, department, email, phone.
-const DEFAULT_EMPLOYEES = [
-  {id: 1, firstName: "Zachary", lastName: "Adams", name: "Zachary Adams", position: "Laborer", department: "Commercial"},
-  {id: 2, firstName: "Mark", lastName: "Aviles", name: "Mark Aviles", position: "3rd Year", department: "Commercial"},
-  {id: 3, firstName: "Austin", lastName: "Banks", name: "Austin Banks", position: "2nd Year", department: "Commercial"},
-  {id: 4, firstName: "David", lastName: "Bansemer", name: "David Bansemer", position: "4th Year", department: "Commercial"},
-  {id: 5, firstName: "William", lastName: "Barth", name: "William Barth", phone: "(414) 810-5027", email: "WBarth@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 6, firstName: "Steven", lastName: "Castro", name: "Steven Castro", position: "4th Year", department: "Commercial"},
-  {id: 7, firstName: "Liam", lastName: "Christophersen", name: "Liam Christophersen", position: "Laborer", department: "Commercial"},
-  {id: 8, firstName: "Kevin", lastName: "Contreras", name: "Kevin Contreras", position: "Laborer", department: "Commercial"},
-  {id: 9, firstName: "Malachi", lastName: "Cooley", name: "Malachi Cooley", position: "1st Year", department: "Commercial"},
-  {id: 10, firstName: "Brandon", lastName: "Deden", name: "Brandon Deden", position: "Journeymen", department: "Commercial"},
-  {id: 11, firstName: "Gage", lastName: "Everson", name: "Gage Everson", position: "Laborer", department: "Commercial"},
-  {id: 12, firstName: "Isaiah", lastName: "Garries-Gutierrez", name: "Isaiah Garries-Gutierrez", position: "2nd Year", department: "Commercial"},
-  {id: 13, firstName: "Blake", lastName: "Gerrits", name: "Blake Gerrits", position: "Laborer", department: "Commercial"},
-  {id: 14, firstName: "Emanuel", lastName: "Gonzalez", name: "Emanuel Gonzalez", position: "Laborer", department: "Commercial"},
-  {id: 15, firstName: "Andrew", lastName: "Grover", name: "Andrew Grover", phone: "(262) 271-3759", email: "AGrover@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 16, firstName: "Adam", lastName: "Hellrung", name: "Adam Hellrung", phone: "(414) 406-2693", email: "AHellrung@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 17, firstName: "Bradley", lastName: "Jeske", name: "Bradley Jeske", phone: "(414) 406-2729", email: "BJeske@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 18, firstName: "Mitch", lastName: "Jurecki", name: "Mitch Jurecki", phone: "(414) 406-2706", email: "MJurecki@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 19, firstName: "Nicholas", lastName: "Kirby", name: "Nicholas Kirby", position: "4th Year", department: "Commercial"},
-  {id: 20, firstName: "Aaron", lastName: "Knier", name: "Aaron Knier", phone: "(414) 810-5042", email: "AKnier@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 21, firstName: "Josh", lastName: "Krushas", name: "Josh Krushas", position: "Laborer", department: "Commercial"},
-  {id: 22, firstName: "Jason", lastName: "Laatsch", name: "Jason Laatsch", position: "2nd Year", department: "Commercial"},
-  {id: 23, firstName: "Edwin", lastName: "Mamahua", name: "Edwin Mamahua", position: "Journeymen", department: "Commercial"},
-  {id: 24, firstName: "Erik", lastName: "Mamahua", name: "Erik Mamahua", position: "Laborer", department: "Commercial"},
-  {id: 25, firstName: "Justin", lastName: "McClelland", name: "Justin McClelland", phone: "(414) 810-8269", email: "JMcClelland@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 26, firstName: "Ryan", lastName: "McCormick", name: "Ryan McCormick", position: "3rd Year", department: "Commercial"},
-  {id: 27, firstName: "Derek", lastName: "Meier", name: "Derek Meier", position: "Laborer", department: "Commercial"},
-  {id: 28, firstName: "Jared", lastName: "Motiff", name: "Jared Motiff", position: "4th Year", department: "Commercial"},
-  {id: 29, firstName: "Justin", lastName: "Nick", name: "Justin Nick", phone: "(414) 788-1545", email: "JNick@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 30, firstName: "Scott", lastName: "Olley", name: "Scott Olley", phone: "(262) 370-5265", email: "SOlley@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 31, firstName: "Joshua", lastName: "Olsen", name: "Joshua Olsen", phone: "(414) 416-8708", email: "JOlsen@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 32, firstName: "Bradley", lastName: "Perkins", name: "Bradley Perkins", phone: "(262) 822-9703", email: "BPerkins@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 33, firstName: "Parker", lastName: "Peterson", name: "Parker Peterson", email: "PPeterson@hornerplumbing.com", position: "4th Year", department: "Commercial"},
-  {id: 34, firstName: "Cyrus", lastName: "Quinton", name: "Cyrus Quinton", phone: "(414) 810-5009", email: "CQuinton@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 35, firstName: "Joshua", lastName: "Ranic", name: "Joshua Ranic", position: "1st Year", department: "Commercial"},
-  {id: 36, firstName: "Kristopher", lastName: "Riese", name: "Kristopher (Kris) Riese", phone: "(414) 406-2694", email: "KRiese@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 37, firstName: "Connor", lastName: "Robinson", name: "Connor Robinson", position: "Pre-Apprentice", department: "Commercial"},
-  {id: 38, firstName: "Bret", lastName: "Rockenbach", name: "Bret Rockenbach", phone: "(414) 810-5065", email: "BRockenbach@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 39, firstName: "Jacob", lastName: "Roso", name: "Jacob Roso", position: "Journeymen", department: "Commercial"},
-  {id: 40, firstName: "Kory", lastName: "Schlender", name: "Kory Schlender", phone: "(262) 894-1493", email: "KSchlender@hornerplumbing.com", position: "4th Year", department: "Commercial"},
-  {id: 41, firstName: "Nicholas", lastName: "Schulz", name: "Nicholas Schulz", phone: "(414) 406-2692", email: "NSchulz@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 42, firstName: "Alex", lastName: "Sterlavage", name: "Alex Sterlavage", position: "2nd Year", department: "Commercial"},
-  {id: 43, firstName: "Austin", lastName: "Stoltenburg", name: "Austin Stoltenburg", position: "1st Year", department: "Commercial"},
-  {id: 44, firstName: "Owen", lastName: "Wozniak", name: "Owen Wozniak", phone: "(414) 519-1323", email: "OWozniak@hornerplumbing.com", position: "Journeymen", department: "Commercial"},
-  {id: 45, firstName: "Lewis", lastName: "Wozniak", name: "Lewis Wozniak", position: "Laborer", department: "Commercial"},
-  {id: 46, firstName: "Joseph", lastName: "Zaczek", name: "Joseph Zaczek", phone: "(414) 659-9102", email: "JZaczek@hornerplumbing.com", position: "Foreman", department: "Commercial"},
-  {id: 47, firstName: "Joseph", lastName: "Zawikowski", name: "Joseph Zawikowski", phone: "(262) 364-8581", email: "JZawikowski@hornerplumbing.com", position: "Journeymen", department: "Commercial"}
-];
+const DEFAULT_EMPLOYEES = [];
 // Runtime employee list — populated from SharePoint CSV at startup, falls back to DEFAULT_EMPLOYEES.
 // All components reference this; do NOT reference DEFAULT_EMPLOYEES directly outside of App init.
 let EMPLOYEES = DEFAULT_EMPLOYEES.slice();
@@ -280,7 +232,7 @@ function parseEmployeeCSV(csvText) {
     const obj = {};
     EMP_CSV_COLS.forEach((col, idx) => { obj[col] = (cols[idx] || "").trim(); });
     if (!obj.firstName || !obj.lastName) continue;
-    obj.id = parseInt(obj.id) || Date.now();
+    obj.id = Number(obj.id) || Date.now();
     obj.name = obj.name || (obj.firstName + " " + obj.lastName);
     rows.push(obj);
   }
