@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-30 (Session 23)_
+_Last updated: 2026-05-31 (Session 24)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -123,6 +123,36 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 24 — 2026-05-31 | index_117 → index_119
+
+**Topic:** Photo viewer complete + MarkupView zoom/pan
+
+**Flow 17 — Save Photo Markup (new)**
+- "Create or update file" action — guaranteed overwrite of original file on SharePoint
+- POST body: `{ code, name, folderPath, filename, contentBase64 }`
+- Flow 6 uses "Create file" (makes duplicates) — Flow 17 needed for overwrite
+
+**index_118 changes:**
+- `SAVE_PHOTO_MARKUP_URL` constant added (Flow 17)
+- `openFile()` image branch replaced — existing photos now open in `MarkupView` instead of old lightbox
+- `handlePhotoMarkupDone` + `photoMarkupFile`/`photoMarkupMeta` state — on Done, calls Flow 17 to overwrite original file
+- Skip button hidden when opening existing photo (`onSkip={null}`)
+- `generateUploadFilename` fixed — all images now always save as `.jpg` (was preserving `.heic` from iPad camera)
+- 3 scenarios fully handled: view-only (Cancel), markup+save (Done=overwrite), re-edit already-marked-up photo (Done=overwrite again)
+
+**index_119 changes:**
+- `MarkupView` fully rewritten with pinch-to-zoom (max 10x) and pan
+- Switched from pointer events → touch events (avoids iOS `pointercancel` race on multitouch)
+- `canvasWrapperRef` + `viewRef` — zoom/pan applied imperatively via CSS transform
+- `beginGesture` / `updateGesture` — adapted from PdfMarkupView pinch logic
+- "⛶ Fit" button in toolbar resets zoom to fit-to-screen
+- "← Back" replaces "✕ Cancel" in top bar and error screen
+- `handleDone` guards `props.onSkip` calls with null check
+
+**Next session:** Rename all Power Automate flows with "Flow N - " prefix convention.
 
 ---
 
