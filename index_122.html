@@ -80,7 +80,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_122";
+const BUILD_ID = "index_123";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -255,7 +255,8 @@ function loadEmployeesFromSharePoint(onLoaded) {
     .then(r => { if (r.status === 404) return null; if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(resp => {
       if (resp && resp.csvData) {
-        const parsed = parseEmployeeCSV(resp.csvData);
+        const csvText = resp.csvData.includes("%") ? decodeURIComponent(resp.csvData) : resp.csvData;
+        const parsed = parseEmployeeCSV(csvText);
         if (parsed && parsed.length) { EMPLOYEES = parsed; onLoaded(parsed); return; }
       }
       onLoaded(DEFAULT_EMPLOYEES.slice());
