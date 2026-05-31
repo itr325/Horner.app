@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-31 (Session 24)_
+_Last updated: 2026-05-31 (Session 25)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -123,6 +123,39 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 25 — 2026-05-31 | index_120 (no code changes)
+
+**Topic:** Power Automate flow renaming
+
+**No code changes this session.**
+
+**All 17 flows renamed** with `"Flow N - "` prefix convention. Final names:
+
+| # | Name |
+|---|---|
+| 1 | Flow 1 - Create New Project Folder |
+| 2 | Flow 2 - Syncing Projects Folders |
+| 3 | Flow 3 - Update PM |
+| 4 | Flow 4 - Change Foreman |
+| 5 | Flow 5 - Fetch Folder Contents |
+| 6 | Flow 6 - Camera Upload |
+| 7 | Flow 7 - PDF Editor - Get PDF File |
+| 8 | Flow 8 - PDF Markup Save |
+| 9 | Flow 9 - Save Valve Tags |
+| 10 | Flow 10 - Load Valve Tags |
+| 11 | Flow 11 - Save Signed TBT PDF |
+| 12 | Flow 12 - Toolbox Talks Rollover |
+| 13 | Flow 13 - Codes &amp; Charts Sync |
+| 14 | Flow 14 - Admin Docs Sync |
+| 15 | Flow 15 - Load Employees |
+| 16 | Flow 16 - Save Employees |
+| 17 | Flow 17 - Save Photo Markup |
+
+**Session protocol note added:** Every new session — fetch master log via curl to get caught up before starting work.
+
 
 ---
 
@@ -389,24 +422,27 @@ PDF annotation editor, photo capture, SharePoint integration, pan tool, folder n
 
 ## 📌 Power Automate Flow Reference
 
-| # | Flow | Purpose | URL constant |
+| # | Flow Name | Purpose | URL constant |
 |---|---|---|---|
-| 1 | Create New Project Folder | Creates job folder + subfolders (incl. VALVE TAG + Toolbox Talks). Sets PM, App, Foreman columns | `CREATE_JOB_URL` |
-| 2 | Syncing Projects Folders | Returns `[{code, name, pm, foreman, app}]` | `PROJECTS_FETCH_URL` |
-| 3 | Update PM | Updates PM column on existing folder | `UPDATE_PM_URL` |
-| 4 | Change Foreman | Updates Foreman column on existing folder | `UPDATE_FOREMAN_URL` |
-| 5 | Fetch Folder Contents | Returns `{folders, files}` for any path | `FETCH_FOLDER_CONTENTS_URL` |
-| 6 | Upload File | Uploads photos/videos to date-subfolder | `UPLOAD_FILE_URL` |
-| 7 | Download File | Proxies SharePoint file as base64 | `DOWNLOAD_FILE_URL` |
-| 8 | Save Markup | Uploads annotated PDF as `_vN` | `SAVE_MARKUP_URL` |
-| 9 | SaveValveTags | Writes valve_tag_list.json to VALVE TAG folder | `SAVE_VALVE_TAGS_URL` |
-| 10 | LoadValveTags | Reads valve_tag_list.json; 404 if not found | `LOAD_VALVE_TAGS_URL` |
-| 11 | Save Signed TBT PDF | Saves signed TBT, deletes original | `SAVE_TBT_URL` |
-| 12 | Toolbox Talks Rollover | Creates next-year TBT folder in every active job, copies 52 templates into each | `ROLLOVER_URL` |
-| 13 | Fetch Codes & Charts | Returns `{items}` for Codes & Charts library at given path | `CODES_CHARTS_FETCH_URL` |
-| 14 | Fetch Admin Docs | Returns `{items}` for Admin Docs library at given path | `ADMIN_DOCS_FETCH_URL` |
+| 1 | Flow 1 - Create New Project Folder | Creates job folder + subfolders (incl. VALVE TAG + Toolbox Talks). Sets PM, App, Foreman columns | `CREATE_JOB_URL` |
+| 2 | Flow 2 - Syncing Projects Folders | Returns `[{code, name, pm, foreman, app}]` | `PROJECTS_FETCH_URL` |
+| 3 | Flow 3 - Update PM | Updates PM column on existing folder | `UPDATE_PM_URL` |
+| 4 | Flow 4 - Change Foreman | Updates Foreman column on existing folder | `UPDATE_FOREMAN_URL` |
+| 5 | Flow 5 - Fetch Folder Contents | Returns `{folders, files}` for any path | `FETCH_FOLDER_CONTENTS_URL` |
+| 6 | Flow 6 - Camera Upload | Uploads photos/videos to date-subfolder | `UPLOAD_FILE_URL` |
+| 7 | Flow 7 - PDF Editor - Get PDF File | Proxies SharePoint file as base64 | `DOWNLOAD_FILE_URL` |
+| 8 | Flow 8 - PDF Markup Save | Uploads annotated PDF as `_vN` | `SAVE_MARKUP_URL` |
+| 9 | Flow 9 - Save Valve Tags | Writes valve_tag_list.json to VALVE TAG folder | `SAVE_VALVE_TAGS_URL` |
+| 10 | Flow 10 - Load Valve Tags | Reads valve_tag_list.json; 404 if not found | `LOAD_VALVE_TAGS_URL` |
+| 11 | Flow 11 - Save Signed TBT PDF | Saves signed TBT, deletes original | `SAVE_TBT_URL` |
+| 12 | Flow 12 - Toolbox Talks Rollover | Creates next-year TBT folder in every active job, copies 52 templates into each | `ROLLOVER_URL` |
+| 13 | Flow 13 - Codes & Charts Sync | Returns `{items}` for Codes & Charts library at given path | `CODES_CHARTS_FETCH_URL` |
+| 14 | Flow 14 - Admin Docs Sync | Returns `{items}` for Admin Docs library at given path | `ADMIN_DOCS_FETCH_URL` |
+| 15 | Flow 15 - Load Employees | GET employees.csv from Templates library → returns `{csvData}` | `LOAD_EMPLOYEES_URL` |
+| 16 | Flow 16 - Save Employees | POST `{csvData}` → writes employees.csv to Templates library | `SAVE_EMPLOYEES_URL` |
+| 17 | Flow 17 - Save Photo Markup | POST base64 image → overwrites original file on SharePoint | `SAVE_PHOTO_MARKUP_URL` |
 
-All 14 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
+All 17 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
 
 ---
 
