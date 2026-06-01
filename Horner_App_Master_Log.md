@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_123.html` |
+| **Current build** | `index_126.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -140,6 +140,27 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - Email verbiage tweak deferred to future session
 
 **No new Power Automate flows.**
+
+---
+
+### Session 26 — 2026-06-01 | index_124 → index_126
+
+**Topic:** Flow 18 fixes + PM dropdown migration + Position/email card updates
+
+**Code changes:**
+- `index_124`: Added "Project Manager" to `EMP_POSITIONS` dropdown in Add/Remove Employee panel
+- `index_125`: Replaced hardcoded `PMS` object with `getPMs()` / `getPmEmail()` helpers driven by `EMPLOYEES` filtered by `position === "Project Manager"`. PM now stored as full name string (same as Foreman). All PM dropdowns (New Job + Change PM) pull from EMPLOYEES. All form email lookups use getPmEmail(). PMS object deleted entirely.
+- `index_126`: Email card label changed from "PM - Name" to "Project Manager - Name"
+
+**Flow 18 fixes (no new flow):**
+- Root cause of filter failure: "Include Nested Items" was true (default) — returning all files across all subfolders, causing Filter array to match wrong items
+- Fix: Include Nested Items = false + Filter array condition changed from `contains` to `is equal to` with `split(triggerOutputs()?['body/{FullPath}'], '/')[1]` for exact job folder match
+- Trigger condition added to only fire on SUBMITTALS and PLANS folders: `@or(contains(triggerOutputs()?['body/{FullPath}'], '/SUBMITTALS/'), contains(triggerOutputs()?['body/{FullPath}'], '/PLANS/'))` — note ALL CAPS folder names
+- Email subject: `A file has been added or updated for {job name}`
+- Email body: `{filename} has been added or updated for {job} in {folder path}`
+- notifications@hornerplumbing.com shared mailbox confirmed as sender
+
+**Next session:** Expand Flow 18 notifications to additional folders as needed.
 
 ---
 
