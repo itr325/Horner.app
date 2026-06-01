@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_117.html` |
+| **Current build** | `index_123.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -18,7 +18,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ## 🔴 Still Open / To-Do
 
 ### Production Blockers
-- [ ] **`SHOW_DIAG`** — flip back to `false` at line 88 before final production push. Was re-enabled in index_60 for field testing.
+- [x] **`SHOW_DIAG`** — flipped to `false` in index_120 ✅ ~~flip back to `false` at line 88 before final production push. Was re-enabled in index_60 for field testing.
 
 ### Features / Work Items (rough priority order)
 - [ ] **Timecard — custom job entry** — allow foreman to type a custom job name/code on the timecard instead of only selecting from the project list.
@@ -156,6 +156,28 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 **Session protocol note added:** Every new session — fetch master log via curl to get caught up before starting work.
 
+
+---
+
+### Session 25 — 2026-05-31 | index_120 → index_123
+
+**Topic:** SHOW_DIAG fix + Flow 18 Submittal Notifications + employee loading fix
+
+**Closed:**
+- `SHOW_DIAG` flipped to `false` in index_120 ✅
+- `DEFAULT_EMPLOYEES` emptied — SharePoint CSV is now sole source of truth ✅
+- Flow 15 CSV load fixed: `decodeURIComponent` added in app; Flow 15 uses `encodeUriComponent(base64ToString(...))` ✅
+- Flow 3 + Flow 4 updated to write `PM_Email` / `Foreman_Email` to new hidden SharePoint columns ✅
+- App sends `pmEmail` + `foremanEmail` in Flow 3 & 4 calls (index_121) ✅
+- Scientific notation ID parse fixed: `parseInt` → `Number()` ✅
+- Flow 18 - Submittal Notifications built: triggers on file create/modify, filters `{FullPath}` contains `/Submittals/`, emails PM + CC Foreman ✅
+
+**Still open in Flow 18:**
+- Filter array empty array error — job folder match failing (`{FullPath}` vs `{FilenameWithExtension}` mismatch)
+- Double-trigger dedup needed
+
+**New flows:** Flow 18 - Submittal Notifications
+**New SP columns:** `PM_Email`, `Foreman_Email` (hidden) on Active Projects library
 
 ---
 
