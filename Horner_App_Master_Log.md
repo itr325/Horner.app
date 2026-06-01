@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-31 (Session 25)_
+_Last updated: 2026-05-31 (Session 26)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -32,7 +32,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - [x] **Codes & Charts** — `LibraryBrowser` component built; SharePoint flow wired end-to-end. ✅ index_95
 - [x] **Admin Docs** — `LibraryBrowser` component built; SharePoint flow wired end-to-end. ✅ index_95
 - [ ] **Toolbox Talks** *(Flows 1–3 complete. Flow 4 — Upload Templates — still needed but not urgent.)*
-- [ ] **Submittals folder — file notifications + upload** — email foremen when new file(s) added/updated.
+- [x] **Submittals folder — file notifications** — ✅ Flow 18 working. Emails PM + CC Foreman on file add/modify. Verbiage tweaks deferred.
 - [ ] **App — Back button on all pages** — universal back navigation on every view.
 - [ ] **PDF Edit — snap dimensions** — snap/constrain lines while marking up plans.
 - [ ] **Pre-Fab Request, Trapeze Pre-Fab Template, Standard Testing Record, RFC form, RFI form** — original batch, no rush.
@@ -123,6 +123,23 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 26 — 2026-05-31 | no code changes (flow fix only)
+
+**Topic:** Flow 18 - Submittal Notifications fix
+
+**No code changes this session.**
+
+**Flow 18 fixed and working:**
+- Root cause: "Get files (properties only)" had **Include Nested Items = true (default)**, returning all files across all subfolders. Filter array `contains` was either matching wrong items or failing entirely.
+- Fix 1: Set **Include Nested Items = false** → returns only top-level job folders from Active Projects
+- Fix 2: Changed Filter array condition from `contains(triggerPath, folderName)` to **is equal to** with right side as `split(triggerOutputs()?['body/{FullPath}'], '/')[1]` — extracts job folder name directly from trigger path and exact-matches against `{FilenameWithExtension}`
+- Result: Single email sent correctly, no double-trigger, correct PM + Foreman populated
+- Email verbiage tweak deferred to future session
+
+**No new Power Automate flows.**
 
 ---
 
