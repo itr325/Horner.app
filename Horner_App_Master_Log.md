@@ -21,6 +21,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - [x] **`SHOW_DIAG`** — flipped to `false` in index_120 ✅ ~~flip back to `false` at line 88 before final production push. Was re-enabled in index_60 for field testing.
 
 ### Features / Work Items (rough priority order)
+- [ ] **Order Sheet material switch bug** — MatToggle warning fires even when no phase is selected. Fix: only show warning if phase is already set. Also investigate: switching phase after adding to cart clears items unexpectedly.
 - [ ] **Timecard — custom job entry** — allow foreman to type a custom job name/code on the timecard instead of only selecting from the project list.
 - [x] **Admin Panel — Add/Remove Employee** — ✅ index_116. Full add/edit/remove UI. employees.csv stored in Templates library via 2 new Power Automate flows. firstName sort on all dropdowns.
 - [x] **Admin Panel — tile landing** — ✅ index_114. Admin panel now has a 2×2 tile grid (New Job, Change PM/Foreman, Toolbox Talks Rollover, Add/Remove Employees). Each tile opens its own sub-view with back button + breadcrumb.
