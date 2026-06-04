@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-05-31 (Session 26)_
+_Last updated: 2026-06-04 (Session 27)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_126.html` |
+| **Current build** | `index_146.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -123,6 +123,48 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 27 — 2026-06-04 | index_127 → index_146
+
+**Topic:** Shopping Cart feature + misc fixes
+
+**Code changes:**
+
+- `index_127`: Added `valvetag` to `formViews` (back button padding fix)
+- `index_128`: Fixed photo Skip path — re-encodes through canvas to guarantee real JPEG bytes (was uploading raw HEIC with .jpg extension)
+- `index_129`: Shopping Cart feature built end-to-end:
+  - `CartSummaryView` component — grouped by Phase → Form Type, foreman/phone fields, remove items, Clear Cart, Submit Cart
+  - All OrderSheet + BlankOrderSheet forms get Add to Cart button + foreman pre-populated from project.foreman
+  - Cart stored per-job as `cart.json` in job root folder on SharePoint (Flows 19 & 20)
+  - Cart icon in job card header with badge
+  - Email format: Job#/Date/Foreman/Phone header, then ━━━ Phase dividers, form name + ━━━ underline, QTY/ITEM columns
+- `index_130`: Wired SAVE_CART_URL and LOAD_CART_URL (Flows 19 & 20)
+- `index_131`: Cart icon opens cart + closes on Send; renamed "Open in Mail" → "Send" everywhere
+- `index_132–135`: Cart icon UI iterations — folder icon (SVG, grey/silver on NAVY bg) in project list; cart icon always visible alongside folder; pre-fetch cart counts for all projects on startup so project list shows badges
+- `index_136`: Pre-fetch cart counts after projects load (background calls, one per project)
+- `index_137`: Both folder and cart icons always visible on project list
+- `index_138`: SVG folder icon (grey/silver) on NAVY background square; cart badge overlay
+- `index_139–140`: Cart icon + badge always visible; badge only on cart not folder
+- `index_141`: Cart email body reformatted to match Word doc template (Job#/Date/Foreman/Phone header + phase dividers + form name + ━━━ underline + QTY/ITEM)
+- `index_142`: Added ━━━ divider line under order sheet name in cart email
+- `index_143`: Cart icon on project list opens cart directly (stopPropagation)
+- `index_144`: Cart and TOP FABs always visible on all order sheets (removed `ordered.length > 0` condition)
+- `index_145–146`: Phase change warning (prompt to add to cart before clearing), material change warning (same on MatToggle switch); cart button moved to right side of project card after PM/Foreman badges, opens cart only
+
+**New flows:**
+- Flow 19 - Save Cart: POST `{code, name, data}` → writes cart.json to job root folder
+- Flow 20 - Load Cart: GET cart.json from job root folder → returns `{data}`
+
+**Flow 21 planned (not built):** Send formatted HTML cart email via Microsoft Graph from notifications@hornerplumbing.com — to replace mailto when ready.
+
+**Open items carried forward:**
+- Flow 21 — HTML cart email via Graph (build when ready)
+- Horner Blue (#0156A4) color swap — replace all NAVY (#1B3A6B) in a dedicated session
+- Timecard custom job entry
+- Admin: Close Job
+- Logins & role-based permissions
 
 ---
 
@@ -501,8 +543,11 @@ PDF annotation editor, photo capture, SharePoint integration, pan tool, folder n
 | 15 | Flow 15 - Load Employees | GET employees.csv from Templates library → returns `{csvData}` | `LOAD_EMPLOYEES_URL` |
 | 16 | Flow 16 - Save Employees | POST `{csvData}` → writes employees.csv to Templates library | `SAVE_EMPLOYEES_URL` |
 | 17 | Flow 17 - Save Photo Markup | POST base64 image → overwrites original file on SharePoint | `SAVE_PHOTO_MARKUP_URL` |
+| 18 | Flow 18 - Submittal Notifications | Emails PM + CC Foreman when files added/updated in SUBMITTALS or PLANS folders | — (trigger-based) |
+| 19 | Flow 19 - Save Cart | POST `{code, name, data}` → writes cart.json to job root folder | `SAVE_CART_URL` |
+| 20 | Flow 20 - Load Cart | GET cart.json from job root folder → returns `{data}` | `LOAD_CART_URL` |
 
-All 17 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
+All 20 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
 
 ---
 
