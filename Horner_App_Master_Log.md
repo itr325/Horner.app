@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_147.html` |
+| **Current build** | `index_148.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -124,6 +124,18 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 28 — 2026-06-04 | index_147 → index_148
+
+**Topic:** MatToggle material switch bug fixes (continued)
+
+**Code changes:**
+- `index_148`: MatToggle onChange — if no phase selected and user switches material with a qty set, show alert "Please select a phase before adding to cart." and block the action entirely
+- `index_148`: MatToggle onChange — if phase IS selected and user switches material with qty set, confirm prompt appears; qty only clears if user clicks Cancel (was clearing unconditionally)
+
+**No new Power Automate flows.**
 
 ---
 
