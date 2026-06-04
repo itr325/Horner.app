@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_148.html` |
+| **Current build** | `index_156.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -169,6 +169,32 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - After fix: Flow 19 save and Flow 20 load both confirmed working. Cart persists across sessions.
 
 **No new Power Automate flows.**
+
+---
+
+### Session 28 — 2026-06-04 | index_146 → index_156
+
+**Topic:** Order sheet bug fixes, cart wiring, email formatting
+
+**Code changes:**
+- `index_147`: MatToggle orange warning gated on phase (`warning: needsMat && !!phase`)
+- `index_147`: Phase change on OrderSheet/BlankOrderSheet — items only clear on Cancel
+- `index_148`: MatToggle onChange — if no phase selected, alert blocks action entirely; qty only clears on Cancel when phase IS set
+- `index_149`: Project list cart button calls `loadCart(p)` + `setProject(p)` before opening cart
+- `index_150`: Added global cart icon next to Refresh in project list header; added cart button between Submit/Reset on all order sheet footers
+- `index_151`: Moved cart button from footer to green FAB (bottom right); FAB now opens global cart
+- `index_152`: FAB background changed to white with border; badge restored to red/white
+- `index_153`: Email phase header spacing fixed (no extra blank lines around phase name); P/N column added to QTY/ITEM row
+- `index_154`: Fixed-width space padding for columns (reverted next build)
+- `index_155`: Back to tabs for QTY/P/N/ITEM columns
+- `index_156`: Email preview switched to monospace font so tabs align correctly in preview
+
+**Flow fixes:**
+- Flow 19 (Save Cart): Build_Target_Path was appending `/cart.json` to folder path — removed it; folder only, filename stays in Files/Add action. Body changed to `binary(triggerBody()?['data'])`.
+- Flow 19/20 confirmed working — cart persists across sessions.
+
+**Up next:**
+- Flow 21: Send cart email via Power Automate / Graph API (HTML formatted email, not mailto)
 
 ---
 
