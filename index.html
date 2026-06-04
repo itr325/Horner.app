@@ -12157,8 +12157,10 @@ function App() {
 
   const addToCart = function(proj) {
     return function(newItems) {
+      console.log('[addToCart] proj=', proj?.code, 'newItems=', newItems?.length, newItems);
       setCart(function(prev) {
         const merged = prev.concat(newItems);
+        console.log('[addToCart] prev=', prev.length, 'merged=', merged.length);
         saveCart(merged, proj);
         setCartCounts(function(c) { return Object.assign({}, c, { [proj.code]: merged.length }); });
         return merged;
