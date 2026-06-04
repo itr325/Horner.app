@@ -152,6 +152,26 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 ---
 
+### Session 28 — 2026-06-04 | index_146 → index_148
+
+**Topic:** Order sheet bug fixes + cart debugging
+
+**Code changes:**
+- `index_147`: MatToggle orange warning now only shows when phase is already selected (`warning: needsMat && !!phase`)
+- `index_147`: Phase change on OrderSheet — items only clear if user clicks Cancel on the "Add to cart?" prompt (was clearing unconditionally)
+- `index_147`: Same phase change fix applied to BlankOrderSheet
+- `index_148`: MatToggle onChange — if no phase selected and user switches material with qty set, alert "Please select a phase before adding to cart." and block entirely
+- `index_148`: MatToggle onChange — if phase IS selected, qty only clears on Cancel (not on OK)
+
+**Cart debugging:**
+- Flow 19 (Save Cart) was failing with DirectoryNotFoundException — Build_Target_Path Compose was building `/Active Projects/(CODE) Name/cart.json` and passing that as the folder path to GetFolderByServerRelativeUrl, which then looked for a folder named cart.json. Fix: removed `/cart.json` from the Compose expression — folder path only, filename stays in the Files/Add action.
+- Flow 19 body field changed to `binary(triggerBody()?['data'])` for correct binary encoding
+- After fix: Flow 19 save and Flow 20 load both confirmed working. Cart persists across sessions.
+
+**No new Power Automate flows.**
+
+---
+
 ### Session 27 — 2026-06-04 | index_127 → index_146
 
 **Topic:** Shopping Cart feature + misc fixes
