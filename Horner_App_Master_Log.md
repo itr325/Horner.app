@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-04 (Session 29)_
+_Last updated: 2026-06-05 (Session 30)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_165.html` |
+| **Current build** | `index_167.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -124,6 +124,31 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 30 — 2026-06-05 | index_166 → index_167
+
+**Topic:** Flow 22 — Timecard Email via Power Automate / Office 365
+
+**Changes:**
+- Built Flow 22 (Send Timecard Email): identical structure to Flow 21 — HTTP trigger → Compose → Office 365 Outlook Send email (V2) from notifications@hornerplumbing.com
+- Added `SEND_TIMECARD_URL` constant; replaced `mailto:` in `TimeCard.sendEmail` with `flowPost(SEND_TIMECARD_URL, ...)`
+- Bug fix: original patch hit wrong `sendEmail` (a different form at line 7563); corrected to target TimeCard's `sendEmail` at line ~15497
+- HTML email body built in-app: header table (Employee / Week Ending / Total Hours), then Regular Time and Labor sections each with Job / Date / Phase / Hours columns. Phase and Hours are split into separate columns; each phase on its own line with Total row at bottom separated by a horizontal rule.
+- Plain-text body kept for in-app preview (unchanged)
+- Form resets on successful send
+- `DateCell` overlay trick temporarily replaced with plain date input to debug Edge desktop issue — reverted back to overlay after confirming it only needs to work on iPad/iPhone
+- Bumped to index_167
+
+**Flow 22 details:**
+- Trigger: HTTP POST with JSON schema `{to, cc, subject, body}`
+- Compose: `triggerBody()?['body']`
+- Send email (V2): From notifications@hornerplumbing.com, To/CC/Subject/Body from trigger body, Is HTML = Yes
+- To: `timecards@hornerplumbing.com`, CC: project PM email
+
+**Still open:** Timecard custom job entry, Admin: Close Job, Logins, Photos .jpg, Back buttons, Horner Blue color swap.
+
 
 ---
 
@@ -687,8 +712,9 @@ PDF annotation editor, photo capture, SharePoint integration, pan tool, folder n
 | 19 | Flow 19 - Save Cart | POST `{code, name, data}` → writes cart.json to job root folder | `SAVE_CART_URL` |
 | 20 | Flow 20 - Load Cart | GET cart.json from job root folder → returns `{data}` | `LOAD_CART_URL` |
 | 21 | Flow 21 - Send Cart Email | POST `{to, cc, subject, body}` → sends HTML email via Office 365 Outlook from notifications@hornerplumbing.com | `SEND_CART_URL` |
+| 22 | Flow 22 - Send Timecard Email | POST `{to, cc, subject, body}` → sends HTML timecard email via Office 365 Outlook from notifications@hornerplumbing.com | `SEND_TIMECARD_URL` |
 
-All 20 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
+All 22 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
 
 ---
 
