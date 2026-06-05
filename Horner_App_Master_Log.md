@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-04 (Session 28)_
+_Last updated: 2026-06-04 (Session 29)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_156.html` |
+| **Current build** | `index_164.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -127,6 +127,23 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 ---
 
+### Session 29 — 2026-06-04 | index_156 → index_164
+
+**Topic:** Flow 21 — Cart Email via Power Automate / Office 365
+
+**Changes:**
+- Built Flow 21 (Send Cart Email): HTTP trigger → Compose (wrap body in HTML div) → Office 365 Outlook Send email (V2) from notifications@hornerplumbing.com
+- Added `SEND_CART_URL` constant; replaced `mailto:` in `CartSummaryView.sendEmail` with `flowPost(SEND_CART_URL, ...)`
+- Switched from plain-text email body to HTML built in the app: header table (Job#/Date/Foreman/Phone), phase dividers (`<hr>`), per-form `<table>` with QTY/P/N/ITEM columns. Plain-text body kept for in-app preview.
+- Tuned email spacing: hr margin → 0, phase div margin → 0, form name top margin → 6px
+- Cart now clears (`onClearCart()`) automatically on successful send
+- Fixed global cart FAB: was rendering in project list toolbar — moved to fixed bottom-right, hidden on `view === "projects"`, visible only inside job views
+- To/CC temporarily redirected to eschieble@pinnacle-tec.com for testing
+
+**Still open:** Restore To → `CONTACTS.purchasing` when Aaron approves. Flow 21 Compose step updated to pass `triggerBody()?['body']` directly (app sends HTML now).
+
+---
+
 ### Session 28 — 2026-06-04 | index_147 → index_148
 
 **Topic:** MatToggle material switch bug fixes (continued)
@@ -136,6 +153,23 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - `index_148`: MatToggle onChange — if phase IS selected and user switches material with qty set, confirm prompt appears; qty only clears if user clicks Cancel (was clearing unconditionally)
 
 **No new Power Automate flows.**
+
+---
+
+### Session 29 — 2026-06-04 | index_156 → index_164
+
+**Topic:** Flow 21 — Cart Email via Power Automate / Office 365
+
+**Changes:**
+- Built Flow 21 (Send Cart Email): HTTP trigger → Compose (wrap body in HTML div) → Office 365 Outlook Send email (V2) from notifications@hornerplumbing.com
+- Added `SEND_CART_URL` constant; replaced `mailto:` in `CartSummaryView.sendEmail` with `flowPost(SEND_CART_URL, ...)`
+- Switched from plain-text email body to HTML built in the app: header table (Job#/Date/Foreman/Phone), phase dividers (`<hr>`), per-form `<table>` with QTY/P/N/ITEM columns. Plain-text body kept for in-app preview.
+- Tuned email spacing: hr margin → 0, phase div margin → 0, form name top margin → 6px
+- Cart now clears (`onClearCart()`) automatically on successful send
+- Fixed global cart FAB: was rendering in project list toolbar — moved to fixed bottom-right, hidden on `view === "projects"`, visible only inside job views
+- To/CC temporarily redirected to eschieble@pinnacle-tec.com for testing
+
+**Still open:** Restore To → `CONTACTS.purchasing` when Aaron approves. Flow 21 Compose step updated to pass `triggerBody()?['body']` directly (app sends HTML now).
 
 ---
 
@@ -149,6 +183,23 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - `index_147`: Same phase change fix applied to BlankOrderSheet
 
 **No new Power Automate flows.**
+
+---
+
+### Session 29 — 2026-06-04 | index_156 → index_164
+
+**Topic:** Flow 21 — Cart Email via Power Automate / Office 365
+
+**Changes:**
+- Built Flow 21 (Send Cart Email): HTTP trigger → Compose (wrap body in HTML div) → Office 365 Outlook Send email (V2) from notifications@hornerplumbing.com
+- Added `SEND_CART_URL` constant; replaced `mailto:` in `CartSummaryView.sendEmail` with `flowPost(SEND_CART_URL, ...)`
+- Switched from plain-text email body to HTML built in the app: header table (Job#/Date/Foreman/Phone), phase dividers (`<hr>`), per-form `<table>` with QTY/P/N/ITEM columns. Plain-text body kept for in-app preview.
+- Tuned email spacing: hr margin → 0, phase div margin → 0, form name top margin → 6px
+- Cart now clears (`onClearCart()`) automatically on successful send
+- Fixed global cart FAB: was rendering in project list toolbar — moved to fixed bottom-right, hidden on `view === "projects"`, visible only inside job views
+- To/CC temporarily redirected to eschieble@pinnacle-tec.com for testing
+
+**Still open:** Restore To → `CONTACTS.purchasing` when Aaron approves. Flow 21 Compose step updated to pass `triggerBody()?['body']` directly (app sends HTML now).
 
 ---
 
@@ -169,6 +220,23 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - After fix: Flow 19 save and Flow 20 load both confirmed working. Cart persists across sessions.
 
 **No new Power Automate flows.**
+
+---
+
+### Session 29 — 2026-06-04 | index_156 → index_164
+
+**Topic:** Flow 21 — Cart Email via Power Automate / Office 365
+
+**Changes:**
+- Built Flow 21 (Send Cart Email): HTTP trigger → Compose (wrap body in HTML div) → Office 365 Outlook Send email (V2) from notifications@hornerplumbing.com
+- Added `SEND_CART_URL` constant; replaced `mailto:` in `CartSummaryView.sendEmail` with `flowPost(SEND_CART_URL, ...)`
+- Switched from plain-text email body to HTML built in the app: header table (Job#/Date/Foreman/Phone), phase dividers (`<hr>`), per-form `<table>` with QTY/P/N/ITEM columns. Plain-text body kept for in-app preview.
+- Tuned email spacing: hr margin → 0, phase div margin → 0, form name top margin → 6px
+- Cart now clears (`onClearCart()`) automatically on successful send
+- Fixed global cart FAB: was rendering in project list toolbar — moved to fixed bottom-right, hidden on `view === "projects"`, visible only inside job views
+- To/CC temporarily redirected to eschieble@pinnacle-tec.com for testing
+
+**Still open:** Restore To → `CONTACTS.purchasing` when Aaron approves. Flow 21 Compose step updated to pass `triggerBody()?['body']` directly (app sends HTML now).
 
 ---
 
@@ -618,6 +686,7 @@ PDF annotation editor, photo capture, SharePoint integration, pan tool, folder n
 | 18 | Flow 18 - Submittal Notifications | Emails PM + CC Foreman when files added/updated in SUBMITTALS or PLANS folders | — (trigger-based) |
 | 19 | Flow 19 - Save Cart | POST `{code, name, data}` → writes cart.json to job root folder | `SAVE_CART_URL` |
 | 20 | Flow 20 - Load Cart | GET cart.json from job root folder → returns `{data}` | `LOAD_CART_URL` |
+| 21 | Flow 21 - Send Cart Email | POST `{to, cc, subject, body}` → sends HTML email via Office 365 Outlook from notifications@hornerplumbing.com | `SEND_CART_URL` |
 
 All 20 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
 
