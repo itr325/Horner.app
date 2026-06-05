@@ -15496,14 +15496,11 @@ function TimeCard({
   };
   const sendEmail = () => {
     if (!preview) return;
-    const url = "mailto:" + preview.to + "?cc=" + encodeURIComponent(preview.cc) + "&subject=" + encodeURIComponent(preview.subject) + "&body=" + encodeURIComponent(preview.body);
-    const a = document.createElement("a");
-    a.href = url;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => setPreview(null), 150);
+    flowPost(SEND_TIMECARD_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: preview.htmlBody })
+      .then(() => { onToast("Timecard sent!", true); })
+      .catch(() => { onToast("Failed to send timecard", false); });
+    setPreview(null);
+    reset();
   };
   const reset = () => {
     const blankR = () => ({
