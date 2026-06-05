@@ -15453,7 +15453,7 @@ function TimeCard({
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Total</th>';
       html += '<th style="text-align:left;padding:3px 0 3px 12px;font-size:12px;border-bottom:1px solid #999;">Phases</th></tr>';
       filledRows.forEach(function(r) {
-        const phases = TC_PHASES.filter(function(p) { return r.hrs[p.code]; }).map(function(p) { return 'Ph.' + p.code + ' ' + p.name + ': ' + r.hrs[p.code]; }).join(', ');
+        const phases = TC_PHASES.filter(function(p) { return r.hrs[p.code]; }).map(function(p) { return '<div><strong>Ph.' + p.code + '</strong> ' + p.name + ' &nbsp;&nbsp; <strong>' + r.hrs[p.code] + ' hrs</strong></div>'; }).join('');
         html += '<tr>';
         html += '<td style="padding:5px 12px 5px 0;vertical-align:top;">' + (r.job || '—') + '</td>';
         html += '<td style="padding:5px 12px;vertical-align:top;">' + fmtDate(r.date) + '</td>';
@@ -15473,7 +15473,7 @@ function TimeCard({
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Total</th>';
       html += '<th style="text-align:left;padding:3px 0 3px 12px;font-size:12px;border-bottom:1px solid #999;">Phases</th></tr>';
       filledLabs.forEach(function(r) {
-        const phases = LAB_PHASES.filter(function(p) { return r.hrs[p.code]; }).map(function(p) { return 'Ph.' + p.code + ' ' + p.name + ': ' + r.hrs[p.code]; }).join(', ');
+        const phases = LAB_PHASES.filter(function(p) { return r.hrs[p.code]; }).map(function(p) { return '<div><strong>Ph.' + p.code + '</strong> ' + p.name + ' &nbsp;&nbsp; <strong>' + r.hrs[p.code] + ' hrs</strong></div>'; }).join('');
         html += '<tr>';
         html += '<td style="padding:5px 12px 5px 0;vertical-align:top;">' + (r.job || '—') + '</td>';
         html += '<td style="padding:5px 12px;vertical-align:top;">' + fmtDate(r.date) + '</td>';
