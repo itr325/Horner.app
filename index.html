@@ -15447,10 +15447,10 @@ function TimeCard({
       html += hr;
       html += '<div style="font-size:14px;font-weight:700;margin:0;">Regular Time</div>';
       html += hr;
-      html += '<table style="width:100%;border-collapse:collapse;margin-top:8px;margin-bottom:10px;">';
+      html += '<table style="border-collapse:collapse;margin-top:8px;margin-bottom:10px;">';
       html += '<tr><th style="text-align:left;padding:3px 12px 3px 0;font-size:12px;border-bottom:1px solid #999;width:90px;">Job</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:90px;">Date</th>';
-      html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:300px;">Phase</th>';
+      html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;">Phase</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Hours</th></tr>';
       filledRows.forEach(function(r) {
         const fp = TC_PHASES.filter(function(p) { return r.hrs[p.code]; });
@@ -15469,10 +15469,10 @@ function TimeCard({
       html += hr;
       html += '<div style="font-size:14px;font-weight:700;margin:0;">Labor</div>';
       html += hr;
-      html += '<table style="width:100%;border-collapse:collapse;margin-top:8px;margin-bottom:10px;">';
+      html += '<table style="border-collapse:collapse;margin-top:8px;margin-bottom:10px;">';
       html += '<tr><th style="text-align:left;padding:3px 12px 3px 0;font-size:12px;border-bottom:1px solid #999;width:90px;">Job</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:90px;">Date</th>';
-      html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:300px;">Phase</th>';
+      html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;">Phase</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Hours</th></tr>';
       filledLabs.forEach(function(r) {
         const fp = LAB_PHASES.filter(function(p) { return r.hrs[p.code]; });
