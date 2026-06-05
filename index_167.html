@@ -15451,7 +15451,7 @@ function TimeCard({
       html += '<tr><th style="text-align:left;padding:3px 12px 3px 0;font-size:12px;border-bottom:1px solid #999;width:90px;">Job</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:90px;">Date</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:300px;">Phase</th>';
-      html += '<th style="text-align:right;padding:3px 0 3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Hours</th></tr>';
+      html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Hours</th></tr>';
       filledRows.forEach(function(r) {
         const fp = TC_PHASES.filter(function(p) { return r.hrs[p.code]; });
         const phaseNames = fp.map(function(p) { return '<div><strong>Ph.' + p.code + '</strong> ' + p.name + '</div>'; }).join('') + '<div style="border-top:1px solid #ccc;margin-top:4px;padding-top:4px;"><strong>Total</strong></div>';
@@ -15460,7 +15460,7 @@ function TimeCard({
         html += '<td style="padding:5px 12px 5px 0;vertical-align:top;">' + (r.job || '—') + '</td>';
         html += '<td style="padding:5px 12px;vertical-align:top;">' + fmtDate(r.date) + '</td>';
         html += '<td style="padding:5px 12px;vertical-align:top;color:#555;">' + phaseNames + '</td>';
-        html += '<td style="padding:5px 0 5px 12px;vertical-align:top;text-align:right;">' + phaseHours + '</td>';
+        html += '<td style="padding:5px 12px;vertical-align:top;">' + phaseHours + '</td>';
         html += '</tr>';
       });
       html += '</table>';
@@ -15473,7 +15473,7 @@ function TimeCard({
       html += '<tr><th style="text-align:left;padding:3px 12px 3px 0;font-size:12px;border-bottom:1px solid #999;width:90px;">Job</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:90px;">Date</th>';
       html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:300px;">Phase</th>';
-      html += '<th style="text-align:right;padding:3px 0 3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Hours</th></tr>';
+      html += '<th style="text-align:left;padding:3px 12px;font-size:12px;border-bottom:1px solid #999;width:60px;">Hours</th></tr>';
       filledLabs.forEach(function(r) {
         const fp = LAB_PHASES.filter(function(p) { return r.hrs[p.code]; });
         const phaseNames = fp.map(function(p) { return '<div><strong>Ph.' + p.code + '</strong> ' + p.name + '</div>'; }).join('') + '<div style="border-top:1px solid #ccc;margin-top:4px;padding-top:4px;"><strong>Total</strong></div>';
@@ -15482,7 +15482,7 @@ function TimeCard({
         html += '<td style="padding:5px 12px 5px 0;vertical-align:top;">' + (r.job || '—') + '</td>';
         html += '<td style="padding:5px 12px;vertical-align:top;">' + fmtDate(r.date) + '</td>';
         html += '<td style="padding:5px 12px;vertical-align:top;color:#555;">' + phaseNames + '</td>';
-        html += '<td style="padding:5px 0 5px 12px;vertical-align:top;text-align:right;">' + phaseHours + '</td>';
+        html += '<td style="padding:5px 12px;vertical-align:top;">' + phaseHours + '</td>';
         html += '</tr>';
       });
       html += '</table>';
