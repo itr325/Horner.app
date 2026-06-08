@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-05 (Session 30)_
+_Last updated: 2026-06-08 (Session 31)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_167.html` |
+| **Current build** | `index_168.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -127,6 +127,21 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 ---
 
+### Session 31 — 2026-06-08 | index_167 → index_168
+
+**Topic:** Timecard email formatting refinements + production cutover
+
+**Changes:**
+- Fixed timecard email Phase/Hours column layout: removed right-align on Hours, removed fixed 300px Phase width, removed width:100% from table so columns size naturally
+- Set all four columns (Job, Date, Phase, Hours) to uniform 90px width
+- Fixed DateCell overlay trick temporarily replaced with plain input for desktop Edge debugging — reverted back to overlay (app is iPad/iPhone only)
+- Confirmed Flow 22 wired correctly — mailto replaced with flowPost
+- Restored To: timecards@hornerplumbing.com after testing via eschieble@pinnacle-tec.com
+- Bumped to index_168
+
+**Still open:** Timecard custom job entry, Admin: Close Job, Logins, Photos .jpg, Back buttons, Horner Blue color swap.
+
+---
 ### Session 30 — 2026-06-05 | index_166 → index_167
 
 **Topic:** Flow 22 — Timecard Email via Power Automate / Office 365
