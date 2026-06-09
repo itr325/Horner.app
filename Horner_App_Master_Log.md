@@ -112,6 +112,21 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - Fetch current build at session start: `curl -s https://itr325.github.io/Horner.app/index.html`
 - Master log lives at: `https://raw.githubusercontent.com/itr325/Horner.app/main/Horner_App_Master_Log.md`
 
+### Session Protocol
+
+**START of every session:**
+1. `curl` fetch the master log (cache-bust with `?$(date +%s)`) and read it fully
+2. Check `**Next session:**` line at bottom of most recent session entry — that's what we're working on
+3. Update memory if anything has changed
+
+**END of every session:**
+1. Append session summary to master log (newest first under Session History)
+2. Update "Current State" table and "Still Open" list at top of log
+3. **Ask Eric: "What are we working on next session?"**
+4. Add `**Next session:** [answer]` as the last line of the session entry
+5. Push updated log to GitHub
+6. Update memory
+
 ### Deploy Process
 1. Rename build to `index.html`
 2. Push to GitHub
@@ -138,6 +153,8 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 - Cart email now **sorts items largest-to-smallest by size** within each phase (parses fractional sizes: `1-1/2"`, `3/4"`, `2"`, etc.). Items with no detectable size sort to bottom.
 - Cart email now **merges duplicate items across forms** within the same phase — qty summed into single line.
 - Form name sub-headers removed from email; each phase is one flat table.
+
+**Next session:** New Home Page redesign.
 
 ---
 
