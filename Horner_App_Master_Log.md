@@ -765,3 +765,27 @@ All 22 URLs are plaintext in the public GitHub JS. **Shared-secret check still u
 ---
 
 _To append a new session: add a new `### Session N` block at the top of Session History, update "Current State" and "Still Open" at the top, update the date in line 2._
+
+---
+
+### Session 33
+**Date:** 2026-06-09
+**Build:** index_175
+
+**What we did:**
+- Established new session protocol: START = fetch fresh log with cache-bust; END = ask Eric what's next, append Next session line
+- Built new landing home page with three division tiles: Commercial, Residential, Service
+- Added Admin tile (gear icon) below Commercial
+- Embedded Horner Plumbing SVG logo centered above tiles
+- Created custom SVG icons for Commercial (warehouse) and Residential (house); used Eric's uploaded Horner service van SVG for Service tile
+- Residential and Service tiles show "Feature not yet enabled. Coming soon!" popup
+- Commercial tile navigates to existing 3-tile screen (Active Projects, Codes & Charts, Admin Docs)
+- Removed nav bar logo image (was duplicate of main logo)
+- Changed nav bar background from white to Horner Blue (#0256A4) with white text
+- Removed gear icon from nav bar top right (Admin now accessible via home tile)
+- Replaced all back buttons with breadcrumb navigation throughout the app
+- Breadcrumb chain: Home › Commercial › Active Projects › Job › Folder › SubPath
+- Codes & Charts and Admin Docs now show libPath segments in top breadcrumb; removed duplicate internal LibraryBrowser breadcrumb
+- Added favicon: white background with blue Horner H outline
+
+**Next session:** Add employee IDs to timecards, then start on timecards for the Residential side.
