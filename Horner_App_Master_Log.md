@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-08 (Session 31)_
+_Last updated: 2026-06-09 (Session 32)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_168.html` |
+| **Current build** | `index_174.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -124,6 +124,20 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+
+### Session 32 — 2026-06-09 | index_168 → index_174
+
+**Topic:** Per-item Add to Cart button + cart email sort/merge
+
+**Closed:**
+- Added **"Add to Cart" button** next to every QTY input on order sheets (standard `OrderSheet` only). Button is navy when qty entered, grey when empty. Tapping with no qty shows warning toast. Tapping with no phase selected shows phase warning. Field clears after adding.
+- Existing footer "Add All to Cart" button retained.
+- Layout: clean 3-column grid — ITEM (flex) | QTY centered (90px) | Add to Cart centered (100px).
+- Cart email now **sorts items largest-to-smallest by size** within each phase (parses fractional sizes: `1-1/2"`, `3/4"`, `2"`, etc.). Items with no detectable size sort to bottom.
+- Cart email now **merges duplicate items across forms** within the same phase — qty summed into single line.
+- Form name sub-headers removed from email; each phase is one flat table.
 
 ---
 
