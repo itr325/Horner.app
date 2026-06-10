@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-10 (Session 35)_
+_Last updated: 2026-06-10 (Session 36)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -821,5 +821,20 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Added special character validation to the New Job submit handler — blocks `# % & * : < > ? / \ | " { }` in both Job Code and Job Name fields
 - Shows `alert()` popup with clear message listing blocked characters; flow is never called if invalid
 - Deleted 3 broken partial folders from SharePoint (SEL-25103, SEL-25103.5, SEL-25104) and re-created with clean names
+
+**Next session:** Employee IDs on timecards, then Residential timecard.
+
+---
+
+### Session 36
+**Date:** 2026-06-10
+**Build:** index_182
+
+**What we did:**
+- Renamed all UI-facing "Foreman" labels to "Project Lead" throughout the app
+- Affected: project cards, New Job form, Admin tile/breadcrumb, Change PM/Project Lead section, all confirm/toast messages, Timecard, TBT, Weekly Safety, cart email body
+- All underlying data keys (foreman, foremanName, editForeman), position filter strings (position === "Foreman"), and SharePoint field names left unchanged — no flow or data breakage
+- Fixed BUILD_ID regression — working file was copied from index_180 instead of index_181, causing stamp to show index_180. Corrected in final push.
+- Both session 35 (special char validation) and session 36 (Project Lead rename) are live in index_182
 
 **Next session:** Employee IDs on timecards, then Residential timecard.
