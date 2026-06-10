@@ -789,3 +789,22 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Added favicon: white background with blue Horner H outline
 
 **Next session:** Add employee IDs to timecards, then start on timecards for the Residential side.
+
+---
+
+### Session 34
+**Date:** 2026-06-10
+**Build:** index_176 → index_180
+
+**What we did:**
+- Moved Admin back to small gear icon (top-right of nav bar, 70% opacity) — removed Admin tile from home page (unauthenticated panel should be low-profile)
+- Hid `cart.json` from folder file list (same filter as `valve_tag_list.json`) — both views updated
+- Added **Feedback & Issues** tile to home page (chat bubble icon, 4th tile in grid)
+- Built `FeedbackForm` as proper React component (initial attempt used IIFE which broke hooks — fixed)
+- Form fields: Name (dropdown — PMs + Foremen sorted by first name), Section (12 visible folder tiles), Feedback/Issue radio, Message textarea, Submit button
+- Submit sends HTML email via Flow 23: To eschieble@pinnacle-tec.com, CC phorner@hornerplumbing.com
+- Built **Flow 23 - Send Feedback Email**: HTTP trigger → Send an email (V2), same pattern as Flows 21 & 22
+- Wired `SEND_FEEDBACK_URL` constant — end-to-end tested and working
+- Added Flow 23 to flow reference table
+
+**Next session:** Employee IDs on timecards, then Residential timecard.
