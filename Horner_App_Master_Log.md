@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-09 (Session 32)_
+_Last updated: 2026-06-10 (Session 35)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -806,5 +806,20 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Built **Flow 23 - Send Feedback Email**: HTTP trigger → Send an email (V2), same pattern as Flows 21 & 22
 - Wired `SEND_FEEDBACK_URL` constant — end-to-end tested and working
 - Added Flow 23 to flow reference table
+
+**Next session:** Employee IDs on timecards, then Residential timecard.
+
+---
+
+### Session 35
+**Date:** 2026-06-10
+**Build:** index_181
+
+**What we did:**
+- Diagnosed Flow 1 (Create New Project Folder) failing with BadGateway / 0x8007007B path syntax error
+- Root cause: `#` character in job name (e.g. "Townhomes #1") breaks SharePoint REST API URL paths — `#` is a URL fragment identifier and truncates the path
+- Added special character validation to the New Job submit handler — blocks `# % & * : < > ? / \ | " { }` in both Job Code and Job Name fields
+- Shows `alert()` popup with clear message listing blocked characters; flow is never called if invalid
+- Deleted 3 broken partial folders from SharePoint (SEL-25103, SEL-25103.5, SEL-25104) and re-created with clean names
 
 **Next session:** Employee IDs on timecards, then Residential timecard.
