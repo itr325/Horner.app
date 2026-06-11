@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-11 (Session 39)_
+_Last updated: 2026-06-11 (Session 40)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -885,3 +885,29 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 **Note:** All changes from Sessions 35 + 36 (special char validation, Foreman→Project Lead rename) are also in index_185 via index_181–184.
 
 **Next session:** Employee IDs on timecards, then Residential timecard.
+
+---
+
+### Session 40
+**Date:** 2026-06-11
+**Build:** index_223 (sessions spanned index_188–223)
+
+**What we did:**
+- **Measure tool complete rework** based on field crew feedback from PDF Expert comparison
+- New interaction model: tap to place line (centered on tap, horizontal default) → drag either endpoint to position → Done to commit
+- Replaced 3-phase drag gesture with tap-to-place + endpoint drag
+- Dimension format: inches only with 1/4" precision (e.g. `70-1/4"`) — removed feet
+- Vector snapping: parses Revit PDF content stream for line/path geometry, snaps endpoints within 18px tolerance
+- Max zoom bumped from 25x to 100x
+- Sharp line during drag: screen-space overlay canvas (`measOverlayCanvasRef`) sits outside zoom wrapper — draws measurement imperatively in screen coords on every touchmove frame. Detail canvas stays visible so PDF remains sharp behind it. Annotation canvas hidden during drag, restored on touchend.
+
+**Key debugging discoveries:**
+- iOS cancels touchmove delivery if `setState`/`rerender()` is called during touchstart — solved by removing all React state updates from touchstart
+- `onTouchEnd` measure branch was intercepting pinch-end events (touches.length===0 + tool==="measure") before gesture handler could fire `scheduleDetail()` — fixed with `&& !gestureRef.current` guard
+- Imperative canvas draw during touchmove (same pattern as crosshair cursor) is the only reliable approach — React re-renders during touch sequence break iOS touch tracking
+- Detail canvas covers annotation canvas at zoom>1 — must hide annotation canvas AND keep detail canvas visible during drag for sharp PDF + sharp line simultaneously
+
+**Reverted:**
+- 3x page canvas oversample experiment — caused PDF to load zoomed in with no zoom-out; reverted. pdf.js CPU rendering can't match PDF Expert's native GPU vector rendering — accepted limitation of free solution.
+
+**Next session:** Field crew feedback items (continued). Residential timecard still on backlog.
