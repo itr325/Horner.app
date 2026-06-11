@@ -9456,9 +9456,8 @@ function PdfMarkupView(props) {
   }
   const [, setTick] = useState(0);
   const rerender = () => setTick(t => t + 1);
-  // ---- measure tool state (index_99) ----------------------------------------
+  // ---- measure tool state (index_188) ----------------------------------------
   const [measurements, setMeasurements] = useState({});
-  const [measurePt1, setMeasurePt1] = useState(null);
   const [calibState, setCalibState] = useState(null);
   const [calibPt1, setCalibPt1] = useState(null);
   const [calibPt2, setCalibPt2] = useState(null);
@@ -9467,16 +9466,25 @@ function PdfMarkupView(props) {
   const [measureScalePerPage, setMeasureScalePerPage] = useState({});
   const [scaleDropdownVal, setScaleDropdownVal] = useState("4");
   const [selectedMeasId, setSelectedMeasId] = useState(null);
-  const liveMeasPtRef = useRef(null);
-  const measureTapStartRef = useRef(null);
+  // New endpoint-drag model (index_188):
+  // pendingMeas: {x1,y1,x2,y2} norm coords — line just placed, waiting for scale dialog
+  // activeMeas: same but scale confirmed, endpoints freely draggable
+  const [pendingMeas, setPendingMeas] = useState(null);
+  const [activeMeas, setActiveMeas] = useState(null);
+  const activeMeasRef = useRef(null);       // mirrors activeMeas for touch handlers
+  const measDragRef = useRef(null);         // {which:"p1"|"p2"|"body", ox,oy} while dragging endpoint/body
+  const measTapStartRef = useRef(null);     // {x,y} clientX/Y on touchstart for tap detection
   const measurementsRef = useRef({});
-  const [measurePt2, setMeasurePt2] = useState(null);
-  const liveOffsetRef = useRef(null);
-  const draggingMeasRef = useRef(null); // {id, meas} while drag-repositioning
+  const pdfVectorCache = useRef({});        // {[pageNum]: [{x1,y1,x2,y2},...]} parsed Revit lines
 
-  const cursorOverlayRef = useRef(null);    // DOM crosshair, screen-space (index_107)
+  const cursorOverlayRef = useRef(null);    // DOM crosshair for calibration only
   const rubberBandSvgRef = useRef(null);    // SVG rubber-band line
   const rubberBandLineRef = useRef(null);   // <line> element inside SVG
+  // legacy refs kept so calibration crosshair draw code still compiles
+  const liveMeasPtRef = useRef(null);
+  const measureTapStartRef = useRef(null);
+  const liveOffsetRef = useRef(null);
+  const draggingMeasRef = useRef(null);
   // ---- diagnostics (index_46) ----------------------------------------------
   // On-screen readout so issue #2 can be debugged on-device without a Mac:
   // build id, devicePixelRatio, page-canvas buffer dimensions + megapixels (the
@@ -9516,8 +9524,6 @@ function PdfMarkupView(props) {
   // the up-to-date markups instead of a one-version-behind (or empty) snapshot.
   const annotationsRef = useRef(annotations);
   const pageNumRef = useRef(pageNum);
-  const measurePt1Ref = useRef(null); // mirrors measurePt1 for detail canvas render (index_106)
-  const measurePt2Ref = useRef(null);
   // ---- canvas-ceiling probe (index_47) -------------------------------------
   // Measures THIS device's real canvas wall instead of guessing from index_40/41.
   // For each step it allocates a canvas, fills it, draws a sentinel marker in the
@@ -9723,9 +9729,9 @@ function PdfMarkupView(props) {
   }, [pageNum, loading, error, resizeTick]);
   useEffect(function() {
     if (tool !== "measure") {
-      setMeasurePt1(null); setMeasurePt2(null); liveMeasPtRef.current = null; liveOffsetRef.current = null; draggingMeasRef.current = null;
+      setActiveMeas(null); activeMeasRef.current = null; measDragRef.current = null; measTapStartRef.current = null;
       setCalibState(null); setCalibPt1(null); setCalibPt2(null);
-      setSelectedMeasId(null); measureTapStartRef.current = null;
+      setSelectedMeasId(null);
       hideCursor(); hideRubberBand();
     }
   }, [tool]);
@@ -9917,51 +9923,166 @@ function PdfMarkupView(props) {
     if (inches === 0) return feet + "'-0\"";
     return feet + "'-" + inches + '"';
   }
-  function completeMeasurement(pt2, offset) {
-    if (!measurePt1) return;
-    const pt1 = measurePt1;
+  // ---- new endpoint-drag measure helpers (index_188) -------------------------
+
+  // Compute label for a norm-coord line segment
+  function labelForMeas(x1, y1, x2, y2) {
     const pxPerFoot = getPxPerFoot(pageNum);
-    let label;
-    if (!pxPerFoot) { label = "NTS"; } else {
-      const d = dimsRef.current;
-      label = formatFeetInches(Math.hypot((pt2.x-pt1.x)*d.cssW, (pt2.y-pt1.y)*d.cssH), pxPerFoot);
-    }
-    const meas = {id:Date.now()+Math.random(), x1:pt1.x, y1:pt1.y, x2:pt2.x, y2:pt2.y, offset:offset||0, label:label};
+    if (!pxPerFoot) return "NTS";
+    const d = dimsRef.current;
+    return formatFeetInches(Math.hypot((x2-x1)*d.cssW, (y2-y1)*d.cssH), pxPerFoot);
+  }
+
+  // Commit activeMeas to the saved measurements list
+  function commitActiveMeas(am) {
+    if (!am) return;
+    const meas = {id: Date.now()+Math.random(), x1:am.x1, y1:am.y1, x2:am.x2, y2:am.y2, offset:0, label: labelForMeas(am.x1,am.y1,am.x2,am.y2)};
     setMeasurements(function(prev){const copy=Object.assign({},prev);copy[pageNum]=(copy[pageNum]||[]).concat([meas]);return copy;});
-    setMeasurePt1(null); setMeasurePt2(null);
-    liveMeasPtRef.current = null; liveOffsetRef.current = null;
+    setActiveMeas(null);
+    activeMeasRef.current = null;
   }
-  function computeOffsetForMeas(touch, meas) {
-    const raw = getNormPoint(touch);
+
+  // Place a new line centered on a norm point, horizontal, default 15% of page width
+  function placeLine(normPt) {
+    const halfW = 0.075; // 15% of page width
+    const am = {x1: normPt.x - halfW, y1: normPt.y, x2: normPt.x + halfW, y2: normPt.y};
+    setActiveMeas(am);
+    activeMeasRef.current = am;
+  }
+
+  // Extract vector line segments from the PDF page content stream for snapping.
+  // Caches per pageNum. Returns array of {x1,y1,x2,y2} in norm (0-1) coords.
+  function getPageVectors(pgNum) {
+    if (pdfVectorCache.current[pgNum]) return pdfVectorCache.current[pgNum];
+    try {
+      const pdfDoc = pdfDocRef.current;
+      if (!pdfDoc) return [];
+      const page = pdfDoc.getPages()[pgNum - 1];
+      if (!page) return [];
+      const { width: pw, height: ph } = page.getSize();
+      if (!pw || !ph) return [];
+      const contentStream = page.node.Contents();
+      if (!contentStream) return [];
+      // Get raw content bytes — handle both stream and array
+      let rawBytes;
+      try {
+        if (contentStream.constructor && contentStream.constructor.name === 'PDFArray') {
+          // Multiple content streams — concatenate
+          const chunks = [];
+          for (let i = 0; i < contentStream.size(); i++) {
+            const s = contentStream.get(i);
+            if (s && s.getContents) chunks.push(s.getContents());
+          }
+          rawBytes = chunks.join(' ');
+        } else {
+          rawBytes = contentStream.getContents ? contentStream.getContents() : '';
+        }
+      } catch(e2) { rawBytes = ''; }
+      if (typeof rawBytes !== 'string') {
+        try { rawBytes = new TextDecoder().decode(rawBytes); } catch(e3) { rawBytes = ''; }
+      }
+      // Parse PDF path operators: moveto (m/M), lineto (l/L), curveto (c/C), closepath (h)
+      // We only care about straight lines (m+l pairs)
+      const segments = [];
+      const tokens = rawBytes.split(/\s+/);
+      let cx = 0, cy = 0, sx = 0, sy = 0; // current & subpath start
+      let pathPts = []; // points in current path
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (t === 'm' || t === 'M') {
+          // moveto: preceding 2 tokens are x y
+          const x = parseFloat(tokens[i-2]), y = parseFloat(tokens[i-1]);
+          if (!isNaN(x) && !isNaN(y)) { cx = x; cy = y; sx = x; sy = y; pathPts = [{x:cx/pw, y:1-cy/ph}]; }
+        } else if (t === 'l' || t === 'L') {
+          const x = parseFloat(tokens[i-2]), y = parseFloat(tokens[i-1]);
+          if (!isNaN(x) && !isNaN(y)) {
+            const nx = cx+x, ny = cy+y; // relative
+            // also handle absolute: if values are large assume absolute
+            const ax = Math.abs(x) > 1 ? x : cx+x;
+            const ay = Math.abs(y) > 1 ? y : cy+y;
+            const ex = (t==='L') ? x : cx+x, ey = (t==='L') ? y : cy+y;
+            pathPts.push({x: ex/pw, y: 1-ey/ph});
+            if (pathPts.length >= 2) {
+              const last = pathPts[pathPts.length-2];
+              const cur  = pathPts[pathPts.length-1];
+              segments.push({x1:last.x,y1:last.y,x2:cur.x,y2:cur.y});
+            }
+            cx = ex; cy = ey;
+          }
+        } else if (t === 'h' || t === 'H') {
+          // closepath — line back to subpath start
+          if (pathPts.length >= 1) {
+            const last = pathPts[pathPts.length-1];
+            segments.push({x1:last.x,y1:last.y,x2:sx/pw,y2:1-sy/ph});
+          }
+          pathPts = [];
+        }
+      }
+      pdfVectorCache.current[pgNum] = segments;
+      return segments;
+    } catch(e) {
+      pdfVectorCache.current[pgNum] = [];
+      return [];
+    }
+  }
+
+  // Snap a norm point to nearest vector edge endpoint within CSS tolerance.
+  // Returns snapped norm point (or original if no snap).
+  function snapToVector(normPt) {
     const d = dimsRef.current;
-    if (!d.cssW) return meas.offset || 0;
-    const dxC = (meas.x2 - meas.x1) * d.cssW, dyC = (meas.y2 - meas.y1) * d.cssH;
-    const lenC = Math.hypot(dxC, dyC) || 1;
-    const pxN = -dyC/lenC, pyN = dxC/lenC;
-    const tx = (raw.x - meas.x1) * d.cssW, ty = (raw.y - meas.y1) * d.cssH;
-    return tx * pxN + ty * pyN;
+    if (!d.cssW || !d.cssH) return normPt;
+    const zoom = (viewRef.current && viewRef.current.zoom) || 1;
+    const snapPxCSS = 18 / zoom; // 18 CSS px tolerance, shrinks at higher zoom for precision
+    const segs = getPageVectors(pageNum);
+    let bestDist = snapPxCSS, bestPt = null;
+    segs.forEach(function(s) {
+      // Check both endpoints of each segment
+      [{x:s.x1,y:s.y1},{x:s.x2,y:s.y2}].forEach(function(ep) {
+        const dx = (ep.x - normPt.x) * d.cssW;
+        const dy = (ep.y - normPt.y) * d.cssH;
+        const dist = Math.hypot(dx, dy);
+        if (dist < bestDist) { bestDist = dist; bestPt = ep; }
+      });
+    });
+    return bestPt || normPt;
   }
-  function computeOffset(touch) {
-    if (!measurePt1 || !measurePt2) return 0;
-    const raw = getNormPoint(touch);
+
+  // Check if a touch (clientX/Y) is near an activeMeas endpoint or body.
+  // Returns "p1", "p2", "body", or null.
+  function hitActiveMeas(clientX, clientY) {
+    const am = activeMeasRef.current;
+    if (!am) return null;
     const d = dimsRef.current;
-    if (!d.cssW) return 0;
-    const dxC = (measurePt2.x - measurePt1.x) * d.cssW;
-    const dyC = (measurePt2.y - measurePt1.y) * d.cssH;
-    const lenC = Math.hypot(dxC, dyC) || 1;
-    const pxN = -dyC/lenC, pyN = dxC/lenC;
-    const tx = (raw.x - measurePt1.x) * d.cssW;
-    const ty = (raw.y - measurePt1.y) * d.cssH;
-    return tx * pxN + ty * pyN;
+    const canvas = annotCanvasRef.current;
+    if (!canvas || !d.cssW) return null;
+    const rect = canvas.getBoundingClientRect();
+    const v = viewRef.current;
+    // norm → CSS px on screen accounting for zoom/pan
+    function normToScreen(nx, ny) {
+      return {
+        sx: rect.left + (nx * d.cssW) * v.zoom + v.panX,
+        sy: rect.top  + (ny * d.cssH) * v.zoom + v.panY
+      };
+    }
+    const HIT = 28; // px hit radius
+    const p1 = normToScreen(am.x1, am.y1);
+    const p2 = normToScreen(am.x2, am.y2);
+    if (Math.hypot(clientX - p1.sx, clientY - p1.sy) < HIT) return "p1";
+    if (Math.hypot(clientX - p2.sx, clientY - p2.sy) < HIT) return "p2";
+    // Body hit — check distance to line segment on screen
+    const dx = p2.sx - p1.sx, dy = p2.sy - p1.sy;
+    const len2 = dx*dx + dy*dy;
+    if (len2 > 0) {
+      const t = Math.max(0, Math.min(1, ((clientX-p1.sx)*dx + (clientY-p1.sy)*dy) / len2));
+      const nearX = p1.sx + t*dx, nearY = p1.sy + t*dy;
+      if (Math.hypot(clientX - nearX, clientY - nearY) < 20) return "body";
+    }
+    return null;
   }
-  function handleMeasureTap(pt) {
-    if (calibState === "placing1") { setCalibPt1(pt); setCalibState("placing2"); return; }
-    if (calibState === "placing2") { setCalibPt2(pt); setCalibState("dialog"); liveMeasPtRef.current = null; return; }
-    const hit = findMeasurementHit(pt);
-    if (hit) { setSelectedMeasId(function(prev){return prev===hit.id?null:hit.id;}); setMeasurePt1(null); liveMeasPtRef.current=null; return; }
-    setSelectedMeasId(null);
-    if (measurePt1) { completeMeasurement(pt); } else { setMeasurePt1(pt); }
-  }
+
+  // legacy stubs — kept so any remaining references compile
+  function computeOffsetForMeas(touch, meas) { return meas ? (meas.offset||0) : 0; }
+  function computeOffset() { return 0; }
   function confirmCalib() {
     if (!calibPt1 || !calibPt2) return;
     const ft = parseFloat(calibInputFt) || 0, inVal = parseFloat(calibInputIn) || 0;
@@ -9996,9 +10117,9 @@ function PdfMarkupView(props) {
     const cur = currentRef.current;
     const all = cur ? pageAnns.concat([cur]) : pageAnns;
     all.forEach(a => drawAnnotation(ctx, a, d.w, d.h));
-    // Draw saved measurements (index_99)
+    // Draw saved measurements (index_188)
     (measurements[pageNum]||[]).forEach(function(m){
-      const _isDrag = draggingMeasRef.current && draggingMeasRef.current.id === m.id;
+      const _isDrag = measDragRef.current && measDragRef.current.which === "saved" && measDragRef.current.id === m.id;
       const _curZoom = viewRef.current.zoom || 1;
       if (_isDrag && liveOffsetRef.current !== null) {
         drawMeasurementSingle(ctx, Object.assign({},m,{offset:liveOffsetRef.current}), d.w, d.h, false, _curZoom);
@@ -10006,8 +10127,15 @@ function PdfMarkupView(props) {
         drawMeasurementSingle(ctx, m, d.w, d.h, m.id===selectedMeasId, _curZoom);
       }
     });
+    // Draw activeMeas (in-progress line, endpoint-draggable) (index_188)
+    const _am = activeMeasRef.current;
+    if (tool === "measure" && _am) {
+      const _zoom = viewRef.current.zoom || 1;
+      const _lbl = labelForMeas(_am.x1, _am.y1, _am.x2, _am.y2);
+      drawMeasurementSingle(ctx, {x1:_am.x1,y1:_am.y1,x2:_am.x2,y2:_am.y2,offset:0,label:_lbl}, d.w, d.h, false, _zoom);
+    }
     const _lp = liveMeasPtRef.current;
-    // Calibration cursor only — normal measure cursor is a DOM overlay (index_107)
+    // Calibration cursor — crosshair on canvas
     if (tool === "measure" && _lp && (calibState === "placing1" || calibState === "placing2")) {
       const _dprC = d.w / (d.cssW || 1);
       const _zoom = viewRef.current.zoom || 1;
@@ -10019,31 +10147,6 @@ function PdfMarkupView(props) {
       ctx.moveTo(_cxC - _armC, _cyC); ctx.lineTo(_cxC + _armC, _cyC);
       ctx.moveTo(_cxC, _cyC - _armC); ctx.lineTo(_cxC, _cyC + _armC);
       ctx.stroke(); ctx.restore();
-    }
-    // Crosshair helper — zoom-corrected, full lines (index_103)
-    function _xhair(xb, yb, clr) {
-      const _dpr = d.w / (d.cssW || 1);
-      const _zoom = viewRef.current.zoom || 1;
-      const _arm = 12 * _dpr / _zoom;
-      ctx.save(); ctx.strokeStyle = clr; ctx.lineWidth = 1.5 * _dpr / _zoom; ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(xb - _arm, yb); ctx.lineTo(xb + _arm, yb);
-      ctx.moveTo(xb, yb - _arm); ctx.lineTo(xb, yb + _arm);
-      ctx.stroke(); ctx.restore();
-    }
-    if (tool === "measure" && measurePt1) {
-      _xhair(measurePt1.x * d.w, measurePt1.y * d.h, "#00E5FF");
-    }
-    if (tool === "measure" && measurePt2) {
-      _xhair(measurePt2.x * d.w, measurePt2.y * d.h, "#00E5FF");
-      // Phase 3: live dimension line preview
-      if (liveOffsetRef.current !== null) {
-        const _ppf3 = getPxPerFoot(pageNum);
-        const _dist3 = Math.hypot((measurePt2.x-measurePt1.x)*(d.cssW||1),(measurePt2.y-measurePt1.y)*(d.cssH||1));
-        const _lbl3 = (_ppf3 && (d.cssW||0)) ? formatFeetInches(_dist3, _ppf3) : "?";
-        const _tm = {x1:measurePt1.x, y1:measurePt1.y, x2:measurePt2.x, y2:measurePt2.y, offset:liveOffsetRef.current, label:_lbl3};
-        drawMeasurementSingle(ctx, _tm, d.w, d.h, false, viewRef.current.zoom || 1);
-      }
     }
     if (tool === "measure" && calibState === "placing2" && calibPt1 && _lp) {
       ctx.save(); ctx.strokeStyle="#FFD54F"; ctx.globalAlpha=0.8;
@@ -10072,8 +10175,7 @@ function PdfMarkupView(props) {
   annotationsRef.current = annotations;
   pageNumRef.current = pageNum;
   measurementsRef.current = measurements;
-  measurePt1Ref.current = measurePt1;
-  measurePt2Ref.current = measurePt2;
+  activeMeasRef.current = activeMeas;
   // Pointer → normalized (0..1) coordinates on the annotation canvas.
   function getNormPoint(e) {
     const canvas = annotCanvasRef.current;
@@ -10230,23 +10332,22 @@ function PdfMarkupView(props) {
         _pageMeas.forEach(function(m){drawMeasurementSingle(dctx,m,_fw,_fh,false,zoom);});
         dctx.restore();
       }
-      // Draw pt1/pt2 crosshairs on detail canvas so they appear sharp (index_106)
+      // Draw activeMeas endpoints on detail canvas so they appear sharp (index_188)
       (function() {
+        var _am = activeMeasRef.current;
+        if (!_am) return;
         var _pts = [
-          {pt: measurePt1Ref.current, clr: "#00E5FF"},
-          {pt: measurePt2Ref.current, clr: "#00E5FF"}
+          {x: _am.x1, y: _am.y1},
+          {x: _am.x2, y: _am.y2}
         ];
-        _pts.forEach(function(item) {
-          if (!item.pt) return;
-          var _bx = item.pt.x * d.cssW * pxPerCss + offX;
-          var _by = item.pt.y * d.cssH * pxPerCss + offY;
-          var _arm = 10 * pxPerCss / zoom, _lw2 = 1.5 * pxPerCss / zoom;
+        _pts.forEach(function(pt) {
+          var _bx = pt.x * d.cssW * pxPerCss + offX;
+          var _by = pt.y * d.cssH * pxPerCss + offY;
+          var _r = 5 * pxPerCss / zoom;
           dctx.save();
-          dctx.strokeStyle = item.clr; dctx.lineWidth = _lw2; dctx.lineCap = "round";
-          dctx.beginPath();
-          dctx.moveTo(_bx - _arm, _by); dctx.lineTo(_bx + _arm, _by);
-          dctx.moveTo(_bx, _by - _arm); dctx.lineTo(_bx, _by + _arm);
-          dctx.stroke(); dctx.restore();
+          dctx.strokeStyle = "#00E5FF"; dctx.lineWidth = 2 * pxPerCss / zoom;
+          dctx.beginPath(); dctx.arc(_bx, _by, _r, 0, Math.PI*2); dctx.stroke();
+          dctx.restore();
         });
       })();
       // Position as a SCREEN-SPACE overlay in the doc area. The region's top-left
@@ -10431,21 +10532,25 @@ function PdfMarkupView(props) {
         const v = viewRef.current;
         panRef.current = { x0: t0.clientX, y0: t0.clientY, panX0: v.panX, panY0: v.panY };
       } else if (tool === "measure") {
-        measureTapStartRef.current = {x: touches[0].clientX, y: touches[0].clientY};
-        // In idle (no pt1), check if touching an existing dimension to drag-reposition
-        let _startedDrag = false;
-        if (measurePt1 === null && !calibState) {
-          const _hitPt = getNormPoint(touches[0]);
-          const _hit = findMeasurementHit(_hitPt);
-          if (_hit) {
-            draggingMeasRef.current = {id: _hit.id, meas: _hit};
-            liveOffsetRef.current = _hit.offset || 0;
-            _startedDrag = true;
+        measTapStartRef.current = {x: touches[0].clientX, y: touches[0].clientY};
+        if (calibState) {
+          // calibration taps handled in onTouchEnd
+        } else {
+          const _which = hitActiveMeas(touches[0].clientX, touches[0].clientY);
+          if (_which) {
+            // Hit an endpoint or body of the active (in-progress) line
+            const _am = activeMeasRef.current;
+            measDragRef.current = {which: _which, startX: touches[0].clientX, startY: touches[0].clientY,
+              ox1: _am.x1, oy1: _am.y1, ox2: _am.x2, oy2: _am.y2};
+          } else {
+            // Check committed measurements for tap-to-select
+            const _hitSaved = findMeasurementHit(getNormPoint(touches[0]));
+            if (_hitSaved) {
+              measDragRef.current = {which: "saved", id: _hitSaved.id, meas: _hitSaved,
+                startX: touches[0].clientX, startY: touches[0].clientY};
+            }
+            // else: tap on empty — will place line in onTouchEnd
           }
-        }
-        if (!_startedDrag) {
-          liveMeasPtRef.current = getMeasurePoint(touches[0]);
-          showCursor(touches[0]); // screen-space DOM cursor, always visible (index_107)
         }
         rerender();
       } else {
@@ -10454,7 +10559,7 @@ function PdfMarkupView(props) {
       e.preventDefault();
     } else if (touches.length >= 2) {
       if (drawingRef.current) cancelDraw();
-      if (tool === "measure" && measurePt1 !== null) { setMeasurePt1(null); liveMeasPtRef.current = null; }
+      if (tool === "measure") { measDragRef.current = null; }
       beginGesture(touches);
       e.preventDefault();
     }
@@ -10482,13 +10587,27 @@ function PdfMarkupView(props) {
       return;
     }
     if (tool === "measure") {
-      if (touches.length === 1) {
-        if (draggingMeasRef.current) {
-          liveOffsetRef.current = computeOffsetForMeas(touches[0], draggingMeasRef.current.meas);
-        } else {
-          liveMeasPtRef.current = getMeasurePoint(touches[0]);
-          showCursor(touches[0]);
-          if (measurePt1) showRubberBand(touches[0], measurePt1); // pt1 set → show rubber-band
+      if (touches.length === 1 && measDragRef.current) {
+        const drag = measDragRef.current;
+        const dx = touches[0].clientX - drag.startX;
+        const dy = touches[0].clientY - drag.startY;
+        const d = dimsRef.current;
+        const zoom = (viewRef.current && viewRef.current.zoom) || 1;
+        const dnx = dx / (d.cssW * zoom), dny = dy / (d.cssH * zoom);
+        if (drag.which === "p1") {
+          const snapped = snapToVector({x: drag.ox1 + dnx, y: drag.oy1 + dny});
+          const updated = Object.assign({}, activeMeasRef.current, {x1: snapped.x, y1: snapped.y});
+          setActiveMeas(updated); activeMeasRef.current = updated;
+        } else if (drag.which === "p2") {
+          const snapped = snapToVector({x: drag.ox2 + dnx, y: drag.oy2 + dny});
+          const updated = Object.assign({}, activeMeasRef.current, {x2: snapped.x, y2: snapped.y});
+          setActiveMeas(updated); activeMeasRef.current = updated;
+        } else if (drag.which === "body") {
+          const updated = {x1: drag.ox1+dnx, y1: drag.oy1+dny, x2: drag.ox2+dnx, y2: drag.oy2+dny};
+          setActiveMeas(updated); activeMeasRef.current = updated;
+        } else if (drag.which === "saved") {
+          // drag-reposition saved measurement offset
+          liveOffsetRef.current = computeOffsetForMeas(touches[0], drag.meas);
         }
         rerender(); e.preventDefault();
       }
@@ -10505,49 +10624,57 @@ function PdfMarkupView(props) {
     if (tool === "measure") {
       const _ch = e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null;
       if (_ch && touches.length === 0) {
-        // Drag-reposition completion
-        if (draggingMeasRef.current) {
-          const _dm = draggingMeasRef.current;
-          draggingMeasRef.current = null;
-          const _start2 = measureTapStartRef.current;
-          measureTapStartRef.current = null;
-          const _wasTap2 = _start2 && Math.hypot(_ch.clientX - _start2.x, _ch.clientY - _start2.y) < 12;
-          hideCursor(); hideRubberBand();
-          if (_wasTap2) {
+        const _tapStart = measTapStartRef.current;
+        measTapStartRef.current = null;
+        const _wasTap = _tapStart && Math.hypot(_ch.clientX - _tapStart.x, _ch.clientY - _tapStart.y) < 12;
+
+        // Calibration taps
+        if (calibState === "placing1") {
+          const pt = getMeasurePoint(_ch);
+          setCalibPt1(pt); setCalibState("placing2"); scheduleDetail(); e.preventDefault(); return;
+        }
+        if (calibState === "placing2") {
+          const pt = getMeasurePoint(_ch);
+          setCalibPt2(pt); setCalibState("dialog"); scheduleDetail(); e.preventDefault(); return;
+        }
+
+        // Finish dragging saved measurement offset
+        if (measDragRef.current && measDragRef.current.which === "saved") {
+          const _dm = measDragRef.current;
+          measDragRef.current = null;
+          if (_wasTap) {
             setSelectedMeasId(function(p){return p===_dm.id?null:_dm.id;});
             liveOffsetRef.current = null;
           } else {
-            // Drag → commit new offset
             const _newOff = liveOffsetRef.current !== null ? liveOffsetRef.current : (_dm.meas.offset||0);
             liveOffsetRef.current = null;
             setMeasurements(function(prev){
               const cp = Object.assign({},prev);
-              cp[pageNum] = (cp[pageNum]||[]).map(function(m){return m.id===_dm.id?Object.assign({},m,{offset:_newOff}):m;});
+              cp[pageNum]=(cp[pageNum]||[]).map(function(m){return m.id===_dm.id?Object.assign({},m,{offset:_newOff}):m;});
               return cp;
             });
           }
-          if (detailTimerRef.current) clearTimeout(detailTimerRef.current);
-          detailTimerRef.current = setTimeout(renderDetail, 0);
-          e.preventDefault(); return;
+          scheduleDetail(); e.preventDefault(); return;
         }
-        hideCursor(); hideRubberBand();
-        const pt = getMeasurePoint(_ch);
-        liveMeasPtRef.current = null;
-        const _start = measureTapStartRef.current;
-        measureTapStartRef.current = null;
-        // Calibration
-        if (calibState === "placing1") { setCalibPt1(pt); setCalibState("placing2"); scheduleDetail(); e.preventDefault(); return; }
-        if (calibState === "placing2") { setCalibPt2(pt); setCalibState("dialog"); scheduleDetail(); e.preventDefault(); return; }
-        setSelectedMeasId(null);
-        if (measurePt1 !== null) {
-          // Phase 2 → place immediately with offset 0 (index_104)
-          completeMeasurement(pt, 0);
-          if (detailTimerRef.current) clearTimeout(detailTimerRef.current);
-          detailTimerRef.current = setTimeout(renderDetail, 0);
-        } else {
-          // Phase 1 → set pt1
-          setMeasurePt1(pt);
-          scheduleDetail(); // restore sharp PDF after hiding detail on touchstart
+
+        // Finish dragging activeMeas endpoint or body — just clear the drag ref
+        if (measDragRef.current) {
+          measDragRef.current = null;
+          scheduleDetail(); e.preventDefault(); return;
+        }
+
+        // Tap on empty space
+        if (_wasTap) {
+          setSelectedMeasId(null);
+          if (activeMeasRef.current) {
+            // Already have an active line — commit it first, then place a new one at tap
+            commitActiveMeas(activeMeasRef.current);
+          }
+          // Place new line centered on tap, show scale dialog
+          const pt = getMeasurePoint(_ch);
+          placeLine(pt);
+          // Show scale/calibrate bar (already visible); if no scale set, show calibrate nudge
+          scheduleDetail();
         }
         e.preventDefault();
       }
@@ -10629,7 +10756,7 @@ function PdfMarkupView(props) {
   function goPage(n) {
     if (n < 1 || n > numPages) return;
     if (textDraft) commitText();
-    setMeasurePt1(null); setMeasurePt2(null); liveMeasPtRef.current = null; liveOffsetRef.current = null; draggingMeasRef.current = null; setSelectedMeasId(null);
+    setActiveMeas(null); activeMeasRef.current = null; measDragRef.current = null; setSelectedMeasId(null);
     hideCursor(); hideRubberBand();
     drawingRef.current = false;
     currentRef.current = null;
@@ -11148,22 +11275,23 @@ function PdfMarkupView(props) {
       }
     },
       calibState === null && /*#__PURE__*/React.createElement(React.Fragment, null,
-        measurePt1 !== null
-            ? (function() {
-                const _liveLP = liveMeasPtRef.current;
-                const _ppf = getPxPerFoot(pageNum);
-                const _d2 = dimsRef.current;
-                const _liveDist = (_liveLP && _ppf && _d2.cssW)
-                  ? formatFeetInches(Math.hypot((_liveLP.x-measurePt1.x)*_d2.cssW, (_liveLP.y-measurePt1.y)*_d2.cssH), _ppf)
-                  : null;
-                return /*#__PURE__*/React.createElement(React.Fragment, null,
-                  /*#__PURE__*/React.createElement("span", {style:{color:"#00E5FF",fontSize:_liveDist?15:13,fontWeight:700,fontVariantNumeric:"tabular-nums",minWidth:80,textAlign:"center"}}, _liveDist || "Drag 2nd point"),
-                  /*#__PURE__*/React.createElement("button", {onClick:function(){setMeasurePt1(null);liveMeasPtRef.current=null;},style:{background:"transparent",color:"#9AA5B4",border:"none",fontSize:17,cursor:"pointer",padding:"2px 6px",lineHeight:1}},"\u2715")
-                );
-              })()
+        activeMeas !== null
+          ? /*#__PURE__*/React.createElement(React.Fragment, null,
+              /*#__PURE__*/React.createElement("span", {style:{color:"#00E5FF",fontSize:14,fontWeight:700,fontVariantNumeric:"tabular-nums",minWidth:80,textAlign:"center"}},
+                labelForMeas(activeMeas.x1, activeMeas.y1, activeMeas.x2, activeMeas.y2)
+              ),
+              /*#__PURE__*/React.createElement("button", {
+                onClick: function(){ commitActiveMeas(activeMeas); },
+                style:{background:"#1B6FB3",color:"white",border:"none",borderRadius:6,padding:"5px 12px",fontSize:13,fontWeight:700,cursor:"pointer"}
+              }, "Done"),
+              /*#__PURE__*/React.createElement("button", {
+                onClick: function(){ setActiveMeas(null); activeMeasRef.current = null; },
+                style:{background:"transparent",color:"#9AA5B4",border:"none",fontSize:17,cursor:"pointer",padding:"2px 6px",lineHeight:1}
+              }, "\u2715")
+            )
           : /*#__PURE__*/React.createElement(React.Fragment, null,
               (measurements[pageNum]||[]).length > 0 && /*#__PURE__*/React.createElement("button", {
-                onClick:function(){setMeasurements(function(prev){const cp=Object.assign({},prev);cp[pageNum]=(cp[pageNum]||[]).slice(0,-1);return cp;});setSelectedMeasId(null);setMeasurePt1(null);liveMeasPtRef.current=null;hideCursor();hideRubberBand();},
+                onClick:function(){setMeasurements(function(prev){const cp=Object.assign({},prev);cp[pageNum]=(cp[pageNum]||[]).slice(0,-1);return cp;});setSelectedMeasId(null);},
                 title:"Undo last measurement",
                 style:{background:"#2E3850",color:"white",border:"1px solid #39435A",borderRadius:6,padding:"5px 10px",fontSize:14,cursor:"pointer"}
               },"\u21B6"),
@@ -11180,14 +11308,14 @@ function PdfMarkupView(props) {
                 measureScalePerPage[pageNum] && /*#__PURE__*/React.createElement("option",{value:"custom"},measureScalePerPage[pageNum].label||"Custom")
               ),
               /*#__PURE__*/React.createElement("button", {
-                onClick: function(){setCalibState("placing1");setMeasurePt1(null);liveMeasPtRef.current=null;},
+                onClick: function(){setCalibState("placing1");},
                 style:{background:"#2E3850",color:"#FFD54F",border:"1px solid #39435A",borderRadius:6,padding:"5px 11px",fontSize:13,fontWeight:600,cursor:"pointer"}
               }, "Calibrate"),
               selectedMeasId && /*#__PURE__*/React.createElement("button", {
                 onClick: deleteMeasurement,
                 style:{background:"#7F1D1D",color:"#FCA5A5",border:"none",borderRadius:6,padding:"5px 11px",fontSize:13,fontWeight:600,cursor:"pointer"}
               }, "\uD83D\uDDD1 Delete")
-              )
+            )
       ),
       calibState === "placing1" && /*#__PURE__*/React.createElement("span",{style:{color:"#FFD54F",fontSize:13,fontWeight:700}},"Tap START of a known dimension"),
       calibState === "placing2" && /*#__PURE__*/React.createElement("span",{style:{color:"#FFD54F",fontSize:13,fontWeight:700}},"Tap END of the dimension"),
