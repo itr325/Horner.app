@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-10 (Session 38)_
+_Last updated: 2026-06-11 (Session 39)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -141,6 +141,21 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ## 📋 Session History (newest first)
 
 ---
+---
+
+### Session 39
+**Date:** 2026-06-11
+**Build:** index_187 (no code changes)
+
+**What we did:**
+- No app changes this session
+- Bulk job migration in progress: creating all active jobs via Admin panel, then dragging files into SharePoint folders
+- Turned off **Flow 18 - Submittal Notifications** to prevent flooding PMs with emails during migration
+- Confirmed Flow 18 already CCs Project Lead (Foreman field) — no changes needed
+- Plan: turn Flow 18 back on after migration and spot-check with a test file drop
+
+**Next session:** Review and address field crew feedback items.
+
 ---
 
 ### Session 38
