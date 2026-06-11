@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-10 (Session 36)_
+_Last updated: 2026-06-10 (Session 37)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -836,5 +836,20 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - All underlying data keys (foreman, foremanName, editForeman), position filter strings (position === "Foreman"), and SharePoint field names left unchanged — no flow or data breakage
 - Fixed BUILD_ID regression — working file was copied from index_180 instead of index_181, causing stamp to show index_180. Corrected in final push.
 - Both session 35 (special char validation) and session 36 (Project Lead rename) are live in index_182
+
+**Next session:** Employee IDs on timecards, then Residential timecard.
+
+---
+
+### Session 37
+**Date:** 2026-06-10
+**Build:** index_185
+
+**What we did:**
+- Diagnosed Flow 2 (Syncing Projects) returning lowercase PM names — root cause was `@toLower()` wrapper in the Select action's `pm` mapping, left over from the old hardcoded PMS object era. Fixed by removing `toLower()` — now returns PM names exactly as stored in SharePoint.
+- Expanded Project Lead dropdowns (New Job form + Change Project Lead admin panel) to include positions: Foreman, Journeymen, 5th Year, and 4th Year — per Patrick's guidance that Project Lead is a role, not a job title
+- Fixed BUILD_ID regression (working file copied from stale index — corrected at push time)
+
+**Note:** All changes from Sessions 35 + 36 (special char validation, Foreman→Project Lead rename) are also in index_185 via index_181–184.
 
 **Next session:** Employee IDs on timecards, then Residential timecard.
