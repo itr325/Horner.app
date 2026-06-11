@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-10 (Session 37)_
+_Last updated: 2026-06-10 (Session 38)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_174.html` |
+| **Current build** | `index_187.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -141,6 +141,23 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ## 📋 Session History (newest first)
 
 ---
+---
+
+### Session 38
+**Date:** 2026-06-10
+**Build:** index_186 → index_187
+
+**What we did:**
+- User uploaded actual `employees.csv` — confirmed the existing `id` column (values 1–47 for field crew) IS the Employee ID, not a timestamp. 4 PM-added employees have timestamp IDs that need cleanup via the Edit form.
+- Added **Employee ID** field to the Add Employee form (numeric only, required, duplicate check)
+- Added **Employee ID** field to the inline Edit Employee form (pre-populated from existing `id`, numeric only, required, duplicate check) — allows cleaning up timestamp IDs
+- When saving via Add or Edit, the `id` field is now set to the user-entered number (not `Date.now()`)
+- **Timecard email** now shows "Employee ID" row in the HTML header table and plain-text body — pulled from `emp.id` automatically on send
+- Employee ID does NOT appear on the timecard form while filling out — email-only
+- No new CSV column added; uses the existing `id` column as-is
+
+**Next session:** Residential timecard.
+
 
 ### Session 32 — 2026-06-09 | index_168 → index_174
 
