@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-12 (Session 42)_
+_Last updated: 2026-06-12 (Session 43)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_233.html` |
+| **Current build** | `index_234.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -141,6 +141,24 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ## 📋 Session History (newest first)
 
 ---
+---
+
+### Session 43
+**Date:** 2026-06-12
+**Build:** index_234
+
+**What we did:**
+- **Feedback form photo attachment — complete:**
+  - Added `fbPhoto` state + hidden `<input type="file" accept="image/*">` to `FeedbackForm`
+  - "📷 Attach Screenshot" button triggers native iOS photo picker
+  - Selected image shows thumbnail preview with filename + ✕ remove button
+  - Image base64-encoded in app (data URL prefix stripped); sent as `attachmentName` / `attachmentBase64` / `attachmentType` in Flow 23 payload
+  - Updated Flow 23 (Send Feedback Email): Attachments → Content field changed to `base64ToBinary(triggerBody()?['attachmentBase64'])` — raw base64 string was causing unreadable attachment; `base64ToBinary()` fixes it
+  - Attachment is optional — form submits normally with no attachment if none selected
+  - Form resets including photo on successful submit
+
+**Next session:** Fix measure tool — scale calibration broken + save dimensions broken after rework.
+
 ---
 
 ### Session 42
