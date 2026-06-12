@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-12 (Session 41)_
+_Last updated: 2026-06-12 (Session 42)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_187.html` |
+| **Current build** | `index_233.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -141,6 +141,23 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ## 📋 Session History (newest first)
 
 ---
+---
+
+### Session 42
+**Date:** 2026-06-12
+**Build:** index_231 → index_233
+
+**What we did:**
+- **Timecard History — complete end-to-end:**
+  - Updated Flow 22 (Send Timecard Email): now also saves an HTML copy to `TIME CARDS/TIMECARDS/` after sending. Filename format: `EmpName - MM-dd-yyyy.html`
+  - Flow 1 already updated by Eric to create `TIMECARDS` subfolder inside `TIME CARDS` on new job creation
+  - App payload to Flow 22 updated: added `code`, `name`, `fileContent`, `empName`, `weekEnd` fields (index_231)
+  - In-app viewer already worked via existing `openTxtFile` / `txtViewer` — no extra code needed
+- **TimeCard reset fix:** After sending, first 5 job rows now re-populate with project code (was resetting to blank) (index_232)
+- **Timecard history filename:** Uses employee name + week ending date in MM-dd-yyyy format via `formatDateTime()` in Flow 22 expression (index_233). Email body/subject already used MM/DD/YY via app-side `fmtDate()`.
+
+**Next session:** Add photo/file/screenshot upload to the Feedback form.
+
 ---
 
 ### Session 39
@@ -792,7 +809,7 @@ PDF annotation editor, photo capture, SharePoint integration, pan tool, folder n
 | 21 | Flow 21 - Send Cart Email | POST `{to, cc, subject, body}` → sends HTML email via Office 365 Outlook from notifications@hornerplumbing.com | `SEND_CART_URL` |
 | 22 | Flow 22 - Send Timecard Email | POST `{to, cc, subject, body}` → sends HTML timecard email via Office 365 Outlook from notifications@hornerplumbing.com | `SEND_TIMECARD_URL` |
 
-All 22 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
+All 24 URLs are plaintext in the public GitHub JS. **Shared-secret check still unimplemented — deferred to Logins.**
 
 ---
 
