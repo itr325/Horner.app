@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-11 (Session 40)_
+_Last updated: 2026-06-12 (Session 41)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -911,3 +911,29 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - 3x page canvas oversample experiment — caused PDF to load zoomed in with no zoom-out; reverted. pdf.js CPU rendering can't match PDF Expert's native GPU vector rendering — accepted limitation of free solution.
 
 **Next session:** Field crew feedback items (continued). Residential timecard still on backlog.
+
+---
+
+### Session 41
+**Date:** 2026-06-11
+**Build:** index_230 (sessions spanned index_224–230)
+
+**What we did:**
+
+**Order History — complete end-to-end:**
+- Flow 21 (Send Cart Email) updated: now also saves an HTML copy of the order to `ORDER SHEETS/ORDERS/Order_YYYY-MM-DD_HH-mm.html` in SharePoint after sending the email
+- App payload to Flow 21 updated: added `code`, `name`, `fileContent` (HTML body) fields alongside existing email fields — no change to email format
+- Flow 1 (Create Job) updated: now creates `ORDERS` subfolder inside `ORDER SHEETS` for every new job
+- Flow 24 - Get File Content: new flow (3 steps — HTTP trigger → Get file content using path → Response). Returns raw file content. URL: stored in GET_FILE_CONTENT_URL constant
+- App: in-app HTML viewer modal — tap any .html file in ORDERS folder → Flow 24 fetches content → renders in iframe with full email layout. Clean, fast, looks identical to the cart email preview.
+- `.html` and `.txt` files now handled by `openTxtFile()` in job view instead of browser open
+
+**Known issues for next session:**
+- Measure tool: scale calibration not working correctly (Patrick testing)
+- Measure tool: saving dimensions no longer works after the rework
+- Timecard history — same pattern as order history, not yet built
+
+**Flows (24 total):**
+- Flow 24 - Get File Content added this session
+
+**Next session:** Fix measure tool — scale calibration + save dimensions. Then timecard history.
