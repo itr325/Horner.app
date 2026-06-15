@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-12 (Session 43)_
+_Last updated: 2026-06-15 (Session 44)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_234.html` |
+| **Current build** | `index_238.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -142,6 +142,27 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 ---
 ---
+
+### Session 44
+**Date:** 2026-06-15
+**Build:** index_235 → index_238
+
+**What we did:**
+- **Shop Orders — separate cart & email destination:**
+  - Added **Shop Orders** square tile at top of ORDER SHEETS form list (matches job folder tile style, shows cart badge count)
+  - Removed "Shop Order Sheet" from the shared FORM_FOLDERS list so it no longer appears in the regular form list
+  - Shop Orders tile opens a `shop-orders` sub-page listing only the Shop Order Sheet form
+  - Shop Order Sheet now uses a completely separate cart (`shop_cart.json`) — independent from the main `cart.json` cart
+  - Submitting the shop cart emails to `shoporder@hornerplumbing.com` (CC: PM) via new `ShopCartSummaryView` component
+  - `ShopCartSummaryView` mirrors `CartSummaryView` but hardcodes `to: shoporder@hornerplumbing.com` and subject line says "Shop Order"
+  - Modified **Flow 19 (Save Cart)** and **Flow 20 (Load Cart)** to accept optional `filename` parameter — defaults to `cart.json` if not provided, uses `shop_cart.json` for shop cart calls. No breaking change to existing cart flows.
+  - `shop_cart.json` filtered from all file list views
+- **Hide all .json files:** Changed all three file list filters (2x job folder views + LibraryBrowser) from specific filename exclusions to a blanket `!/\.json$/i.test(f.name)` filter — hides all JSON files in all views automatically
+
+**Next session:** Fix measure tool — dimension scaling (scale calibration broken).
+
+---
+
 
 ### Session 43
 **Date:** 2026-06-12
