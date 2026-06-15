@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-15 (Session 44)_
+_Last updated: 2026-06-15 (Session 45)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_238.html` |
+| **Current build** | `index_239.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -139,6 +139,21 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+---
+
+### Session 45
+**Date:** 2026-06-15
+**Build:** index_238 → index_239
+
+**What we did:**
+- **Measure tool — scale calibration fix:**
+  - **Root bug:** `confirmCalib` was calling `setScaleDropdownVal("custom")` after calibration. `"custom"` is not in `SCALE_OPTIONS`, so `getPxPerFoot` returned `null` on any page without a `measureScalePerPage` entry — causing all measurements to show "NTS".
+  - **Fix:** Removed `setScaleDropdownVal("custom")`. The dropdown already shows "Custom" via `value: measureScalePerPage[pageNum] ? "custom" : scaleDropdownVal` — no side effects needed.
+  - **Bonus fix:** After calibration (`confirmCalib`) and after changing the scale dropdown, all previously committed measurements on that page now have their labels recomputed to match the new scale. Previously, only newly placed measurements got the correct label.
+
+**Next session:** TBD.
 
 ---
 ---
