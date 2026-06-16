@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-16 (Session 46)_
+_Last updated: 2026-06-16 (Session 47)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_273.html` |
+| **Current build** | `index_274.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -139,6 +139,18 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+---
+
+### Session 47
+**Date:** 2026-06-16
+**Build:** index_273 → index_274
+
+**What we did:**
+- **Scale picker modal (index_274):** Tapping measure tool now shows a persistent modal requiring scale selection before any dimension can be placed. Large tap-friendly buttons for all scale options. Last-used scale highlighted. Modal dismisses on selection. Scale label in toolbar turns yellow until confirmed. Resets on each new page load. Cal tool also counts as confirming scale.
+
+**Next session:** Residential timecard, or further measure tool work.
 
 ---
 ---
