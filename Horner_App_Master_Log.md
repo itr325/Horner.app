@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-15 (Session 45)_
+_Last updated: 2026-06-16 (Session 46)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
@@ -8,7 +8,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_239.html` |
+| **Current build** | `index_273.html` |
 | **GitHub Pages URL** | `https://itr325.github.io/Horner.app/` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
@@ -139,6 +139,40 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
 ---
 
 ## 📋 Session History (newest first)
+
+---
+---
+
+### Session 46
+**Date:** 2026-06-16
+**Build:** index_239 → index_273
+
+**What we did:**
+
+**Pinch zoom jump fixed (index_242):** Removed "final pair" updateGesture call on finger lift that was using a lifted finger's position causing jumps. Also cleared panRef when pinch starts and re-baselined pan when pinch ends with one finger remaining.
+
+**Measurement format (index_240):** Switched from inches-only to feet-inches display (e.g. 5'-10-1/4").
+
+**Scale calibration fixed (index_239):** Removed `setScaleDropdownVal("custom")` from confirmCalib that was breaking non-calibrated pages. Existing measurement labels now recompute when scale changes.
+
+**Cal tool reworked (index_245/246):** Replaced awkward two-tap calibration with a "Cal" button on the active line. Place line on known dimension, tap Cal, enter real-world length. distPx computed eagerly from activeMeasRef at button-tap time to avoid stale state.
+
+**Measurements save as PDF vectors (index_256+):** Measurements now saved as crisp pdf-lib vector graphics (drawLine/drawText) instead of rasterized canvas overlay. Sizes scale proportionally to page size, capped at CAD-standard proportions. hasAnnotations updated to include measurements.
+
+**PDF dimension text size fixed (index_257/258):** Font ~8pt, arrows ~7pt on D-size. Scales for C through E size sheets.
+
+**Snap working (index_268-271):** 
+- Discovered PDF.js 3.x compiles all path ops into constructPath (op 91) with sub-arrays
+- Sub-op codes are raw OPS codes (moveTo=13, lineTo=14, closePath=18, rectangle=19)
+- Added CTM stack tracking (save/restore/transform ops) to transform local coords to page space
+- snapToVector rewritten to snap to nearest point ON nearest line segment (not just endpoints)
+- 30,000+ segments extracted from typical Revit PDF
+
+**Scale investigation:** Formula confirmed mathematically correct. Variation in measurements (e.g. two 8'-5" bays reading differently) traced to snap landing on different wall layers (face of stud vs face of drywall). Not a formula bug — inherent to drawing geometry.
+
+**Display format (index_273):** Restored feet-inches at 1/8" precision.
+
+**Next session:** Residential timecard, or continue measure tool refinements.
 
 ---
 ---
