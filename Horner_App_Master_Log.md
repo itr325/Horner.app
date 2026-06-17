@@ -1,7 +1,24 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-16 (Session 47)_
+_Last updated: 2026-06-17 (Session 48)_
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
+---
+
+### Session 48
+**Date:** 2026-06-17
+**Build:** index_274 → index_278
+
+**What we did:**
+- **Cart indicators on ORDER SHEETS:**
+  - **Active Projects list:** Cart icon now shows a small red dot (no count) if main cart OR shop cart has any items for that job.
+  - **ORDER SHEETS folder tile** (job home): Red dot on top-left corner when either cart has items.
+  - **Form tiles inside ORDER SHEETS:** Cart icon (🛒 in yellow square) always visible; orange count badge appears when that form has items in the main cart.
+  - **Shop Orders tile:** Orange count badge showing shop cart item count (unchanged from before).
+  - Went through several iterations: index_275 (badge only when items), index_276 (simplified conditional), index_277 (always show cart icon), index_278 (dot-only on project list + ORDER SHEETS tile, counts only on individual form tiles).
+
+**Next session:** TBD.
+
+---
 ---
 
 ## ⚡ Current State
