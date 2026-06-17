@@ -14332,7 +14332,7 @@ function App() {
       fontSize: 11,
       fontWeight: 700
     }
-  }, "Project Lead: ", p.foreman)), /*#__PURE__*/React.createElement("button", { onClick: function(e) { e.stopPropagation(); setProject(p); loadCart(p); setCartView(true); }, style: { position: "relative", background: "none", border: "none", cursor: "pointer", fontSize: 24, padding: "2px 0", lineHeight: 1, alignSelf: "center" } }, "\uD83D\uDED2", cartCounts[p.code] > 0 && /*#__PURE__*/React.createElement("span", { style: { position: "absolute", top: -4, right: -4, background: RED, color: "white", borderRadius: "50%", minWidth: 16, height: 16, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 2px", boxSizing: "border-box", lineHeight: 1 } }, cartCounts[p.code])))))), view === "projects" && projects.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Project Lead: ", p.foreman)), /*#__PURE__*/React.createElement("button", { onClick: function(e) { e.stopPropagation(); setProject(p); loadCart(p); setCartView(true); }, style: { position: "relative", background: "none", border: "none", cursor: "pointer", fontSize: 24, padding: "2px 0", lineHeight: 1, alignSelf: "center" } }, "\uD83D\uDED2", (cartCounts[p.code] > 0 || shopCartCounts[p.code] > 0) && /*#__PURE__*/React.createElement("span", { style: { position: "absolute", top: -2, right: -2, background: RED, borderRadius: "50%", width: 9, height: 9, display: "block" } })))))), view === "projects" && projects.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "48px 24px",
@@ -14556,6 +14556,16 @@ function App() {
         width: 8,
         height: 8,
         background: BLUE,
+        borderRadius: "50%"
+      }
+    }), f.name === "ORDER SHEETS" && (cartCounts[project?.code] > 0 || shopCartCounts[project?.code] > 0) && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        top: 8,
+        left: 8,
+        width: 9,
+        height: 9,
+        background: RED,
         borderRadius: "50%"
       }
     }), /*#__PURE__*/React.createElement("div", {
