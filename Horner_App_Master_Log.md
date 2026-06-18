@@ -1,5 +1,20 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-18 (Session 49)_
+_Last updated: 2026-06-18 (Session 50)_
+### Session 50
+**Date:** 2026-06-18
+**Build:** index_279 → index_280
+
+**What we did:**
+- **Residential Time Card — moved to correct location:**
+  - Removed "Residential Time Card" from `FORM_FOLDERS["TIME CARDS"]` — it was incorrectly showing up inside every commercial job's TIME CARDS folder
+  - Residential home tile now navigates to `"res-timecard"` view (was showing "Coming soon!" alert)
+  - `ResidentialTimecardView` now renders as a standalone top-level view with breadcrumb: Home › Residential Time Card
+  - No `project` prop (residential timecard has no commercial job context)
+
+**Next session:** Build Flow 25 (Get Residential Jobs) — HTTP trigger → List rows from `Project_DB` table in Patrick's SharePoint Excel file → filter Status=Open → return Job No. array. Wire `GET_RES_JOBS_URL` constant into `ResidentialTimecardView` job# search.
+
+---
+---
 ### Session 49
 **Date:** 2026-06-18
 **Build:** index_278 → index_279
