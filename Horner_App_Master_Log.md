@@ -1,5 +1,25 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-17 (Session 48)_
+_Last updated: 2026-06-18 (Session 49)_
+### Session 49
+**Date:** 2026-06-18
+**Build:** index_278 → index_279
+
+**What we did:**
+- **Residential Time Card:** Built `ResidentialTimecardView` component and wired it into the app
+  - Added "Residential Time Card" to `FORM_FOLDERS["TIME CARDS"]` (appears alongside Commercial Time Card)
+  - `getFormView()` routes it to `"res-timecard"`; added to `formViews` array
+  - Header card: Employee dropdown (filters by `department === "Residential"`, falls back to all) + Week Ending date picker (2-col grid)
+  - Job rows: job# search field + Phase dropdown (Ph.3 Rough / Ph.6 Finish) on top line; Mon–Fri hour inputs + auto-calculated row total
+  - Footer: daily column totals + weekly grand total
+  - "+ Add Job Row" button (starts with 3 rows)
+  - Submits via existing `SEND_TIMECARD_URL` flow to `timecards@hornerplumbing.com`
+  - Job# search field ready for Flow 25 data (no live suggestions yet — empty array placeholder)
+  - iOS-safe: no setState in touchstart
+
+**Next session:** Build Flow 25 — fetch open residential job numbers from Patrick's SharePoint Excel file, wire into the ResidentialTimecardView job# search suggestions.
+
+---
+---
 _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "Session History."_
 
 ---
