@@ -1,5 +1,22 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-18 (Session 50)_
+_Last updated: 2026-06-18 (Session 51)_
+### Session 51
+**Date:** 2026-06-18
+**Build:** index_280 → index_281
+
+**What we did:**
+- **Flow 25 - Get Residential Jobs wired end-to-end:**
+  - Built Flow 25: HTTP trigger → Get file content (SharePoint, `Residential_Projects.xlsm`) → List rows from `Project_DB` table → Filter array Status=Open → Select Job No. → Response JSON array
+  - Added `GET_RES_JOBS_URL` constant (Flow 25 URL)
+  - `ResidentialTimecardView` now fetches open job list on mount via `useEffect`
+  - Response normalized to flat string array (handles both string and object-with-empty-key formats from the Select action)
+  - Jobs sorted alphabetically; silent fail if flow errors — field still works as free-text input
+  - Type 2+ characters in any job# field → matching open job numbers appear as suggestions
+
+**Next session:** TBD.
+
+---
+---
 ### Session 50
 **Date:** 2026-06-18
 **Build:** index_279 → index_280
