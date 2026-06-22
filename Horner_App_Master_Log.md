@@ -1,5 +1,22 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-18 (Session 51)_
+_Last updated: 2026-06-22 (Session 52)_
+### Session 52
+**Date:** 2026-06-22
+**Build:** index_281 (no new build — debugging)
+
+**What we did:**
+- Discovered blank white screen when tapping Residential tile (index_281)
+- Root cause not yet identified — likely a render crash in `ResidentialTimecardView` on mount
+- Session ended before fix was applied
+
+**Next session:** Debug blank screen in `ResidentialTimecardView`. Suspected causes:
+1. `EmailPreview` component being called with wrong/missing props
+2. `CONTACTS.timecards` undefined in this context
+3. Something in the render tree crashing silently
+- Strategy: add try/catch wrapper or strip component down to bare minimum and add back piece by piece
+
+---
+---
 ### Session 51
 **Date:** 2026-06-18
 **Build:** index_280 → index_281
