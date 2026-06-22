@@ -1,5 +1,27 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-22 (Session 53)_
+_Last updated: 2026-06-22 (Session 54)_
+### Session 54
+**Date:** 2026-06-22
+**Build:** index_282 → index_283
+
+**What we did:**
+- **Fixed employee dropdown** — was filtering to `department === "Residential"` only (showing 1 person). Changed to show all employees sorted by `firstName`. (index_283)
+- **Debugged Flow 25 (Get Residential Jobs)** — long sequence of issues:
+  - `Get file content using path`: wrong path (`/Cloud/Residential Shared/...`) → fixed to `/Horner Shares/Residential Shared/Shared Project Documents/Residential Projects.xlsm`
+  - `List rows present in a table`: Document Library couldn't be selected from picker → typed `Horner Shares` as custom value; table name was `Project_DB` (underscore) → should be `Project-DB` (hyphen) but saving that caused a 404 because Excel Online connector can't resolve `.xlsm` files in non-standard libraries
+  - Tried multiple workarounds: HTTP request to SharePoint, Graph API, code view edits — all failed due to `.xlsm` + non-standard library combination
+  - **Final solution**: add CSV export to the VBA macro in `Residential Projects.xlsm`. When Refresh List is clicked, macro writes `res_jobs.csv` to the same SharePoint folder containing one open job number per line.
+  - Added CSV export block to `RefreshAndPushToChildren()` in the macro, right before `Done:` label, using the already-loaded `data` array and `col` dictionary.
+  - Flow 25 will be rewired next session to read `res_jobs.csv` (plain text) instead of the Excel table — no connector issues.
+
+**Current state of Flow 25:**
+- Still pointing at Excel `List rows` action (broken)
+- Waiting for Eric to paste updated macro into the `.xlsm` file and run Refresh List to confirm `res_jobs.csv` appears in SharePoint
+- Once CSV confirmed, Flow 25 needs to be rebuilt: Get file content (`res_jobs.csv`) → parse lines → Response JSON array
+
+**Next session:** Confirm `res_jobs.csv` exists in SharePoint, rebuild Flow 25 to read CSV, wire up job search in the app, then test end-to-end residential timecard submit.
+
+---
 ### Session 53
 **Date:** 2026-06-22
 **Build:** index_281 → index_282
