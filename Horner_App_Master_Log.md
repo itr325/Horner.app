@@ -1,5 +1,19 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-22 (Session 52)_
+_Last updated: 2026-06-22 (Session 53)_
+### Session 53
+**Date:** 2026-06-22
+**Build:** index_281 → index_282
+
+**What we did:**
+- **Fixed blank white screen on Residential tile**
+  - Root cause: `ResidentialTimecardView` was defined *inside* the `TimeCard` function body (line 16710, right after `function TimeCard({` opened at 16704) — making it a locally-scoped nested function, invisible at global scope.
+  - At render time, `React.createElement(ResidentialTimecardView, ...)` received `undefined` as the component → silent React failure → blank white screen.
+  - Fix: moved `ResidentialTimecardView` to global scope, immediately before `TimeCard` (now line 16709; TimeCard at 16931).
+  - JS validated with acorn — no syntax errors.
+
+**Next session:** Verify residential timecard works end-to-end on device. Then: timecard custom job entry.
+
+---
 ### Session 52
 **Date:** 2026-06-22
 **Build:** index_281 (no new build — debugging)
