@@ -1,5 +1,20 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-22 (Session 54)_
+_Last updated: 2026-06-22 (Session 54 addendum)_
+### Session 54 — Addendum
+**Date:** 2026-06-22
+
+**Next session start checklist:**
+1. Paste updated VBA macro into `Residential Projects.xlsm` (Alt+F11, replace module contents)
+2. Click Refresh List button — confirm `res_jobs.csv` appears in `/Horner Shares/Residential Shared/Shared Project Documents/`
+3. Rebuild Flow 25:
+   - Delete current actions (Get file content + List rows + Select)
+   - Add: **Get file content using path** → site: `https://hornerplumbing.sharepoint.com`, path: `/Horner Shares/Residential Shared/Shared Project Documents/res_jobs.csv`
+   - Add: **Response** → body: (Expression) `split(string(body('Get_file_content_using_path')), decodeUriComponent('%0A'))` → Content-Type: `application/json`
+   - This returns a flat JSON array of job number strings
+4. Update app parsing if needed (currently handles flat string arrays ✅)
+5. Test job search in residential timecard on iPad
+
+---
 ### Session 54
 **Date:** 2026-06-22
 **Build:** index_282 → index_283
