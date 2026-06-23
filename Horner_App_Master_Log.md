@@ -1,5 +1,27 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-23 (Session 55)_
+_Last updated: 2026-06-23 (Session 56)_
+
+### Session 56
+**Date:** 2026-06-23
+**Build:** index_290 → index_291
+
+**What we did:**
+- **Responsive layout for iPhone** — app was iPad-optimized with several hardcoded fixed sizes that looked cramped/broken on small phone screens
+- Added `isMobile` React state (tracks `window.innerWidth < 480`, updates on resize/orientation change) in App component
+- **Logo:** Changed hardcoded `width="380"` to `width="100%"` with `max-width: 380px` — no longer overflows iPhone screen
+- **Home tile grid:** `gridTemplateColumns` now `1fr 1fr` on phones, `1fr 1fr 1fr` on iPad
+- **Home tile padding/icons:** Icon containers scale from `72×72` → `52×52`, padding `24px` → `16px` on phones
+- **Tile label font:** 13px → 11px on phones
+- **Commercial home grid:** Same 2/3-col responsive behavior
+- **Main content:** `maxWidth` respects `isMobile`, padding tightens from `14px` → `10px`
+- **CSS media query added** (`max-width: 479px`): input/select/textarea forced to `font-size: 16px` (prevents iOS Safari zoom-on-focus), breadcrumb font tightened
+- JS validated with `new Function()` — no errors
+
+**Next session:** TBD
+
+---
+
+
 
 ### Session 55
 **Date:** 2026-06-23
@@ -1222,4 +1244,5 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Flow 24 - Get File Content added this session
 
 **Next session:** Fix measure tool — scale calibration + save dimensions. Then timecard history.
+
 
