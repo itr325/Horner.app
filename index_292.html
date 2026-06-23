@@ -13730,8 +13730,14 @@ function App() {
     ]);
 
     // Home › Admin  /  Home › Admin › Sub
+    if (view === "homeResidential") return bar([
+      crumb("h", "Home", () => go("home")), sep("s1"), current("c", "Residential")
+    ]);
+    if (view === "homeService") return bar([
+      crumb("h", "Home", () => go("home")), sep("s1"), current("c", "Service")
+    ]);
     if (view === "res-timecard") return bar([
-      crumb("h", "Home", () => go("home")), sep("s1"), current("c", "Residential Time Card")
+      crumb("h", "Home", () => go("home")), sep("s1"), crumb("r", "Residential", () => go("homeResidential")), sep("s2"), current("c", "Time Cards")
     ]);
     if (view === "feedback") return bar([
       crumb("h", "Home", () => go("home")), sep("s1"), current("c", "Feedback & Issues")
@@ -13981,7 +13987,7 @@ function App() {
       ),
       /* Residential tile */
       /*#__PURE__*/React.createElement("button", {
-        onClick: function() { go("res-timecard"); },
+        onClick: function() { go("homeResidential"); },
         style: {
           background: "white", border: "2px solid #DDE3ED", borderRadius: 16,
           padding: isMobile ? "16px 6px 14px" : "24px 10px 20px", display: "flex", flexDirection: "column",
@@ -13999,7 +14005,7 @@ function App() {
       ),
       /* Service tile */
       /*#__PURE__*/React.createElement("button", {
-        onClick: function() { window.alert("Feature not yet enabled. Coming soon!"); },
+        onClick: function() { go("homeService"); },
         style: {
           background: "white", border: "2px solid #DDE3ED", borderRadius: 16,
           padding: "24px 10px 20px", display: "flex", flexDirection: "column",
