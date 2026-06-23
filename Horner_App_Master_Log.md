@@ -1,5 +1,36 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-22 (Session 54 addendum)_
+_Last updated: 2026-06-23 (Session 55)_
+
+### Session 55
+**Date:** 2026-06-23
+**Build:** index_283 → index_290
+
+**What we did:**
+- **Completed Flow 25 (Get Residential Jobs) — end-to-end working:**
+  - Excel Online (Business) connector confirmed unable to read ANY file in "Horner Shares" library regardless of file type
+  - VBA macro updated: `ExportOpenJobsXlsx` replaced with `ExportOpenJobsCsv` — saves plain CSV via `wb.SaveAs` with full SharePoint URL, works on any machine/user
+  - Flow 25 rebuilt: HTTP trigger → SharePoint "Get file content using path" (`/Horner Shares/Residential Shared/Shared Project Documents/res_jobs.csv`) → Response: `split(string(body('Get_file_content_using_path')), decodeUriComponent('%0D%0A'))` → Content-Type: application/json
+  - Returns flat JSON array of job number strings ✅
+
+- **Residential timecard UI fixes (index_284–290):**
+  - **index_284:** Suggestions dropdown scrollable (maxHeight:220, overflowY:auto); removed 8-item slice cap
+  - **index_285:** Week Ending defaults to Friday of current week; employee dropdown filtered to `department === "Residential"`
+  - **index_286:** Reverted to all employees (only 1 Residential in CSV at that point)
+  - **index_287:** Employee dropdown driven by React `employees` state passed as prop — updates live after Admin save
+  - **index_288:** Re-applied Residential department filter
+  - **index_289:** Fixed CSV parser bug — regex `filter((_, idx) => idx % 2 === 0)` was dropping every other column (position/department/email/phone). Replaced with simple `split(",")`
+  - **index_290:** `AdminEmployeesView` re-fetches from SharePoint on every open via `useEffect` calling `loadEmployeesFromSharePoint`
+
+- **Employee CSV issues found and fixed:**
+  - Residential employees added last week were missing — saves had failed silently
+  - Some IDs stored as scientific notation in Excel (timestamp IDs)
+  - Eric edited `employees.csv` directly, fixed IDs, added Residential crew with `department: Residential`, re-uploaded to Templates library
+
+**Current state of residential timecard:** Fully working end-to-end ✅
+
+**Next session:** Build Residential Home Page — similar structure to Commercial (Active Projects tile grid, etc.)
+
+---
 ### Session 54 — Addendum
 **Date:** 2026-06-22
 
@@ -1191,3 +1222,4 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Flow 24 - Get File Content added this session
 
 **Next session:** Fix measure tool — scale calibration + save dimensions. Then timecard history.
+
