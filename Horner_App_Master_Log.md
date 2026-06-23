@@ -1,5 +1,22 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-23 (Session 56)_
+_Last updated: 2026-06-23 (Session 57)_
+
+### Session 57
+**Date:** 2026-06-23
+**Build:** index_291 → index_292
+
+**What we did:**
+- **Residential Home Page** — Residential tile on home now routes to `homeResidential` (was going straight to `res-timecard`)
+- `homeResidential` view: 2-tile grid — Time Cards (routes to `res-timecard`) + Order Sheets ("Coming soon" alert)
+- **Service Home Page** — Service tile on home now routes to `homeService` (was showing "coming soon" alert)
+- `homeService` view: 2-tile grid — Time Cards ("Coming soon") + Order Sheets ("Coming soon")
+- Both home pages use same responsive tile pattern as Commercial (isMobile-aware sizing)
+- Breadcrumbs updated: `res-timecard` now shows Home › Residential › Time Cards
+- `homeResidential` breadcrumb: Home › Residential; `homeService`: Home › Service
+
+**Next session:** TBD — timecard custom job entry, or Service/Residential Order Sheets.
+
+---
 
 ### Session 56
 **Date:** 2026-06-23
