@@ -1,5 +1,20 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-23 (Session 57)_
+_Last updated: 2026-06-23 (Session 58)_
+
+### Session 58
+**Date:** 2026-06-23
+**Build:** index_292 → index_293
+
+**What we did:**
+- **Residential & Service Home Pages** (index_292) — Residential and Service tiles on home now route to their own home pages (`homeResidential`, `homeService`) each with 2 tiles: Time Cards + Order Sheets
+  - Residential Time Cards routes to existing `res-timecard` (fully working)
+  - All other tiles show "Coming soon" alert
+  - Breadcrumbs updated: res-timecard shows Home › Residential › Time Cards
+- **Removed Team Email Routing card** (index_293) from Commercial home page — card still present in Admin panel
+
+**Next session:** More intensive work — TBD (likely Residential Order Sheets or timecard custom job entry).
+
+---
 
 ### Session 57
 **Date:** 2026-06-23
