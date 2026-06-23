@@ -17,7 +17,7 @@ _Last updated: 2026-06-23 (Session 56)_
 - **CSS media query added** (`max-width: 479px`): input/select/textarea forced to `font-size: 16px` (prevents iOS Safari zoom-on-focus), breadcrumb font tightened
 - JS validated with `new Function()` — no errors
 
-**Next session:** TBD
+**Next session:** Build Residential and Service Home Pages — each with 2 tiles: Time Cards and Order Sheets.
 
 ---
 
@@ -1244,5 +1244,6 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Flow 24 - Get File Content added this session
 
 **Next session:** Fix measure tool — scale calibration + save dimensions. Then timecard history.
+
 
 
