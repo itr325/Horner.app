@@ -1,5 +1,17 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-24 (Session 60)_
+_Last updated: 2026-06-24 (Session 61)_
+
+### Session 61
+**Date:** 2026-06-24
+**Build:** index_296 → index_297
+
+**What we did:**
+- **iOS keyboard dismiss on job search** (index_297) — in `handleSearch`, when suggestions appear (≥2 chars match), call `inputEl.blur()` immediately so the keyboard collapses before the list renders. Fixes landscape mode on iPhone where the keyboard was covering 2/3 of the screen and obscuring the job suggestion list.
+- Note: `blur()` is not possible to suppress on the iOS input accessory bar (the white bar with up/down arrows and checkmark above the keyboard) — that is a native Safari UI element with no web API to remove it.
+
+**Next session:** TBD
+
+---
 
 ### Session 60
 **Date:** 2026-06-24
