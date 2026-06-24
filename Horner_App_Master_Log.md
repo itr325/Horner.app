@@ -1,5 +1,18 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-24 (Session 61)_
+_Last updated: 2026-06-24 (Session 62)_
+
+### Session 62
+**Date:** 2026-06-24
+**Build:** index_297 → index_299
+
+**What we did:**
+- **index_298 (reverted):** Made incorrect changes to Shop Order Sheet email routing (changed purchasing@ to shoporder@) without fully understanding what change was actually needed. Reverted immediately to index_297 state as index_299.
+- **index_299:** Identical to index_297 — revert of index_298.
+- **Lesson:** Always clarify exactly what change is needed before touching email routing or any send logic.
+
+**Next session:** Shop Order Sheet — ask Eric to explain exactly what needs to change before writing any code.
+
+---
 
 ### Session 61
 **Date:** 2026-06-24
