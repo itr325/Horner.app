@@ -96,7 +96,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_299";
+const BUILD_ID = "index_300";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -133,7 +133,8 @@ const CONTACTS = {
   admin: "commercialadmin@hornerplumbing.com",
   safety: "safety@hornerplumbing.com",
   returns: "returns@hornerplumbing.com",
-  craig: "cscharmer@hornerplumbing.com"
+  craig: "cscharmer@hornerplumbing.com",
+  shoporder: "shoporder@hornerplumbing.com"
 };
 // FORM ROUTING REFERENCE (Patrick, last updated 2026-05-08):
 //   dailyLog: TO project's PM only, no CC
@@ -7525,7 +7526,8 @@ function OrderSheet({
   showGuide = false,
   onAddToCart = null,
   onOpenCart = null,
-  cartCount = 0
+  cartCount = 0,
+  toEmail = null
 }) {
   const initItems = () => {
     const m = {};
@@ -7627,7 +7629,7 @@ function OrderSheet({
     body += "\nSent from Horner Field App";
     const cc = pm?.email || "";
     setPreview({
-      to: CONTACTS.purchasing,
+      to: toEmail || CONTACTS.purchasing,
       cc,
       subject: subj,
       body
@@ -14996,7 +14998,8 @@ function App() {
     formName: activeForm.name,
     sections: SHOP,
     onToast: showToast,
-    onAddToCart: addToShopCart(project), onOpenCart: function() { setShopCartView(true); }, cartCount: shopCart.length
+    onAddToCart: addToShopCart(project), onOpenCart: function() { setShopCartView(true); }, cartCount: shopCart.length,
+    toEmail: CONTACTS.shoporder
   }), view === "pex" && activeForm && /*#__PURE__*/React.createElement(OrderSheet, {
     project: project,
     formName: activeForm.name,
