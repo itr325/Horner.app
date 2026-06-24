@@ -1,5 +1,26 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-23 (Session 58)_
+_Last updated: 2026-06-24 (Session 59)_
+
+### Session 59
+**Date:** 2026-06-24
+**Build:** index_293 → index_295
+
+**What we did:**
+- **Finish Order Sheet — size selection for 5 items** using existing `sizeOpts`/`upcBySize` pattern
+- **Water Closet section** (index_294) — added size buttons + per-size UPCs to 4 items:
+  - `PEX WC Supply 12"/20"`: sizeOpts 12"/20", upcBySize SIOUX 287-12 / SIOUX 287-20
+  - `Braided WC Supply 9"/12"/16"`: sizeOpts 9"/12"/16", upcBySize BRASSCRAFT B1-9DL-F / B1-12DL-F / B1-16DL-F
+  - `Braided 1/2"x3/8" (16"/20"/30")`: sizeOpts 16"/20"/30", upcBySize BRASSCRAFT B1-16A-F / B1-20A-F / PROFLO PFX146326
+  - `Braided 3/8"x3/8" (16"/20")`: sizeOpts 16"/20", upcBySize PROFLO PFX146343 / PFX146344
+- **Vacuum Breakers & Vents section** (index_295) — added size buttons + per-size UPCs to Maxitrol:
+  - `Maxitrol Regulator (1/2", 3/4")`: sizeOpts 1/2"/3/4", upcBySize MAXI 325-3L / MAXI 325-5A-66
+- All items: entering a qty shows size buttons, row highlights orange until size selected, correct UPC pulls per selection, cart/submit blocked until size chosen
+- Tested and confirmed working on iPad ✅
+
+**Next session:** TBD
+
+---
+
 
 ### Session 58
 **Date:** 2026-06-23
@@ -1276,6 +1297,7 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Flow 24 - Get File Content added this session
 
 **Next session:** Fix measure tool — scale calibration + save dimensions. Then timecard history.
+
 
 
 
