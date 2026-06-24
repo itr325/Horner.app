@@ -17,7 +17,7 @@ _Last updated: 2026-06-24 (Session 59)_
 - All items: entering a qty shows size buttons, row highlights orange until size selected, correct UPC pulls per selection, cart/submit blocked until size chosen
 - Tested and confirmed working on iPad ✅
 
-**Next session:** TBD
+**Next session:** Residential timecard — add 2 new phases (names TBD, Eric to provide) + Saturday and Sunday hour columns.
 
 ---
 
