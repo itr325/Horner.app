@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-24 (Session 62)_
+_Last updated: 2026-06-24 (Session 63)_
 
 ### Session 62
 **Date:** 2026-06-24
@@ -1342,3 +1342,18 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 
 
 
+
+
+### Session 63
+**Date:** 2026-06-24
+**Build:** index_299 → index_300
+
+**What we did:**
+- Fixed Shop Order Sheet direct Submit button emailing `purchasing@` instead of `shoporder@hornerplumbing.com`
+- Added `shoporder` key to `CONTACTS` object
+- Added `toEmail` prop to `OrderSheet` component (defaults to `CONTACTS.purchasing` — all other order sheets unaffected)
+- Passed `toEmail: CONTACTS.shoporder` only on the `shop` view call
+- CC field (`pm?.email`) was not touched
+- Confirmed live and working on iPad after GitHub Pages cache cleared
+
+**Next session:** Format the email sent from the order sheets.
