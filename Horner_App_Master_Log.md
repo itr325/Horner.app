@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-24 (Session 63)_
+Last updated: 2026-06-24
 
 ### Session 62
 **Date:** 2026-06-24
@@ -1355,5 +1355,17 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Passed `toEmail: CONTACTS.shoporder` only on the `shop` view call
 - CC field (`pm?.email`) was not touched
 - Confirmed live and working on iPad after GitHub Pages cache cleared
+
+**Next session:** Format the email sent from the order sheets.
+---
+
+### Session 64
+**Date:** 2026-06-24
+**Build:** index_300 → index_301
+
+**What we did:**
+- Fixed cart icon appearing on non-order-sheet fillable form tiles (Daily Field Report, RFI Form, RFC Form, Commercial Time Card, Site Safety Inspection)
+- Root cause: cart icon div was rendered unconditionally on all fillable form tiles in the `currentForms.map()` block
+- Fix: wrapped cart icon element with `folder === "ORDER SHEETS" &&` so it only appears when inside the ORDER SHEETS folder
 
 **Next session:** Format the email sent from the order sheets.
