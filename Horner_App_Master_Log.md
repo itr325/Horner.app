@@ -1,5 +1,21 @@
 # Horner Field App — Master Project Log
-_Last updated: 2026-06-24 (Session 59)_
+_Last updated: 2026-06-24 (Session 60)_
+
+### Session 60
+**Date:** 2026-06-24
+**Build:** index_295 → index_296
+
+**What we did:**
+- **Residential timecard — phase + day expansion** (index_296)
+  - Added Phase 9 (Warranty) and Phase 17 (Service) to `RES_PHASES` array
+  - Added Saturday and Sunday columns to `DAYS` array (was Mon–Fri, now Mon–Sun)
+  - Updated `mkRow` to initialize `Sat` and `Sun` hour slots
+  - Updated both row-input grid and footer totals grid from `repeat(5,1fr)` to `repeat(7,1fr)`
+  - Email output picks up all changes automatically (loops over `DAYS` and `RES_PHASES` dynamically)
+
+**Next session:** TBD
+
+---
 
 ### Session 59
 **Date:** 2026-06-24
