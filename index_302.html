@@ -16835,11 +16835,10 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
   const upRow = (i, key, val) => setRows(rs => rs.map((r, x) => x === i ? { ...r, [key]: val } : r));
   const upHrs = (i, d, val) => setRows(rs => rs.map((r, x) => x === i ? { ...r, hrs: { ...r.hrs, [d]: val } } : r));
 
-  const handleSearch = (i, val, inputEl) => {
-    const sugg = val.length >= 2
+  const handleSearch = (i, val) => {
+    const sugg = val.length >= 4
       ? RES_JOBS.filter(j => j.toLowerCase().startsWith(val.toLowerCase()))
       : [];
-    if (sugg.length > 0 && inputEl) inputEl.blur();
     setRows(rs => rs.map((r, x) => x === i ? { ...r, jobNo: val, search: val, suggestions: sugg } : r));
   };
   const pickJob = (i, jobNo) => {
@@ -16942,7 +16941,8 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
           /*#__PURE__*/React.createElement("div", { style:{ position:"relative" } },
             /*#__PURE__*/React.createElement("input", {
               type:"text", placeholder:"Job # (e.g. CHVS1901)", value:r.search,
-              onChange:e=>handleSearch(i, e.target.value, e.target),
+              onChange:e=>handleSearch(i, e.target.value),
+              onFocus:e=>{ if (r.search.length >= 4) handleSearch(i, r.search); },
               style:{ ...inputStyle }
             }),
             r.suggestions.length > 0 && /*#__PURE__*/React.createElement("div", {

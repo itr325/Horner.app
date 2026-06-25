@@ -96,7 +96,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_304";
+const BUILD_ID = "index_302";
 // Diag panel gate — the on-screen "DIAG · index_NN" panel in the PDF editor is a
 // debug tool only. Set false for field release; flip true to bring it back for
 // on-device probing. The canvas-ceiling probe code stays compiled in either way,
@@ -7312,21 +7312,6 @@ function DateCell({
     }
   }));
 }
-// ── Email item sort key lookup ───────────────────────────────────────────────
-// Maps item name (trimmed lowercase) -> formOrder index
-// PVC=0, CPVC=1, SCH80=2, PEX=3, everything else=99
-const EMAIL_ITEM_SORT_KEY = (function() {
-  var map = {};
-  [[0, PVC], [1, CPVC], [2, SCH80], [3, PEX]].forEach(function(pair) {
-    var order = pair[0], sections = pair[1];
-    sections.forEach(function(sec) {
-      (sec.items || []).forEach(function(name) {
-        map[name.trim().toLowerCase()] = order;
-      });
-    });
-  });
-  return map;
-})();
 // ── CartSummaryView ─────────────────────────────────────────────────────────
 function CartSummaryView({ cart, project, onClose, onClearCart, onRemoveItem, onToast }) {
   const [foremanName, setForemanName] = React.useState(project?.foreman || "");
@@ -7378,11 +7363,8 @@ function CartSummaryView({ cart, project, onClose, onClearCart, onRemoveItem, on
     });
     var arr = Object.values(merged);
     arr.sort(function(a, b) {
-      var ka = EMAIL_ITEM_SORT_KEY[a.item.trim().toLowerCase()] !== undefined ? EMAIL_ITEM_SORT_KEY[a.item.trim().toLowerCase()] : 99;
-      var kb = EMAIL_ITEM_SORT_KEY[b.item.trim().toLowerCase()] !== undefined ? EMAIL_ITEM_SORT_KEY[b.item.trim().toLowerCase()] : 99;
-      if (ka !== kb) return ka - kb;              // sheet order: PVC→CPVC→SCH80→PEX→other
       var sa = parseSize(a.item), sb = parseSize(b.item);
-      if (sb !== sa) return sb - sa;              // largest first
+      if (sb !== sa) return sb - sa; // largest first
       return a.item.localeCompare(b.item);
     });
     return arr;
@@ -8297,14 +8279,7 @@ function ShopCartSummaryView({ cart, project, onClose, onClearCart, onRemoveItem
         else { arr.push(Object.assign({}, item)); }
       });
     });
-    arr.sort(function(a, b) {
-      var ka = EMAIL_ITEM_SORT_KEY[a.item.trim().toLowerCase()] !== undefined ? EMAIL_ITEM_SORT_KEY[a.item.trim().toLowerCase()] : 99;
-      var kb = EMAIL_ITEM_SORT_KEY[b.item.trim().toLowerCase()] !== undefined ? EMAIL_ITEM_SORT_KEY[b.item.trim().toLowerCase()] : 99;
-      if (ka !== kb) return ka - kb;              // sheet order: PVC→CPVC→SCH80→PEX→other
-      var sa = parseSize(a.item), sb = parseSize(b.item);
-      if (sb !== sa) return sb - sa;              // largest first
-      return a.item.localeCompare(b.item);
-    });
+    arr.sort(function(a, b) { return parseSize(b.item) - parseSize(a.item); });
     return arr;
   };
 
@@ -16860,11 +16835,10 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
   const upRow = (i, key, val) => setRows(rs => rs.map((r, x) => x === i ? { ...r, [key]: val } : r));
   const upHrs = (i, d, val) => setRows(rs => rs.map((r, x) => x === i ? { ...r, hrs: { ...r.hrs, [d]: val } } : r));
 
-  const handleSearch = (i, val, inputEl) => {
-    const sugg = val.length >= 2
+  const handleSearch = (i, val) => {
+    const sugg = val.length >= 4
       ? RES_JOBS.filter(j => j.toLowerCase().startsWith(val.toLowerCase()))
       : [];
-    if (sugg.length > 0 && inputEl) inputEl.blur();
     setRows(rs => rs.map((r, x) => x === i ? { ...r, jobNo: val, search: val, suggestions: sugg } : r));
   };
   const pickJob = (i, jobNo) => {
@@ -16967,7 +16941,8 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
           /*#__PURE__*/React.createElement("div", { style:{ position:"relative" } },
             /*#__PURE__*/React.createElement("input", {
               type:"text", placeholder:"Job # (e.g. CHVS1901)", value:r.search,
-              onChange:e=>handleSearch(i, e.target.value, e.target),
+              onChange:e=>handleSearch(i, e.target.value),
+              onFocus:e=>{ if (r.search.length >= 4) handleSearch(i, r.search); },
               style:{ ...inputStyle }
             }),
             r.suggestions.length > 0 && /*#__PURE__*/React.createElement("div", {
