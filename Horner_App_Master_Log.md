@@ -1,3 +1,19 @@
+### Session 65
+**Date:** 2026-06-25
+**Build:** index_301 → index_304
+
+**What we did:**
+- Implemented cart email line item sorting by material sheet order: PVC → CPVC → SCH80 → PEX → other
+- Added `EMAIL_ITEM_SORT_KEY` IIFE lookup (built from PVC/CPVC/SCH80/PEX arrays at runtime, maps item name → sheet order index)
+- Sort priority: sheet order first, then largest-to-smallest size within each sheet, then alphabetical tiebreaker
+- Applied same sort to both `CartSummaryView` and `ShopCartSummaryView` `mergePhaseItems` functions
+- Fixed broken Submit Cart button (index_303 had sort referencing `EMAIL_ITEM_SORT_KEY` before it was defined — lookup was never injected due to earlier patch abort; fixed in index_304)
+- Confirmed pipe-before-fittings ordering is naturally handled by size sort (larger diameter pipe floats above fittings)
+
+**Next session:** Add lengths to all pipe sizes across PVC, CPVC, SCH80, PEX order sheets.
+
+---
+
 # Horner Field App — Master Project Log
 Last updated: 2026-06-24
 
