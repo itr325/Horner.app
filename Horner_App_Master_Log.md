@@ -1,3 +1,28 @@
+### Session 67
+**Date:** 2026-06-26
+**Build:** index_316 → index_320
+
+**What we did:**
+- **Pipe length 10'/20' buttons** (index_317): Added `sizeOpts`/`upcBySize` pattern to CPVC Pipe, PVC SCH40 Solid Pipe, and SCH80 CPVC Pipe sections. CPVC has full 10' and 20' UPCs; PVC and SCH80 have 10' UPCs only (20' TBD from Aaron).
+- **PEX Ball Valves** (index_317): New section added to PEX Order Sheet before CPVC Ball Valves — 5 sizes (1-1/2" through 1/2") with UPONOR UPCs.
+- **Case Quantity Reference Sheet removed** (index_317): Full removal — menu entry, `const CASE_QTY` array, routing, `formViews` entry, and render call all deleted.
+- **Size button style standardized** (index_318): All `sizeOpts` buttons (10'/20' pipe lengths, braided supply lines) now match BLK/GAL/BRA MatToggle style — `borderRadius: 6`, `padding: 6px 8px`, `fontSize: 13`, `minWidth: 36`. This is now the default for all future size buttons.
+- **PVC Foam Core Pipe** (index_318): Added 10'/20' buttons for all 7 sizes (20' UPCs TBD).
+- **Copper Order Sheet** (index_319): New order sheet added between BLK-GAL-BRA and CPVC in the menu. Three sections: Type M Copper Pipe (8 sizes, 10'/20' buttons), Type L Copper Pipe (9 sizes, 10'/20' buttons), Level-Wound Copper (2 items, single UPC). UPCs populated where available; blanks where Aaron still needs to provide.
+- **Copper color size buttons** (index_320): Size buttons on Copper Order Sheet render in copper color (`#B87333`) instead of navy. Other sheets unaffected. Uses new `sizeColor` property on sections — can be applied to any future sheet.
+
+**Pending UPCs (Aaron to provide):**
+- PVC SCH40 20' lengths (all sizes)
+- PVC Foam Core 20' lengths (all sizes)
+- SCH80 CPVC 20' lengths (all sizes)
+- Type M Copper: 10' for 1"–2-1/2", both lengths for 3" and 2-1/2"
+- Type L Copper: 10' for all sizes except 1/2"
+- Copper fittings (ProPress) — Aaron to provide when ready
+
+**Next session:** TBD
+
+---
+
 ### Session 66
 **Date:** 2026-06-26
 **Build:** index_305 → index_316
@@ -1414,3 +1439,4 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 - Fix: wrapped cart icon element with `folder === "ORDER SHEETS" &&` so it only appears when inside the ORDER SHEETS folder
 
 **Next session:** Format the email sent from the order sheets.
+
