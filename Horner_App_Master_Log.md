@@ -1,3 +1,25 @@
+### Session 68
+**Date:** 2026-06-26
+**Build:** index_320 → index_321
+
+**What we did:**
+- **Active Projects list** (index_321): Removed the navy folder SVG icon from the left of each project card in the Active Projects list.
+- **Form list headings** (index_321): Replaced the static "Fillable Forms" left-aligned small-caps heading with a dynamic centered title based on `pathKey`:
+  - FORMS → "Forms"
+  - ORDER SHEETS → "Order Forms"
+  - RETURNS → "Returns"
+  - TIME CARDS → "Time Cards / Site Safety Inspection"
+  - T&M → "T & M"
+  - SAFETY → "Safety"
+  - VALVE TAG → "Valve Tag List"
+- **Form row icon removed** (index_321): Removed the 📋 clipboard icon div from every form list row across all folders.
+- **"Fillable form" subtitle removed** (index_321): Removed the "Fillable form · submits via Outlook" subtitle from every form row.
+- **Shop Orders view** (index_321): Changed "Shop Forms" heading to "Shop Order Forms" (centered); removed 📋 icon and "Fillable form · emails to shoporder@hornerplumbing.com" subtitle from the Shop Order Sheet row.
+
+**Next session:** TBD
+
+---
+
 ### Session 67
 **Date:** 2026-06-26
 **Build:** index_316 → index_320
