@@ -19,7 +19,7 @@
 - Type L Copper: 10' for all sizes except 1/2"
 - Copper fittings (ProPress) — Aaron to provide when ready
 
-**Next session:** TBD
+**Next session:** Aesthetics cleanup on the order sheet forms
 
 ---
 
@@ -92,7 +92,7 @@ Last updated: 2026-06-24
 - **iOS keyboard dismiss on job search** (index_297) — in `handleSearch`, when suggestions appear (≥2 chars match), call `inputEl.blur()` immediately so the keyboard collapses before the list renders. Fixes landscape mode on iPhone where the keyboard was covering 2/3 of the screen and obscuring the job suggestion list.
 - Note: `blur()` is not possible to suppress on the iOS input accessory bar (the white bar with up/down arrows and checkmark above the keyboard) — that is a native Safari UI element with no web API to remove it.
 
-**Next session:** TBD
+**Next session:** Aesthetics cleanup on the order sheet forms
 
 ---
 
@@ -108,7 +108,7 @@ Last updated: 2026-06-24
   - Updated both row-input grid and footer totals grid from `repeat(5,1fr)` to `repeat(7,1fr)`
   - Email output picks up all changes automatically (loops over `DAYS` and `RES_PHASES` dynamically)
 
-**Next session:** TBD
+**Next session:** Aesthetics cleanup on the order sheet forms
 
 ---
 
@@ -161,7 +161,7 @@ Last updated: 2026-06-24
 - Breadcrumbs updated: `res-timecard` now shows Home › Residential › Time Cards
 - `homeResidential` breadcrumb: Home › Residential; `homeService`: Home › Service
 
-**Next session:** TBD — timecard custom job entry, or Service/Residential Order Sheets.
+**Next session:** Aesthetics cleanup on the order sheet forms — timecard custom job entry, or Service/Residential Order Sheets.
 
 ---
 
@@ -298,7 +298,7 @@ Last updated: 2026-06-24
   - Jobs sorted alphabetically; silent fail if flow errors — field still works as free-text input
   - Type 2+ characters in any job# field → matching open job numbers appear as suggestions
 
-**Next session:** TBD.
+**Next session:** Aesthetics cleanup on the order sheet forms.
 
 ---
 ---
@@ -353,7 +353,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
   - **Shop Orders tile:** Orange count badge showing shop cart item count (unchanged from before).
   - Went through several iterations: index_275 (badge only when items), index_276 (simplified conditional), index_277 (always show cart icon), index_278 (dot-only on project list + ORDER SHEETS tile, counts only on individual form tiles).
 
-**Next session:** TBD.
+**Next session:** Aesthetics cleanup on the order sheet forms.
 
 ---
 ---
@@ -553,7 +553,7 @@ _Consolidates Handoffs 1–12 plus sessions 7–19. Append new sessions below "S
   - **Fix:** Removed `setScaleDropdownVal("custom")`. The dropdown already shows "Custom" via `value: measureScalePerPage[pageNum] ? "custom" : scaleDropdownVal` — no side effects needed.
   - **Bonus fix:** After calibration (`confirmCalib`) and after changing the scale dropdown, all previously committed measurements on that page now have their labels recomputed to match the new scale. Previously, only newly placed measurements got the correct label.
 
-**Next session:** TBD.
+**Next session:** Aesthetics cleanup on the order sheet forms.
 
 ---
 ---
