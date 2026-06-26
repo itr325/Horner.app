@@ -1,3 +1,32 @@
+### Session 66
+**Date:** 2026-06-26
+**Build:** index_305 → index_316
+
+**What we did:**
+- **Residential timecard job# search fixes** (index_305/306):
+  - Changed trigger threshold from 2 → 4 characters before dropdown appears
+  - Restored blur() on dropdown show (keyboard dismisses when suggestions appear)
+  - Added onFocus handler so tapping back into field restores keyboard and re-shows suggestions
+  - Note: index_302 was pushed in error (wrong base file — cloned index_301 instead of checking actual latest); corrected to index_305
+- **GitHub cleanup:** Deleted 197 old build files; repo now keeps only index_301–316 (rolling window of ~15)
+- **Week Ending field height** (index_307–315): Long battle with iOS Safari date input rendering — tried height, padding, overflow, grid column ratio fixes. iOS date input ignores most CSS overrides.
+- **Custom CalendarPicker component** (index_316):
+  - Replaced native `<input type="date">` with a custom React calendar modal
+  - Tapping the Week Ending field opens a full month calendar overlay
+  - Month navigation with ‹ › arrows
+  - Today highlighted with navy border; selected date filled navy
+  - Tapping outside modal closes it
+  - Displays as `Jun 26, 2026` format
+  - Defaults to Friday of current week (existing logic preserved)
+  - Reverted employee select height back to default inputStyle (removed height:44)
+  - Restored equal 1fr 1fr grid columns
+- **IIS / horner.build discussion:** Plan to move app off GitHub Pages to company IIS server — solves cache/stale build issues with no-cache headers. Eric has domain horner.build ready.
+- **iOS App Store discussion:** WKWebView wrapper or PWA are viable paths; tabled for future after IIS migration.
+
+**Next session:** Order sheet changes — Aaron has provided additional items to add. Clarify all requirements before touching any code.
+
+---
+
 ### Session 65
 **Date:** 2026-06-25
 **Build:** index_301 → index_304
