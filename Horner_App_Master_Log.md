@@ -1476,3 +1476,31 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 
 **Next session:** Format the email sent from the order sheets.
 
+
+
+---
+
+### Session 65
+**Date:** 2026-06-27
+**Build:** No code changes this session
+
+**What we did — IIS Migration Attempt:**
+- Goal: move app from GitHub Pages to horner.app on company IIS Server 2025
+- Installed and configured OpenSSH Server on Windows Server 2025 on custom port 2243
+- Created dedicated `horner-deploy` local user, added to OpenSSH Users group
+- Generated ED25519 SSH key pair; public key installed in `C:\Users\horner-deploy\.ssh\authorized_keys`
+- Configured FortiGate 60F: VIP (HP-APP) mapping 98.103.132.245 → 10.1.1.12, custom service SSH-2243, firewall policy HP-APP SSH
+- Debugged extensively: wrong public IP (.242 vs .245), policy disabled, geo-blocking (Sweden/Estonia catching AWS IPs), NAT setting, policy order
+- **Root blocker discovered:** Anthropic sandbox network only allows outbound HTTPS (443/80) to whitelisted domains — raw TCP on custom ports is blocked at the sandbox level, not the FortiGate. SSH from Claude is not possible in this environment.
+
+**IIS server state (ready for next steps):**
+- OpenSSH running on port 2243 ✅
+- FortiGate VIP + policy configured ✅
+- `horner-deploy` user + SSH key auth configured ✅
+- SSH key private: stored at /tmp/horner_deploy_key (ephemeral — regenerate next session if needed)
+
+**Next session options (Eric to decide):**
+1. GitHub webhook/pull — server polls GitHub for changes and pulls index.html automatically (recommended — no new infrastructure, builds on existing GitHub workflow)
+2. Other relay approach over HTTPS
+
+**Next session:** Decide on IIS deployment method, then implement. After that: order sheet email formatting.
