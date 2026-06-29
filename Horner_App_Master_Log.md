@@ -1,3 +1,30 @@
+### Session 71
+**Date:** 2026-06-29
+**Build:** index_327 (no new build — infrastructure session)
+
+**What we did — IIS Migration Complete:**
+- **DNS:** Registered `horner.app` domain; added A record pointing to 98.103.132.245 (FortiGate public IP)
+- **IIS site:** Created "Horner Field App" site bound to `horner.app` on port 443 via IIS Manager
+- **SSL cert:** Starfield TLS cert (GoDaddy CA, valid to 1/10/2027) bound to site. Fixed missing root CA — downloaded and installed Starfield TLS Root CA - R1 into LocalMachine\Root store. Fixed IIS serving incomplete chain to external clients — rebuilt cert with full chain. iOS Edge now connects cleanly with green padlock.
+- **web.config:** Created with no-cache headers (Cache-Control, Pragma, Expires). Fixed duplicate .json mimeMap error (removed redundant entry — already defined at server level).
+- **index.html deployed:** Current build (index_327) copied to `C:\inetpub\wwwroot\horner_app\index.html` and confirmed loading at https://horner.app ✅
+- **GitHub webhook + auto-deploy:** Claude Code built webhook.ps1 (HMAC-SHA256 verified GitHub push receiver on https://horner.app/gh-webhook, port 443 shared with IIS via http.sys), sync.ps1 (downloads index.html from GitHub raw, deploys only if changed), HornerAppWebhook scheduled task (boot-start, SYSTEM, auto-restart), HornerAppSync hourly fallback task.
+- **Filesystem MCP connector:** Added Filesystem connector in Claude Desktop pointed at `C:\inetpub\wwwroot\horner_app` with full access. Claude can now write directly to the server from this chat — no GitHub middleman needed for deployment!
+- **New deployment workflow:** Build index.html here → Claude writes directly to `C:\inetpub\wwwroot\horner_app\index.html` → instantly live on horner.app. GitHub remains source control/backup. No more GitHub Pages cache delay.
+- **Master log + memory:** Moved to `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` on the server. Claude reads/writes it directly via Filesystem connector each session.
+- **GitHub Pages:** Kept live at https://itr325.github.io/Horner.app/ as fallback (repo made public again after brief private period that broke field crew access).
+
+**Infrastructure state:**
+- horner.app → IIS on HP-APP (10.1.1.12) ✅
+- SSL cert valid, full chain serving correctly ✅
+- Claude has direct filesystem write access to web root ✅
+- GitHub webhook fires on every push to main ✅
+- Hourly fallback sync task running ✅
+
+**Next session:** Order sheet email formatting.
+
+---
+
 ### Session 70
 **Date:** 2026-06-29
 **Build:** index_323 → index_327
@@ -1527,5 +1554,6 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 2. Other relay approach over HTTPS
 
 **Next session:** Decide on IIS deployment method, then implement. After that: order sheet email formatting.
+
 
 
