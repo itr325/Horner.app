@@ -1,3 +1,14 @@
+### Session 70
+**Date:** 2026-06-29
+**Build:** index_323 → index_324
+
+**What we did:**
+- **Remove form tile dots** (index_324): Removed the blue dot (●) indicator that appeared in the top-right corner of folder tiles that contain fillable forms. Also removed the matching legend line ("● Blue dot = fillable forms available") from the project detail view.
+
+**Next session:** TBD
+
+---
+
 ### Session 69
 **Date:** 2026-06-26
 **Build:** index_321 → index_323
@@ -1504,3 +1515,4 @@ _To append a new session: add a new `### Session N` block at the top of Session 
 2. Other relay approach over HTTPS
 
 **Next session:** Decide on IIS deployment method, then implement. After that: order sheet email formatting.
+
