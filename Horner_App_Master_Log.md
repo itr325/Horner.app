@@ -1,10 +1,10 @@
 ### Session 70
 **Date:** 2026-06-29
-**Build:** index_323 → index_326
+**Build:** index_323 → index_327
 
 **What we did:**
 - **Remove form tile dots** (index_324): Removed the small blue dot (●) indicator from the top-right corner of folder tiles that contain fillable forms. Also removed the matching legend line ("● Blue dot = fillable forms available") from the project detail view.
-- **Fix blank form renders** (index_325–326): ValveTagList, DailyLog, TMLog, SiteWeeklySafety, and ResidentialTimecardView were all fully coded but their React.createElement calls were never wired into the main app return — tapping those form tiles navigated correctly but rendered a blank screen. Pre-existing bug, likely introduced during the form tile UI refactor in index_321. All five now render correctly.
+- **Fix blank form renders** (index_325–327): ValveTagList, DailyLog, TMLog, SiteWeeklySafety, ResidentialTimecardView, homeResidential, and homeService were all missing their React.createElement calls from the main app return — blank screens on tap. Pre-existing bug, likely from the form tile UI refactor in index_321. All seven now render correctly. homeResidential shows Time Cards (working) + Order Sheets (Coming Soon); homeService shows both as Coming Soon.
 
 **Next session:** IIS migration — move app off GitHub Pages to horner.app on company IIS server.
 
