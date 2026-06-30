@@ -1,30 +1,53 @@
 ### Session 73
 **Date:** 2026-06-30
-**Build:** index_329 → index_330
+**Build:** index_329 → index_334 (all confirmed deployed and working as of session end)
 
-**What we did — Fixed critical auth fail-open bug, settled on GitHub-only deploy workflow:**
-- **Bug found:** Eric tested index_329 on horner.app — tapping the gear icon opened the Admin Panel with **zero authentication**. Root cause: `msalRequireLogin()` called `onSuccess(null)` whenever `msalInit()` returned null (MSAL CDN not loaded/blocked/slow) instead of calling `onError`. This meant any MSAL load hiccup silently let anyone into the Admin Panel — a fail-open, not a fail-closed.
-- **Fix (index_330):** `msalRequireLogin` now calls `onError({errorCode: "msal_unavailable", ...})` when MSAL can't init. Gear icon onClick now shows an existing-pattern toast (`showToast("Admin login unavailable, try again.", false)`) instead of silently console-erroring and opening the panel anyway.
-- **Validated:** JS syntax checked via `node -e 'new Function(src)'` — clean. Diffed index_329 vs index_330 (content-blob-excluding) — confirmed only the 3 intended lines changed (BUILD_ID, msalRequireLogin body, gear onClick handler).
-- **NOT yet verified on-device:** Eric still needs to confirm on an iPad/iPhone that (a) gear icon still opens Admin Panel normally when MSAL loads fine, and (b) it now shows the error toast instead of opening the panel when MSAL fails to load.
+**Summary:** Started by fixing a critical auth fail-open bug, then discovered MSAL CDN itself was 404ing (bundled inline to fix), then verified the full Entra SSO + RBAC flow end-to-end including both the allow and deny paths. Admin Panel access is now genuinely gated by "Horner App Admin" group membership, confirmed working in production.
 
-**Deploy workflow — resolved, simplified:**
-- Long discussion this session about why Claude can push to GitHub (via `curl`/`git` in sandbox — file already sits on sandbox disk, streams disk-to-disk) but historically struggled to write directly to the IIS web root (`Filesystem:write_file` requires full file content to be retyped as a literal string parameter — confirmed this session: attempting to `view` the full 1.2MB index_330.html truncated ~17,000 lines from the middle, proving large-file content cannot reliably round-trip through Claude's context this way).
-- Explored and **discarded**: building a custom `/claude-deploy` authenticated push endpoint on horner.app (too much new attack surface for an internet-facing endpoint that can overwrite the live production app); building a new Linux server (doesn't solve the core problem — any new server has the same reachability/content-passing constraints unless it's just GitHub again).
-- **DECISION — new deploy workflow:** Claude pushes every new build to GitHub (`itr325/Horner.app`) as both `index_NNN.html` (versioned) and `index.html` (live copy in repo). Eric manually downloads `index.html` from GitHub and copies it into `C:\inetpub\wwwroot\horner_app\`, overwriting the existing file. **No more patch_NNN.ps1 scripts, no more asking Eric to run PowerShell on the server.** Master log lives in both places — GitHub (source of truth Claude pushes to) and the server copy (Claude still reads it via Filesystem connector at session start, since that's still reachable for reads — only large-content *writes* are the problem).
-- **Note:** `sync.ps1` / GitHub webhook auto-deploy was previously removed by Eric (was being built for a different sync approach he didn't want). Not in use. Eric does the IIS copy manually now — this is the new permanent norm, not a stopgap.
+**1. Fixed auth fail-open bug (index_330):**
+- Eric tested index_329 on horner.app — tapping the gear icon opened the Admin Panel with **zero authentication**. Root cause: `msalRequireLogin()` called `onSuccess(null)` whenever `msalInit()` returned null instead of calling `onError`, silently letting anyone in on any MSAL load hiccup.
+- Fix: `msalRequireLogin` now calls `onError(...)` when MSAL can't init; gear icon shows `showToast("Admin login unavailable, try again.", false)` instead of opening the panel.
 
-**Current server state (as of session end):**
-- IIS (`horner.app`) is still running **index_329** (the broken fail-open build) — Eric has NOT yet copied index_330 over manually.
-- GitHub now has index_330 pushed (both versioned and as index.html in repo).
-- Server-side master log at `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` is now behind this GitHub version — Eric copying index_330 over is a good time to also replace the server's master log copy with this one.
+**2. Discovered and fixed root cause of MSAL load failures (index_332):**
+- After deploying 330, gear icon still failed with "MSAL not loaded" console warning. Eric checked the Network tab: `alcdn.msauth.net/.../msal-browser.min.js` was returning **404**, not blocked/slow.
+- Root cause (confirmed via web search): Microsoft has been decommissioning CDN hosting for MSAL.js v2 builds as part of the v3 migration — same failure class as the pdf-lib CDN issue from earlier in the project.
+- Fix: downloaded the real `@azure/msal-browser` v2.39.0 package from npm (`npm pack`), verified it (version-stamped header, correct UMD wrapper, valid JS syntax via `node -e 'new Function()'`), and bundled it inline — same pattern as pdf-lib. No more dependency on the external CDN.
+- Eric confirmed: "Got the login" — popup now actually opens and authenticates.
 
-**⚠️ FIRST THING NEXT SESSION:**
-- Confirm whether Eric has copied index_330's index.html onto IIS yet (check live BUILD_ID at horner.app).
-- If yes: confirm on-device that the auth fail-closed fix actually works (gear icon blocks access + shows toast when MSAL can't load).
-- If site still on index_329: flag that the Admin Panel is still wide open with no auth on the live server.
+**3. Verified the `groups` token claim end-to-end (index_333_diag → confirmed, then reverted):**
+- Configured Token configuration in the Entra App Registration: Add groups claim → Security groups → Group ID.
+- Built a temporary diagnostic build (index_333_diag, based on clean index_332) that console.logged `account.idTokenClaims` and the `groups` claim specifically on login.
+- Eric tested it: `groups` claim came through correctly — `['9806a8c3-4471-4696-831f-9c7923f1346d', '484ad2f7-ab3b-46fc-95f0-88b926cb9f75']`, the second ID matching "Horner App Admin" exactly. Confirms the full AD group → Entra sync → token claim → app pipeline works.
+- Noted: COOP ("Cross-Origin-Opener-Policy policy would block the window.closed call") console errors appeared during login — researched and confirmed this is a known, benign MSAL v2/Chrome interaction (modern browsers block the legacy popup-close detection MSAL v2 uses; functionality is unaffected). Not something to fix — login completes successfully despite the console noise.
 
-**Next session:** Verify index_330 deployed + auth fix confirmed on-device, then continue Entra SSO / RBAC work (AD groups, role-based UI gating).
+**4. Built and verified the real RBAC gate (index_334):**
+- Built fresh from clean index_332 (NOT on top of the diagnostic build — no console.log token dump in this build).
+- Added `ADMIN_GROUP_ID = "484ad2f7-ab3b-46fc-95f0-88b926cb9f75"` constant and `msalIsAdmin(account)` helper that checks `account.idTokenClaims.groups` for that ID.
+- Gear icon onClick: after successful MSAL login, calls `msalIsAdmin()` before opening the Admin Panel. Non-members see `"Your account does not have Admin Panel access."` toast instead of getting in (fail-closed, consistent with the index_330 pattern).
+- **Tested BOTH paths in production:**
+  - Allow path: Eric (member of Horner App Admin) logs in → gets into Admin Panel. ✅
+  - Deny path: Eric temporarily removed himself from the Horner App Admin group in AD, used a private/incognito window to force a fresh (non-cached) login, confirmed he saw the "does not have Admin Panel access" toast and was blocked. Re-added himself to the group afterward and confirmed access restored. ✅
+- This is the first time the auth gate has been verified end-to-end with a real deny-path test, not just "login works."
+
+**Deploy workflow — resolved this session, now permanent:**
+- Discussed at length why Claude can push to GitHub (file already on sandbox disk, streams via `curl`/`git`) but can't reliably write the full 1.2MB index.html directly to the IIS server (`Filesystem:write_file` requires full content as a literal string param — confirmed this session that even `view`-ing the full file truncates ~17,000 lines from the middle, so round-tripping it through Claude's context isn't viable).
+- Explored and **discarded**: a custom `/claude-deploy` authenticated push endpoint on horner.app (too much new attack surface for an internet-facing endpoint that overwrites the live app); a new Linux server (doesn't solve the core problem — same reachability/content-passing constraints apply unless it's just GitHub again).
+- **Permanent workflow:** Claude pushes every new build to GitHub (`itr325/Horner.app`) as `index_NNN.html` + `index.html` + updated master log. **Eric manually downloads `index.html` from GitHub and copies it into `C:\inetpub\wwwroot\horner_app\`, overwriting the live file.** No more patch_NNN.ps1 scripts, no more PowerShell run by Eric for routine deploys.
+- `sync.ps1` / GitHub webhook auto-deploy: confirmed removed by Eric earlier, not in use, not being rebuilt.
+- Master log: GitHub copy is source of truth going forward (Claude pushes here reliably); server copy at `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` updated manually by Eric when convenient, alongside the index.html copy.
+
+**Current state (end of session):**
+- horner.app live build: **index_334**, confirmed deployed and working (RBAC tested both allow and deny paths).
+- GitHub: index_334 pushed (versioned + live copy).
+- MSAL bundled inline (v2.39.0) — no more external CDN dependency for auth.
+- Admin Panel access genuinely restricted to "Horner App Admin" group members.
+
+**Still open / not yet done:**
+- Broader multi-role RBAC (PM, Foreman, etc. with different permission levels) — explicitly NOT needed right now per Eric ("just one role: can access Admin Panel vs everyone else" — this is what's built). Multi-role is still backlog if/when needed.
+- Logout/session expiry behavior not yet tested (how long does the cached MSAL session last before requiring re-login — Eric deferred this check this session).
+- Server-side master log copy needs manual sync from Eric next time he's doing a deploy.
+
+**Next session:** Confirm server-side master log copy is up to date (Eric to sync manually). Otherwise, return to the open feature backlog: Order sheet email formatting, Timecard custom job entry, Residential Order Sheets, Service tiles, Admin Close Job. RBAC/Entra SSO work is now considered functionally complete for the single-admin-role use case.
 
 ---
 
@@ -174,28 +197,28 @@ Last updated: 2026-06-30
 
 | Field | Value |
 |---|---|
-| **Current build (GitHub)** | `index_330` |
-| **Current build (live IIS)** | `index_329` (Eric needs to manually copy index_330's index.html from GitHub onto IIS — see Immediate To-Do) |
+| **Current build (GitHub)** | `index_334` |
+| **Current build (live IIS)** | `index_334` (confirmed deployed and working — RBAC tested both allow and deny paths) |
 | **Primary URL** | `https://horner.app` (IIS on HP-APP) |
 | **Fallback URL** | `https://itr325.github.io/Horner.app/` (GitHub Pages) |
 | **Web root** | `C:\inetpub\wwwroot\horner_app\` |
-| **Master log** | `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` (server copy — may lag GitHub; GitHub is now source of truth, see Deploy Process) |
+| **Master log** | `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` (server copy — may lag GitHub; GitHub is source of truth, see Deploy Process) |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
+| **Admin Panel access** | Gated by "Horner App Admin" Entra group (Object ID `484ad2f7-ab3b-46fc-95f0-88b926cb9f75`) — confirmed working |
 
 ---
 
 ## 🔴 Still Open / To-Do
 
 ### ⚠️ Immediate — Start of Next Session
-- [ ] Confirm whether Eric copied index_330's `index.html` from GitHub onto IIS yet
-- [ ] If deployed: verify on-device the auth fail-closed fix works (gear icon shows error toast, doesn't open Admin Panel, when MSAL can't load)
-- [ ] If NOT deployed: flag that live site is still running the broken fail-open auth (index_329)
-- [ ] Replace server's master log copy with the latest GitHub version next time Eric is on the server
+- [ ] Confirm server's master log copy has been manually synced from GitHub by Eric
+- [ ] MSAL/Entra auth is now considered functionally complete for the single-admin-role use case — no immediate action needed unless new issues surface
 
 ### Features / Work Items (rough priority order)
-- [ ] **MSAL / Entra auth** — index_330 fixes fail-open bug; needs on-device verification
-- [ ] **RBAC with Entra AD groups** — after MSAL confirmed working
+- [x] **MSAL / Entra auth** — DONE: bundled inline (CDN was 404ing), fail-closed on load failure, RBAC gate via "Horner App Admin" group, tested both allow and deny paths in production
+- [ ] **Multi-role RBAC** (PM, Foreman, etc. with different permission levels) — backlog, not currently needed (single admin-role gate is sufficient per Eric)
+- [ ] **Session/logout behavior** — not yet tested how long the cached MSAL session lasts before requiring re-login
 - [ ] **Order sheet email formatting**
 - [ ] **Timecard — custom job entry**
 - [ ] **Residential Order Sheets**
@@ -243,7 +266,7 @@ Last updated: 2026-06-30
 - **Filesystem MCP:** Connected to `C:\inetpub\wwwroot\horner_app\` — reliable for reads and small file writes/patches; NOT reliable for full-file writes of the main 1.2MB index.html
 
 ### Revision Convention
-- Each change: `index_327 → 328 → 329 → 330 → ...`
+- Each change: `index_327 → 328 → 329 → 330 → ... → 334 → ...`
 - Bump `BUILD_ID` to match every session.
 
 ---
