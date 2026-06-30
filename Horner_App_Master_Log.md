@@ -1,3 +1,52 @@
+### Session 74
+**Date:** 2026-06-30
+**Build:** index_334 → index_335
+
+**Summary:** Multi-role RBAC with new Entra groups, switched from popup to redirect login flow, added full-screen branded login page, embedded actual Horner logo, and updated iOS home screen icon.
+
+**1. New Entra groups + multi-role RBAC:**
+- Eric created three new AD groups: Horner App Field (`b4f1695d-7718-4cb1-881b-3bf00551be05`), Horner App Office (`cd7ef8cc-6f61-41d9-b451-a1931e39c229`), Horner App PM (`b63d98a5-0a8d-4159-b628-0a80faf08519`)
+- Added `msalGetRole(account)` helper — returns `"admin"` | `"office"` | `"pm"` | `"field"` | `"none"` based on group membership
+- Added `msalAdminTiles(role)` — returns array of tile IDs visible to that role:
+  - Admin → all 4 tiles (newJob, changePm, rollover, employees)
+  - Office → newJob + rollover
+  - PM → changePm only
+  - Field → no admin access (gear icon shows "does not have Admin Panel access" toast)
+- Admin Panel tile grid now filters by `msalAdminTiles(msalRole)` — non-visible tiles simply don't render
+
+**2. Switched to redirect login flow (loginRedirect):**
+- Replaced `loginPopup` with `loginRedirect` throughout — more reliable on iOS/mobile (popups can be blocked)
+- `handleRedirectPromise()` now runs on app startup (in the initial `useEffect`) before React renders anything
+- Added `authState` ("loading" | "ready"), `msalAccount`, and `msalRole` to App state
+- Added `msalSignIn()` helper that calls `instance.loginRedirect()`
+- Gear icon: if no cached account → triggers `msalSignIn()`; if account cached → checks role and opens admin or shows toast
+
+**3. Full-screen login page:**
+- When `authState === "ready"` and no account: renders a branded login page instead of the main app
+- Blue (#0156A4) full-screen background, white Horner logo (SVG embedded as data URI), sign-in card with Microsoft logo button
+- "Admin Panel" header: centered, 2× size (34px), Bebas Neue font (loaded from Google Fonts), letter-spacing 0.12em
+- Loading state: simple blue screen with "Loading…" while `handleRedirectPromise()` resolves
+
+**4. Horner logo on login page:**
+- Embedded actual `horner-plumbing-logo.svg` as a URL-encoded data URI (`data:image/svg+xml,...`)
+- Fill overridden to white so it renders cleanly on blue background
+- 280px wide, scales to 85vw on narrow screens
+
+**5. iOS home screen icon (apple-touch-icon):**
+- Replaced generic "HP" text icon with proper 180×180 PNG rendered from `H.svg`
+- Blue (#0156A4) background, white H mark — matches the existing favicon
+- Embedded as base64 PNG data URI in `<link rel="apple-touch-icon">`
+- Note: existing pinned shortcuts need to be deleted and re-added to pick up the new icon
+
+**Deploy notes:**
+- index_335.html pushed to GitHub (versioned file only — index.html on GitHub NOT touched)
+- Eric copies index_335.html → C:\inetpub\wwwroot\horner_app\index.html manually
+- Multiple commits to index_335 this session (logo refinements) — final version is the one to deploy
+
+**Next session:** TBD — return to feature backlog (Order sheet email formatting, Timecard custom job entry, Residential Order Sheets, Service tiles, Admin Close Job) or continue auth/RBAC work if issues surface from testing.
+
+---
+
 ### Session 73
 **Date:** 2026-06-30
 **Build:** index_329 → index_334 (all confirmed deployed and working as of session end)
@@ -300,3 +349,4 @@ Last updated: 2026-06-30
 | 23 | Flow 23 - Send Feedback Email | Sends feedback email | `SEND_FEEDBACK_URL` |
 | 24 | Flow 24 - Get File Content | Returns raw file content | `GET_FILE_CONTENT_URL` |
 | 25 | Flow 25 - Get Residential Jobs | Returns open residential job numbers | `GET_RES_JOBS_URL` |
+
