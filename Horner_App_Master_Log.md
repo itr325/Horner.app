@@ -43,7 +43,7 @@
 - Eric copies index_335.html → C:\inetpub\wwwroot\horner_app\index.html manually
 - Multiple commits to index_335 this session (logo refinements) — final version is the one to deploy
 
-**Next session:** TBD — return to feature backlog (Order sheet email formatting, Timecard custom job entry, Residential Order Sheets, Service tiles, Admin Close Job) or continue auth/RBAC work if issues surface from testing.
+**Next session:** Login/authentication timeout — handle token expiry gracefully (redirect back to login page when session expires rather than breaking mid-use).
 
 ---
 
@@ -349,4 +349,5 @@ Last updated: 2026-06-30
 | 23 | Flow 23 - Send Feedback Email | Sends feedback email | `SEND_FEEDBACK_URL` |
 | 24 | Flow 24 - Get File Content | Returns raw file content | `GET_FILE_CONTENT_URL` |
 | 25 | Flow 25 - Get Residential Jobs | Returns open residential job numbers | `GET_RES_JOBS_URL` |
+
 
