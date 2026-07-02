@@ -1,3 +1,36 @@
+
+### Session 75
+**Date:** 2026-07-02
+**Build:** No new build this session (design/planning only)
+
+**Summary:** Discussion-only session covering auth behavior, token lifetimes, SSPR, and early design of a new employee-to-project assignment feature. No code written.
+
+**1. Auth / token lifetime discussion:**
+- Confirmed current auth flow: `handleRedirectPromise()` runs once on startup, sets `msalAccount` + `msalRole`, then no ongoing token monitoring. Token expiry is invisible since the app never calls a protected API with the token post-login.
+- New builds do NOT force re-authentication — MSAL localStorage cache persists across deploys (keyed by Client ID, not page version).
+- SPA-registered redirect URIs get **24-hour** refresh tokens (not 90 days — 90 days is for non-SPA apps). After 24 hours MSAL silently refreshes in the background; users don't see a login prompt unless Safari clears storage.
+- Refresh/session token lifetimes are **no longer configurable** via token lifetime policies (deprecated Jan 30, 2021). Conditional Access sign-in frequency is the correct lever — but requires **Entra ID P1/P2 (Premium)**. Eric decided not to pursue Premium licensing at this time.
+- Field crew concern: plumbers on company iPads (no existing Microsoft cloud experience, on-prem AD accounts synced to Entra) may forget passwords after long gaps.
+- **Resolution:** Eric will configure **SSPR (Self-Service Password Reset)** in Entra. As tenant admin, Eric can pre-register each employee's cell phone number directly in Entra admin portal (Authentication methods) without users doing any setup. Users can then reset via SMS at `aka.ms/sspr` if they forget. No MFA required — SSPR and MFA are separate.
+- In practice, daily iPad use means the silent refresh cycle keeps users logged in indefinitely. The password concern only surfaces after extended non-use.
+
+**2. Project assignment feature — design started, PAUSED:**
+- **Goal:** Assign Journeymen/4th years/5th years to specific projects; assigned employees see only their projects in Active Projects view.
+- **Key design decisions made:**
+  - All employees have `@hornerplumbing.com` Entra accounts — `msalAccount.username` can be matched to `email` field in employees.csv
+  - Storage: new `assignments.csv` in SharePoint Templates library (consistent with existing CSV pattern)
+  - Schema: `projectCode,employeeEmail` — one row per employee-project assignment
+  - Assignment UI: PM/Project Lead role assigns their crew within the app
+  - Two new Power Automate flows needed: read assignments CSV + write assignments CSV
+  - Filtering logic: if logged-in user's email found in assignments → show only assigned projects; if not found → show all (covers Admin/Office/PM/unassigned roles)
+- **PAUSED:** Eric needs to speak with Patrick about role/permission structure before proceeding. Open questions:
+  - Which roles get filtered vs see all projects (Admin, Office, PM, Field, Foreman)?
+  - Do Office users who use the app see all projects or get filtered?
+  - Does assignment filtering eventually affect what users can DO within a project (timecards, order sheets) or just what they SEE?
+  - Foreman behavior TBD (pinned for later)
+
+**Next session:** App tweaks (Eric to specify). Project assignment feature on hold pending Patrick conversation about permissions/groups.
+
 ### Session 74
 **Date:** 2026-06-30
 **Build:** index_334 → index_335
@@ -240,7 +273,7 @@ Then verify https://horner.app loads and gear icon prompts for Microsoft login.
 ---
 
 # Horner Field App — Master Project Log
-Last updated: 2026-06-30
+Last updated: 2026-07-02
 
 ## ⚡ Current State
 
@@ -349,5 +382,3 @@ Last updated: 2026-06-30
 | 23 | Flow 23 - Send Feedback Email | Sends feedback email | `SEND_FEEDBACK_URL` |
 | 24 | Flow 24 - Get File Content | Returns raw file content | `GET_FILE_CONTENT_URL` |
 | 25 | Flow 25 - Get Residential Jobs | Returns open residential job numbers | `GET_RES_JOBS_URL` |
-
-
