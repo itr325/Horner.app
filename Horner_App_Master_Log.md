@@ -1,16 +1,4 @@
 
-### Session 76
-**Date:** 2026-07-02
-**Build:** index_335 → index_336
-
-**Summary:** Removed gear icon from nav bar, added Admin tile to home screen (only visible to admin role).
-
-**Changes (index_336):**
-- **Admin tile on home screen:** Added a new tile after Help on the home screen. Renders only when `msalRole === "admin"` — non-admin users see nothing. Tapping it navigates directly to `go("admin")`. Uses the same gear SVG (stroke `#0256a4`, 52px) styled to match all other home tiles (white background, blue border, shadow).
-- **Gear icon removed from nav bar:** Removed the `<button>` gear icon from the top-right of the nav bar entirely. The nav bar now only contains the logo/home button and the breadcrumb trail. No more hidden admin entry point.
-
-**Next session:** TBD — Eric to specify next app tweaks.
-
 ### Session 75
 **Date:** 2026-07-02
 **Build:** No new build this session (design/planning only)
