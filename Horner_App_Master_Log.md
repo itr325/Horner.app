@@ -1,3 +1,35 @@
+### Session 76
+**Date:** 2026-07-07
+**Builds:** index_336 → index_346
+
+**Summary:** Major UX overhaul — nav bar restructured, home screen cleaned up, back navigation added, several display tweaks.
+
+**Changes:**
+- **index_336:** Admin Panel moved from nav bar gear icon to home screen tile (gear icon, admin-only, last tile after Help). Gear removed from nav bar entirely.
+- **index_337:** Removed blue nav bar on home screen. All inner pages now have a sticky header with: back arrow (left), centered Horner logo (tappable → home), Sign Out + username (right). Breadcrumb bar made sticky (sits below header). `window.history.back()` used initially for back button.
+- **index_338:** Removed "⚡ Submit by 1:00 PM Fridays · Safety sheets → reception@hornerplumbing.com" notice from Commercial Time Card.
+- **index_339:** Replaced header logo SVG with new Horner Plumbing logo (uploaded by Eric).
+- **index_340:** Fixed back button (was navigating to home always). Added view history stack (`viewHistory` ref). Username moved below Sign Out button. "Project Lead" → "PL" on Active Projects cards and detail header.
+- **index_341:** Fixed logo centering — back button and right-side user column both set to `width: 56px` so logo is truly centered.
+- **index_342:** Back button fully fixed — `go()` now pushes full state snapshot (view, project, folder, subPath, activeForm) to `viewHistory` ref before navigating. Back button pops snapshot and restores all five values. (Had double-push bug due to functional setView updater — fixed in 343.)
+- **index_343:** Fixed back button double-push bug. `go()` now pushes snapshot before `setView()` call (not inside functional updater). Back button restores full state so breadcrumbs stay in sync.
+- **index_344:** Added Sign Out button + "Signed in as [name]" to bottom of home screen (only when logged in).
+- **index_345:** Tightened home screen vertical spacing (logo padding 36px→16px, Sign Out padding reduced).
+- **index_346:** Removed `minHeight: 100vh` from home container so Sign Out sits directly below tiles without large empty gap.
+
+**GitHub cleanup:** Removed 35 old build files. Repo now contains: index.html (frozen at 327), index_327.html, index_339–346.html, Horner_App_Master_Log.md.
+
+**Key findings this session:**
+- Cart persists across reloads/deploys — saved to SharePoint as `shop_cart.json` via Power Automate (SAVE_CART_URL/LOAD_CART_URL flows). Not browser state.
+- Valve tag list also persists — saved to SharePoint via SaveValveTags/LoadValveTags flows.
+- MSAL session persists in localStorage by Client ID — no re-login needed on deploy.
+- Only risk on deploy is in-progress form data not yet submitted.
+- Replit not needed — IIS + GitHub + Claude is the full stack.
+
+**Deploy rule confirmed:** Only push versioned files (index_NNN.html) to GitHub. Never overwrite index.html until Eric confirms authentication training is complete.
+
+**Next session:** TBD — Eric to specify next app tweaks.
+
 
 ### Session 75
 **Date:** 2026-07-02
@@ -382,3 +414,4 @@ Last updated: 2026-07-02
 | 23 | Flow 23 - Send Feedback Email | Sends feedback email | `SEND_FEEDBACK_URL` |
 | 24 | Flow 24 - Get File Content | Returns raw file content | `GET_FILE_CONTENT_URL` |
 | 25 | Flow 25 - Get Residential Jobs | Returns open residential job numbers | `GET_RES_JOBS_URL` |
+
