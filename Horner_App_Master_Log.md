@@ -1,3 +1,21 @@
+### Session 78
+**Date:** 2026-07-07
+**Builds:** index_347 → index_348
+
+**Summary:** PDF editor toolbar refinements + Filesystem MCP reconnected.
+
+**Changes:**
+- **index_347:** Collapsible toolbar — hidden by default, slides in from right edge. Blue flyout tab with ✏️ + "TOOLS" label at vertical center. (Deployed to IIS — index_347 confirmed live.)
+- **index_348:** Flyout tab moved to bottom-right (`bottom: 24`), removed pencil icon and "TOOLS" label, now just `‹` / `›` arrows. Tab is 28×44px.
+
+**Infrastructure:**
+- Filesystem MCP reconnected to `C:\inetpub\wwwroot\horner_app\` — confirmed index_347 already live on IIS.
+- Established that full `write_file` of 1.6MB index.html is unreliable via Filesystem MCP.
+- Decided to set up SFTP access to HP-APP in a future session for direct deploys.
+- web.config already has `no-cache, no-store, must-revalidate` headers — cache-busting covered at IIS level.
+
+**Next session:** Set up SFTP (or other direct deploy method) from Claude to HP-APP. TBD app tweaks.
+
 ### Session 77
 **Date:** 2026-07-07
 **Build:** index_347
