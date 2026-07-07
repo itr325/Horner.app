@@ -1,3 +1,16 @@
+### Session 77
+**Date:** 2026-07-07
+**Build:** index_347
+
+**Summary:** Collapsible toolbar in PDF Markup Editor.
+
+**Changes:**
+- **index_347:** Toolbar now hidden by default — slides off the right edge. A blue `✏️ TOOLS` flyout tab sits on the right edge at all times. Tapping it slides the toolbar in (220ms cubic-bezier transition). Tab shows `›` when open, shifts left to sit flush against the toolbar. Toolbar is absolutely positioned so PDF canvas gets full screen width when hidden. No functional changes to any toolbar buttons.
+
+**Deploy note:** Filesystem MCP not connected this session — index_347.html pushed to GitHub only. Eric to copy to IIS index.html manually. Filesystem MCP will be reconnected once horner.app goes live on IIS.
+
+**Next session:** TBD.
+
 ### Session 76
 **Date:** 2026-07-07
 **Builds:** index_336 → index_346
@@ -414,4 +427,5 @@ Last updated: 2026-07-02
 | 23 | Flow 23 - Send Feedback Email | Sends feedback email | `SEND_FEEDBACK_URL` |
 | 24 | Flow 24 - Get File Content | Returns raw file content | `GET_FILE_CONTENT_URL` |
 | 25 | Flow 25 - Get Residential Jobs | Returns open residential job numbers | `GET_RES_JOBS_URL` |
+
 
