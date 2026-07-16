@@ -1,198 +1,76 @@
-### Session 78
-**Date:** 2026-07-07
-**Builds:** index_347 → index_348
+### Session 80
+**Date:** 2026-07-16
+**Builds:** index_361 → index_362
 
-**Summary:** PDF editor toolbar refinements + Filesystem MCP reconnected.
-
-**Changes:**
-- **index_347:** Collapsible toolbar — hidden by default, slides in from right edge. Blue flyout tab with ✏️ + "TOOLS" label at vertical center. (Deployed to IIS — index_347 confirmed live.)
-- **index_348:** Flyout tab moved to bottom-right (`bottom: 24`), removed pencil icon and "TOOLS" label, now just `‹` / `›` arrows. Tab is 28×44px.
-
-**Infrastructure:**
-- Filesystem MCP reconnected to `C:\inetpub\wwwroot\horner_app\` — confirmed index_347 already live on IIS.
-- Established that full `write_file` of 1.6MB index.html is unreliable via Filesystem MCP.
-- Decided to set up SFTP access to HP-APP in a future session for direct deploys.
-- web.config already has `no-cache, no-store, must-revalidate` headers — cache-busting covered at IIS level.
-
-**Next session:** Set up SFTP (or other direct deploy method) from Claude to HP-APP. TBD app tweaks.
-
-### Session 77
-**Date:** 2026-07-07
-**Build:** index_347
-
-**Summary:** Collapsible toolbar in PDF Markup Editor.
+**Summary:** Two new order sheets (Copper Solder Fittings, ProPress Fittings) built from ERP inventory dump. Scroll-to-top fix on all navigation.
 
 **Changes:**
-- **index_347:** Toolbar now hidden by default — slides off the right edge. A blue `✏️ TOOLS` flyout tab sits on the right edge at all times. Tapping it slides the toolbar in (220ms cubic-bezier transition). Tab shows `›` when open, shifts left to sit flush against the toolbar. Toolbar is absolutely positioned so PDF canvas gets full screen width when hidden. No functional changes to any toolbar buttons.
+- **index_361:** Added two new order sheets generated from ERP_Inventory_Dump.xlsx:
+  - **Copper Solder Fittings** — 163 items across 11 size sections (1/4" through 4"). Includes 90s, 45s, street elbows, tees, reducing tees, couplings (w/stop, no stop, reducing), adapters (CxM, CxF, FTGxM, FTGxF), pressure caps, test caps, flush bushings, FTG reducers. Each item has its ERP item number as the UPC field.
+  - **ProPress Fittings** — 114 items across 9 size sections (1/2" through 4"). Same fitting categories plus PRESSxMPT adapters, PRESSxFIP adapters, PRESSxFPT drop ears, and ball valves. Larger sizes (2-1/2"+) use bronze (BRZ) fittings.
+  - Both sheets use copper color (#B87333), appear in Order Sheets list, use the shared OrderSheet component with section-based layout.
+  - Data generated via Python script parsing the ERP dump, cleaning labels (removing WROT/COPPER/BRZ/model number prefixes), grouping by primary fitting size.
+- **index_362:** Scroll-to-top on all navigation. Added `window.scrollTo(0, 0)` in both the `go()` function and the Back button handler. Every page transition now starts at the top — fixes issue where order sheets opened mid-page requiring scroll up to select project/phase.
 
-**Deploy note:** Filesystem MCP not connected this session — index_347.html pushed to GitHub only. Eric to copy to IIS index.html manually. Filesystem MCP will be reconnected once horner.app goes live on IIS.
+**ERP Inventory Analysis:**
+- Full ERP dump analyzed: 7,597 items across 1,026 Sort Name categories
+- Identified potential new order sheets beyond copper: Cast Iron (25 items), Gas Fittings (80+), SharkBite (18), Hangers (150+), Cleanouts (50+), Fernco/Mission (29), Valves (90+)
+- MegaPress fittings (53 items) found under FITTINGS-GAS — deferred, Aaron to clarify if used only for gas or also hydronic/mechanical
 
-**Next session:** TBD.
+**Architecture Discussion:**
+- Discussed moving from hardcoded data to SQL database + API backend
+- Eric comfortable with SQL Server Express + ASP.NET Core Web API on HP-APP
+- End goal: native app (not just web app), so backend API is inevitable
+- Further discussed: packaging as a product for other sub-contractors (not SaaS — shipped product, customer owns deployment)
+- Decision: build for Horner first but design multi-tenant from day one
+- For now: continue with inline data, migrate to DB in a future dedicated session
 
-### Session 76
-**Date:** 2026-07-07
-**Builds:** index_336 → index_346
+**Key decisions:**
+- Copper fittings split into two separate sheets (Solder vs ProPress) per Aaron's input
+- MegaPress deferred — need clarification on gas-only vs multi-use
+- If it's in the ERP system, it goes on the order sheet (no curation)
+- Scroll-to-top applies globally to all navigation, not just order sheets
 
-**Summary:** Major UX overhaul — nav bar restructured, home screen cleaned up, back navigation added, several display tweaks.
+**index_362 deployed to IIS via PowerShell Invoke-WebRequest**
 
-**Changes:**
-- **index_336:** Admin Panel moved from nav bar gear icon to home screen tile (gear icon, admin-only, last tile after Help). Gear removed from nav bar entirely.
-- **index_337:** Removed blue nav bar on home screen. All inner pages now have a sticky header with: back arrow (left), centered Horner logo (tappable → home), Sign Out + username (right). Breadcrumb bar made sticky (sits below header). `window.history.back()` used initially for back button.
-- **index_338:** Removed "⚡ Submit by 1:00 PM Fridays · Safety sheets → reception@hornerplumbing.com" notice from Commercial Time Card.
-- **index_339:** Replaced header logo SVG with new Horner Plumbing logo (uploaded by Eric).
-- **index_340:** Fixed back button (was navigating to home always). Added view history stack (`viewHistory` ref). Username moved below Sign Out button. "Project Lead" → "PL" on Active Projects cards and detail header.
-- **index_341:** Fixed logo centering — back button and right-side user column both set to `width: 56px` so logo is truly centered.
-- **index_342:** Back button fully fixed — `go()` now pushes full state snapshot (view, project, folder, subPath, activeForm) to `viewHistory` ref before navigating. Back button pops snapshot and restores all five values. (Had double-push bug due to functional setView updater — fixed in 343.)
-- **index_343:** Fixed back button double-push bug. `go()` now pushes snapshot before `setView()` call (not inside functional updater). Back button restores full state so breadcrumbs stay in sync.
-- **index_344:** Added Sign Out button + "Signed in as [name]" to bottom of home screen (only when logged in).
-- **index_345:** Tightened home screen vertical spacing (logo padding 36px→16px, Sign Out padding reduced).
-- **index_346:** Removed `minHeight: 100vh` from home container so Sign Out sits directly below tiles without large empty gap.
+**ERP Audit Spreadsheet:**
+- Built comprehensive audit spreadsheet (Horner_Order_Sheet_Audit.xlsx) sent to Aaron for review
+- Cross-referenced all 7,432 ERP items against 1,105 unique UPCs in the app
+- 1,009 ERP items matched to app, 6,423 not on any order sheet
+- Filtered to 1,570 field-relevant items across 34 categories (excluded 5,018 finish/showroom/non-field)
+- Spreadsheet has dropdown data validation with all 14 current order sheet names + ability to type new sheet names (errorStyle="warning")
+- 96 app items have part numbers not found in ERP — Aaron to verify/correct
+- Key missing categories: PVC Fittings (170), Valves (159), Gas/MegaPress (106), PEX Fittings (105), Hangers (92), Black Fittings (88), Black Nipples (83), Firestop (59), Tools (57), Galv Fittings (54), PVC Pipe (52), PEX Pipe (49), Brass Fittings (48)
+- PVC pressure fittings (Schedule 40 pressure) identified as distinct from DWV fittings currently on PVC sheet
+- Goal: eliminate the Blank Order Sheet by covering all field items on proper order sheets
+- Sent to Aaron for markup — once returned, Claude will parse descriptions to auto-generate section data
 
-**GitHub cleanup:** Removed 35 old build files. Repo now contains: index.html (frozen at 327), index_327.html, index_339–346.html, Horner_App_Master_Log.md.
-
-**Key findings this session:**
-- Cart persists across reloads/deploys — saved to SharePoint as `shop_cart.json` via Power Automate (SAVE_CART_URL/LOAD_CART_URL flows). Not browser state.
-- Valve tag list also persists — saved to SharePoint via SaveValveTags/LoadValveTags flows.
-- MSAL session persists in localStorage by Client ID — no re-login needed on deploy.
-- Only risk on deploy is in-progress form data not yet submitted.
-- Replit not needed — IIS + GitHub + Claude is the full stack.
-
-**Deploy rule confirmed:** Only push versioned files (index_NNN.html) to GitHub. Never overwrite index.html until Eric confirms authentication training is complete.
-
-**Next session:** TBD — Eric to specify next app tweaks.
-
-
-### Session 75
-**Date:** 2026-07-02
-**Build:** No new build this session (design/planning only)
-
-**Summary:** Discussion-only session covering auth behavior, token lifetimes, SSPR, and early design of a new employee-to-project assignment feature. No code written.
-
-**1. Auth / token lifetime discussion:**
-- Confirmed current auth flow: `handleRedirectPromise()` runs once on startup, sets `msalAccount` + `msalRole`, then no ongoing token monitoring. Token expiry is invisible since the app never calls a protected API with the token post-login.
-- New builds do NOT force re-authentication — MSAL localStorage cache persists across deploys (keyed by Client ID, not page version).
-- SPA-registered redirect URIs get **24-hour** refresh tokens (not 90 days — 90 days is for non-SPA apps). After 24 hours MSAL silently refreshes in the background; users don't see a login prompt unless Safari clears storage.
-- Refresh/session token lifetimes are **no longer configurable** via token lifetime policies (deprecated Jan 30, 2021). Conditional Access sign-in frequency is the correct lever — but requires **Entra ID P1/P2 (Premium)**. Eric decided not to pursue Premium licensing at this time.
-- Field crew concern: plumbers on company iPads (no existing Microsoft cloud experience, on-prem AD accounts synced to Entra) may forget passwords after long gaps.
-- **Resolution:** Eric will configure **SSPR (Self-Service Password Reset)** in Entra. As tenant admin, Eric can pre-register each employee's cell phone number directly in Entra admin portal (Authentication methods) without users doing any setup. Users can then reset via SMS at `aka.ms/sspr` if they forget. No MFA required — SSPR and MFA are separate.
-- In practice, daily iPad use means the silent refresh cycle keeps users logged in indefinitely. The password concern only surfaces after extended non-use.
-
-**2. Project assignment feature — design started, PAUSED:**
-- **Goal:** Assign Journeymen/4th years/5th years to specific projects; assigned employees see only their projects in Active Projects view.
-- **Key design decisions made:**
-  - All employees have `@hornerplumbing.com` Entra accounts — `msalAccount.username` can be matched to `email` field in employees.csv
-  - Storage: new `assignments.csv` in SharePoint Templates library (consistent with existing CSV pattern)
-  - Schema: `projectCode,employeeEmail` — one row per employee-project assignment
-  - Assignment UI: PM/Project Lead role assigns their crew within the app
-  - Two new Power Automate flows needed: read assignments CSV + write assignments CSV
-  - Filtering logic: if logged-in user's email found in assignments → show only assigned projects; if not found → show all (covers Admin/Office/PM/unassigned roles)
-- **PAUSED:** Eric needs to speak with Patrick about role/permission structure before proceeding. Open questions:
-  - Which roles get filtered vs see all projects (Admin, Office, PM, Field, Foreman)?
-  - Do Office users who use the app see all projects or get filtered?
-  - Does assignment filtering eventually affect what users can DO within a project (timecards, order sheets) or just what they SEE?
-  - Foreman behavior TBD (pinned for later)
-
-**Next session:** App tweaks (Eric to specify). Project assignment feature on hold pending Patrick conversation about permissions/groups.
-
-### Session 74
-**Date:** 2026-06-30
-**Build:** index_334 → index_335
-
-**Summary:** Multi-role RBAC with new Entra groups, switched from popup to redirect login flow, added full-screen branded login page, embedded actual Horner logo, and updated iOS home screen icon.
-
-**1. New Entra groups + multi-role RBAC:**
-- Eric created three new AD groups: Horner App Field (`b4f1695d-7718-4cb1-881b-3bf00551be05`), Horner App Office (`cd7ef8cc-6f61-41d9-b451-a1931e39c229`), Horner App PM (`b63d98a5-0a8d-4159-b628-0a80faf08519`)
-- Added `msalGetRole(account)` helper — returns `"admin"` | `"office"` | `"pm"` | `"field"` | `"none"` based on group membership
-- Added `msalAdminTiles(role)` — returns array of tile IDs visible to that role:
-  - Admin → all 4 tiles (newJob, changePm, rollover, employees)
-  - Office → newJob + rollover
-  - PM → changePm only
-  - Field → no admin access (gear icon shows "does not have Admin Panel access" toast)
-- Admin Panel tile grid now filters by `msalAdminTiles(msalRole)` — non-visible tiles simply don't render
-
-**2. Switched to redirect login flow (loginRedirect):**
-- Replaced `loginPopup` with `loginRedirect` throughout — more reliable on iOS/mobile (popups can be blocked)
-- `handleRedirectPromise()` now runs on app startup (in the initial `useEffect`) before React renders anything
-- Added `authState` ("loading" | "ready"), `msalAccount`, and `msalRole` to App state
-- Added `msalSignIn()` helper that calls `instance.loginRedirect()`
-- Gear icon: if no cached account → triggers `msalSignIn()`; if account cached → checks role and opens admin or shows toast
-
-**3. Full-screen login page:**
-- When `authState === "ready"` and no account: renders a branded login page instead of the main app
-- Blue (#0156A4) full-screen background, white Horner logo (SVG embedded as data URI), sign-in card with Microsoft logo button
-- "Admin Panel" header: centered, 2× size (34px), Bebas Neue font (loaded from Google Fonts), letter-spacing 0.12em
-- Loading state: simple blue screen with "Loading…" while `handleRedirectPromise()` resolves
-
-**4. Horner logo on login page:**
-- Embedded actual `horner-plumbing-logo.svg` as a URL-encoded data URI (`data:image/svg+xml,...`)
-- Fill overridden to white so it renders cleanly on blue background
-- 280px wide, scales to 85vw on narrow screens
-
-**5. iOS home screen icon (apple-touch-icon):**
-- Replaced generic "HP" text icon with proper 180×180 PNG rendered from `H.svg`
-- Blue (#0156A4) background, white H mark — matches the existing favicon
-- Embedded as base64 PNG data URI in `<link rel="apple-touch-icon">`
-- Note: existing pinned shortcuts need to be deleted and re-added to pick up the new icon
-
-**Deploy notes:**
-- index_335.html pushed to GitHub (versioned file only — index.html on GitHub NOT touched)
-- Eric copies index_335.html → C:\inetpub\wwwroot\horner_app\index.html manually
-- Multiple commits to index_335 this session (logo refinements) — final version is the one to deploy
-
-**Next session:** Login/authentication timeout — handle token expiry gracefully (redirect back to login page when session expires rather than breaking mid-use).
+**Next session:** Process Aaron's completed audit spreadsheet to build new order sheets and fill gaps in existing ones. Or begin database/API scoping.
 
 ---
 
-### Session 73
-**Date:** 2026-06-30
-**Build:** index_329 → index_334 (all confirmed deployed and working as of session end)
+### Session 79
+**Date:** 2026-07-16
+**Builds:** index_356 → index_360
 
-**Summary:** Started by fixing a critical auth fail-open bug, then discovered MSAL CDN itself was 404ing (bundled inline to fix), then verified the full Entra SSO + RBAC flow end-to-end including both the allow and deny paths. Admin Panel access is now genuinely gated by "Horner App Admin" group membership, confirmed working in production.
+**Summary:** Pull-to-refresh (global), styled Back button, Reload/Refresh buttons removed, larger header logo, inactivity auto-reload.
 
-**1. Fixed auth fail-open bug (index_330):**
-- Eric tested index_329 on horner.app — tapping the gear icon opened the Admin Panel with **zero authentication**. Root cause: `msalRequireLogin()` called `onSuccess(null)` whenever `msalInit()` returned null instead of calling `onError`, silently letting anyone in on any MSAL load hiccup.
-- Fix: `msalRequireLogin` now calls `onError(...)` when MSAL can't init; gear icon shows `showToast("Admin login unavailable, try again.", false)` instead of opening the panel.
+**Deploy workflow this session:** All builds done in Python on clean base files with `assert count == 1` guards, pushed to GitHub, Eric manually copies to IIS. No edit_file on IIS — burned by cascading patch failures earlier in session (index_351–355 all broken). This workflow is now the standard.
 
-**2. Discovered and fixed root cause of MSAL load failures (index_332):**
-- After deploying 330, gear icon still failed with "MSAL not loaded" console warning. Eric checked the Network tab: `alcdn.msauth.net/.../msal-browser.min.js` was returning **404**, not blocked/slow.
-- Root cause (confirmed via web search): Microsoft has been decommissioning CDN hosting for MSAL.js v2 builds as part of the v3 migration — same failure class as the pdf-lib CDN issue from earlier in the project.
-- Fix: downloaded the real `@azure/msal-browser` v2.39.0 package from npm (`npm pack`), verified it (version-stamped header, correct UMD wrapper, valid JS syntax via `node -e 'new Function()'`), and bundled it inline — same pattern as pdf-lib. No more dependency on the external CDN.
-- Eric confirmed: "Got the login" — popup now actually opens and authenticates.
+**Changes:**
+- **index_356:** Pull-to-refresh on every page — touch listeners on `document`, fires `window.location.href = pathname + ?v= + Date.now()` when user pulls down >72px from scroll top. No indicator. Built on clean index_349 base.
+- **index_357:** Styled Back button — frosted white pill (`rgba(255,255,255,0.18)` bg, `1px solid rgba(255,255,255,0.35)` border, borderRadius 6, fontSize 12, fontWeight 700) with 14px chevron SVG (strokeWidth 2.8) + "Back" text.
+- **index_358:** Removed all Reload App buttons (home screen ×2, projects header, folders view, subPath view) and Refresh Projects List button from projects header. Kept empty-state "Refresh Projects List" button (only shown when zero projects found).
+- **index_359:** Header logo height increased from 26 to 38 — fills the blue bar better.
+- **index_360:** Inactivity auto-reload — Page Visibility API fires on resume; if last touch/click was >10 minutes ago, reloads the app. Resets timer on every touchstart/click.
 
-**3. Verified the `groups` token claim end-to-end (index_333_diag → confirmed, then reverted):**
-- Configured Token configuration in the Entra App Registration: Add groups claim → Security groups → Group ID.
-- Built a temporary diagnostic build (index_333_diag, based on clean index_332) that console.logged `account.idTokenClaims` and the `groups` claim specifically on login.
-- Eric tested it: `groups` claim came through correctly — `['9806a8c3-4471-4696-831f-9c7923f1346d', '484ad2f7-ab3b-46fc-95f0-88b926cb9f75']`, the second ID matching "Horner App Admin" exactly. Confirms the full AD group → Entra sync → token claim → app pipeline works.
-- Noted: COOP ("Cross-Origin-Opener-Policy policy would block the window.closed call") console errors appeared during login — researched and confirmed this is a known, benign MSAL v2/Chrome interaction (modern browsers block the legacy popup-close detection MSAL v2 uses; functionality is unaffected). Not something to fix — login completes successfully despite the console noise.
+**Key decisions:**
+- Pull-to-refresh does a full reload (lands on home screen) — intentional, matches old Reload App behavior, field crew uses it to grab latest build
+- No pull-to-refresh indicator — silent, just reloads on release
+- IIS no-cache headers + ?v= param = always fresh build on reload
+- Inactivity threshold: 10 minutes
 
-**4. Built and verified the real RBAC gate (index_334):**
-- Built fresh from clean index_332 (NOT on top of the diagnostic build — no console.log token dump in this build).
-- Added `ADMIN_GROUP_ID = "484ad2f7-ab3b-46fc-95f0-88b926cb9f75"` constant and `msalIsAdmin(account)` helper that checks `account.idTokenClaims.groups` for that ID.
-- Gear icon onClick: after successful MSAL login, calls `msalIsAdmin()` before opening the Admin Panel. Non-members see `"Your account does not have Admin Panel access."` toast instead of getting in (fail-closed, consistent with the index_330 pattern).
-- **Tested BOTH paths in production:**
-  - Allow path: Eric (member of Horner App Admin) logs in → gets into Admin Panel. ✅
-  - Deny path: Eric temporarily removed himself from the Horner App Admin group in AD, used a private/incognito window to force a fresh (non-cached) login, confirmed he saw the "does not have Admin Panel access" toast and was blocked. Re-added himself to the group afterward and confirmed access restored. ✅
-- This is the first time the auth gate has been verified end-to-end with a real deny-path test, not just "login works."
-
-**Deploy workflow — resolved this session, now permanent:**
-- Discussed at length why Claude can push to GitHub (file already on sandbox disk, streams via `curl`/`git`) but can't reliably write the full 1.2MB index.html directly to the IIS server (`Filesystem:write_file` requires full content as a literal string param — confirmed this session that even `view`-ing the full file truncates ~17,000 lines from the middle, so round-tripping it through Claude's context isn't viable).
-- Explored and **discarded**: a custom `/claude-deploy` authenticated push endpoint on horner.app (too much new attack surface for an internet-facing endpoint that overwrites the live app); a new Linux server (doesn't solve the core problem — same reachability/content-passing constraints apply unless it's just GitHub again).
-- **Permanent workflow:** Claude pushes every new build to GitHub (`itr325/Horner.app`) as `index_NNN.html` + `index.html` + updated master log. **Eric manually downloads `index.html` from GitHub and copies it into `C:\inetpub\wwwroot\horner_app\`, overwriting the live file.** No more patch_NNN.ps1 scripts, no more PowerShell run by Eric for routine deploys.
-- `sync.ps1` / GitHub webhook auto-deploy: confirmed removed by Eric earlier, not in use, not being rebuilt.
-- Master log: GitHub copy is source of truth going forward (Claude pushes here reliably); server copy at `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` updated manually by Eric when convenient, alongside the index.html copy.
-
-**Current state (end of session):**
-- horner.app live build: **index_334**, confirmed deployed and working (RBAC tested both allow and deny paths).
-- GitHub: index_334 pushed (versioned + live copy).
-- MSAL bundled inline (v2.39.0) — no more external CDN dependency for auth.
-- Admin Panel access genuinely restricted to "Horner App Admin" group members.
-
-**Still open / not yet done:**
-- Broader multi-role RBAC (PM, Foreman, etc. with different permission levels) — explicitly NOT needed right now per Eric ("just one role: can access Admin Panel vs everyone else" — this is what's built). Multi-role is still backlog if/when needed.
-- Logout/session expiry behavior not yet tested (how long does the cached MSAL session last before requiring re-login — Eric deferred this check this session).
-- Server-side master log copy needs manual sync from Eric next time he's doing a deploy.
-
-**Next session:** Confirm server-side master log copy is up to date (Eric to sync manually). Otherwise, return to the open feature backlog: Order sheet email formatting, Timecard custom job entry, Residential Order Sheets, Service tiles, Admin Close Job. RBAC/Entra SSO work is now considered functionally complete for the single-admin-role use case.
+**Next session:** Go through entire inventory list — identify what order sheets need to be created and what items need part numbers.
 
 ---
 
@@ -235,9 +113,9 @@ Then verify https://horner.app loads and gear icon prompts for Microsoft login.
 - **SSL cert:** Starfield TLS cert (GoDaddy CA, valid to 1/10/2027) bound to site. Full chain fix details: (1) Diagnosed chain — intermediate (Starfield TLS Intermediate CA DV - R1v1) was present but root (Starfield TLS Root CA - R1) was untrusted on the machine. (2) Downloaded root cert from https://certs.starfieldtech.com/repository/sf_tls_root-r1.crt.pem. (3) Verified thumbprint ED1BED9C312B7783B0E3EF9DAEE9C642ECB86937 (self-signed, valid to 2040) before installing. (4) Installed into Cert:\LocalMachine\Root. (5) Second issue: IIS was not serving the intermediate cert to external clients — rebuilt certificate binding with full chain so browsers can verify without having the intermediate cached. iOS Edge now connects cleanly with green padlock. ChainBuildSucceeded: True confirmed via PowerShell.
 - **web.config:** Created with no-cache headers (Cache-Control, Pragma, Expires). Fixed duplicate .json mimeMap error (removed redundant entry — already defined at server level).
 - **index.html deployed:** Current build (index_327) copied to `C:\inetpub\wwwroot\horner_app\index.html` and confirmed loading at https://horner.app ✅
-- **GitHub webhook + auto-deploy:** Claude Code built webhook.ps1 (HMAC-SHA256 verified GitHub push receiver on https://horner.app/gh-webhook, port 443 shared with IIS via http.sys), sync.ps1 (downloads index.html from GitHub raw, deploys only if changed), HornerAppWebhook scheduled task (boot-start, SYSTEM, auto-restart), HornerAppSync hourly fallback task. **(Note: removed by Eric in Session 73 — see above. Not in use.)**
+- **GitHub webhook + auto-deploy:** Claude Code built webhook.ps1 (HMAC-SHA256 verified GitHub push receiver on https://horner.app/gh-webhook, port 443 shared with IIS via http.sys), sync.ps1 (downloads index.html from GitHub raw, deploys only if changed), HornerAppWebhook scheduled task (boot-start, SYSTEM, auto-restart), HornerAppSync hourly fallback task.
 - **Filesystem MCP connector:** Added Filesystem connector in Claude Desktop pointed at `C:\inetpub\wwwroot\horner_app` with full access. Claude can now write directly to the server from this chat — no GitHub middleman needed for deployment!
-- **New deployment workflow:** Build index.html here → Claude writes directly to `C:\inetpub\wwwroot\horner_app\index.html` → instantly live on horner.app. GitHub remains source control/backup. No more GitHub Pages cache delay. **(Superseded in Session 73 — large-file direct writes don't work reliably; see Session 73 deploy workflow notes.)**
+- **New deployment workflow:** Build index.html here → Claude writes directly to `C:\inetpub\wwwroot\horner_app\index.html` → instantly live on horner.app. GitHub remains source control/backup. No more GitHub Pages cache delay.
 - **Master log + memory:** Moved to `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` on the server. Claude reads/writes it directly via Filesystem connector each session.
 - **GitHub Pages:** Kept live at https://itr325.github.io/Horner.app/ as fallback (repo made public again after brief private period that broke field crew access).
 
@@ -336,34 +214,31 @@ Then verify https://horner.app loads and gear icon prompts for Microsoft login.
 ---
 
 # Horner Field App — Master Project Log
-Last updated: 2026-07-02
+Last updated: 2026-06-29
 
 ## ⚡ Current State
 
 | Field | Value |
 |---|---|
-| **Current build (GitHub)** | `index_334` |
-| **Current build (live IIS)** | `index_334` (confirmed deployed and working — RBAC tested both allow and deny paths) |
+| **Current build** | `index_329` (patch_329.ps1 on server — run it!) |
 | **Primary URL** | `https://horner.app` (IIS on HP-APP) |
 | **Fallback URL** | `https://itr325.github.io/Horner.app/` (GitHub Pages) |
 | **Web root** | `C:\inetpub\wwwroot\horner_app\` |
-| **Master log** | `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` (server copy — may lag GitHub; GitHub is source of truth, see Deploy Process) |
+| **Master log** | `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` |
 | **SharePoint site** | `https://hornerplumbing.sharepoint.com` |
 | **Active Projects path** | `/Active Projects` in the Documents library |
-| **Admin Panel access** | Gated by "Horner App Admin" Entra group (Object ID `484ad2f7-ab3b-46fc-95f0-88b926cb9f75`) — confirmed working |
 
 ---
 
 ## 🔴 Still Open / To-Do
 
 ### ⚠️ Immediate — Start of Next Session
-- [ ] Confirm server's master log copy has been manually synced from GitHub by Eric
-- [ ] MSAL/Entra auth is now considered functionally complete for the single-admin-role use case — no immediate action needed unless new issues surface
+- [ ] Run `powershell -ExecutionPolicy Bypass -File "C:\inetpub\wwwroot\horner_app\patch_329.ps1"` on HP-APP
+- [ ] Verify https://horner.app loads and gear icon prompts Microsoft login
 
 ### Features / Work Items (rough priority order)
-- [x] **MSAL / Entra auth** — DONE: bundled inline (CDN was 404ing), fail-closed on load failure, RBAC gate via "Horner App Admin" group, tested both allow and deny paths in production
-- [ ] **Multi-role RBAC** (PM, Foreman, etc. with different permission levels) — backlog, not currently needed (single admin-role gate is sufficient per Eric)
-- [ ] **Session/logout behavior** — not yet tested how long the cached MSAL session lasts before requiring re-login
+- [ ] **MSAL / Entra auth** — patch_329 fixes crash; then verify login flow works
+- [ ] **RBAC with Entra AD groups** — after MSAL confirmed working
 - [ ] **Order sheet email formatting**
 - [ ] **Timecard — custom job entry**
 - [ ] **Residential Order Sheets**
@@ -385,22 +260,21 @@ Last updated: 2026-07-02
 - **PDF.js** loaded from CDN in `<head>`.
 - **No service worker.**
 
-### Deploy Process — UPDATED Session 73
-- **Confirmed root cause this session:** Claude CANNOT reliably write/copy large files (1.2MB+) directly onto the IIS server. `Filesystem:write_file` requires full content as a literal string param; `view`-ing the full file to retype it truncates ~17K lines from the middle. No tool bridges Claude's sandbox disk directly to the server disk (no "copy" primitive, only `move_file` which is server-internal-only).
-- **Current permanent workflow:** Claude pushes every new build to GitHub (`itr325/Horner.app`) as `index_NNN.html` + updates `index.html` in the repo + updates the master log in the repo. **Eric manually downloads `index.html` from GitHub and copies it into `C:\inetpub\wwwroot\horner_app\`, overwriting the live file.** No patch scripts, no PowerShell run by Eric for routine deploys — that pattern is retired.
-- Claude still reads the server-side master log via Filesystem connector at session start (reads of small-to-medium text work fine — only large binary-ish writes are the actual constraint).
-- GitHub webhook / sync.ps1 auto-deploy: **removed by Eric, not in use.** Don't reference or rebuild without Eric asking.
+### Deploy Process
+- Claude CANNOT write large files (1.2MB) directly via Filesystem connector — content must be inline string, exceeds limits
+- Claude CANNOT execute scripts — can only read/write files
+- **Current pattern:** Claude writes patch_NNN.ps1 to server → Eric runs it manually
+- GitHub webhook + hourly sync still active as fallback
 
 ### Session Protocol
 **START of every session:**
-1. Read `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` via Filesystem connector (server copy)
-2. ALSO check GitHub master log if server copy seems behind (GitHub is now source of truth for the log, since Claude pushes there reliably)
-3. Check `**Next session:**` / `⚠️ Immediate` items
-4. Update memory if anything has changed
+1. Read `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` via Filesystem connector
+2. Check `**Next session:**` / `⚠️ Immediate` items
+3. Update memory if anything has changed
 
 **END of every session:**
-1. Push new build (`index_NNN.html` + `index.html`) and updated master log to GitHub
-2. Tell Eric the build number is ready on GitHub — Eric pulls/copies it to IIS himself
+1. Append session summary to master log (newest first)
+2. Write updated log back to server via Filesystem connector
 
 ### Key Infrastructure
 - **IIS server:** HP-APP, 10.1.1.12, Windows Server 2025
@@ -408,10 +282,10 @@ Last updated: 2026-07-02
 - **FortiGate:** 98.103.132.245, VIP HP-APP → 10.1.1.12:443
 - **SSL cert:** Starfield TLS (GoDaddy CA), valid to 1/10/2027
 - **Entra App Registration:** Client ID `282e84c6-5e0b-4a7d-a58b-a773215c30b0`, Tenant ID `ef466c74-7a13-4920-854c-210669ea3c84`
-- **Filesystem MCP:** Connected to `C:\inetpub\wwwroot\horner_app\` — reliable for reads and small file writes/patches; NOT reliable for full-file writes of the main 1.2MB index.html
+- **Filesystem MCP:** Connected to `C:\inetpub\wwwroot\horner_app\` with full access
 
 ### Revision Convention
-- Each change: `index_327 → 328 → 329 → 330 → ... → 334 → ...`
+- Each change: `index_327 → 328 → 329 → ...`
 - Bump `BUILD_ID` to match every session.
 
 ---
@@ -445,5 +319,3 @@ Last updated: 2026-07-02
 | 23 | Flow 23 - Send Feedback Email | Sends feedback email | `SEND_FEEDBACK_URL` |
 | 24 | Flow 24 - Get File Content | Returns raw file content | `GET_FILE_CONTENT_URL` |
 | 25 | Flow 25 - Get Residential Jobs | Returns open residential job numbers | `GET_RES_JOBS_URL` |
-
-
