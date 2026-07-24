@@ -1,3 +1,48 @@
+### Session 81 (continued) / My Files Feature
+**Date:** 2026-07-24
+**Builds:** index_363 → index_372
+
+**Summary:** Built the My Files personal FTP tile feature end-to-end — tile, file browser, upload, and file viewing (PDF, photo, other).
+
+**New Power Automate Flows:**
+- **Flow 26 — Get Personal FTP Contents** (`GET_PERSONAL_FTP_URL`): Mirrors Flow 5 but targets Personal FTPs library. Body: `{ path }` → returns `{ folders, files }` with `ServerRelativeUrl` for each file. Trigger auth must be "Anyone" (not "Anyone in my tenant") or gets 401.
+- **Flow 27 — Upload to Personal FTPs** (`UPLOAD_PERSONAL_FTP_URL`): Body: `{ filename, contentBase64, folder }`. SharePoint Create File step uses Expression mode for all three fields. Trigger auth must be "Anyone".
+
+**New Constants:**
+- `GET_PERSONAL_FTP_URL` — Flow 26
+- `UPLOAD_PERSONAL_FTP_URL` — Flow 27
+
+**Feature: My Files Tile**
+- Appears on home screen after Help tile, only if user has a matching folder in SharePoint "Personal FTPs" library
+- Folder matched by first letter of email prefix (e.g. `eschieble@...` → `ESchieble`)
+- Shows file/folder browser with Upload button (full width)
+- Upload: picks any file from iOS native picker (includes camera option natively)
+- File opening: PDFs → `openLibraryPdf()` (PDF markup viewer, read-only); Images → download via Flow 17 + open in photo viewer (read-only, no save-back); Other files → direct SharePoint URL in new tab
+
+**Build history:**
+- **index_364:** Initial My Files. Flow 26 URL missing sp/sv/sig params — tile didn't appear
+- **index_365:** Fixed Flow 26 URL. Tile appeared. Upload used wrong flow (Flow 6 hardcodes Active Projects)
+- **index_366:** Removed camera button (redundant with iOS native picker), Upload full width
+- **index_367:** Added Flow 27, fixed upload params (`contentBase64` not `base64`)
+- **index_368:** Fixed file opening — non-PDF/image open via direct SharePoint URL instead of Flow 17 (502)
+- **index_369:** Fixed PDF opening — `openLibraryPdf(f)` instead of fake `pdfViewer` view
+- **index_370:** Images tried `openLibraryPdf` — shows "Loading PDF", wrong
+- **index_371:** Images tried `window.open` SharePoint URL — Eric rejected, wants in-app viewer
+- **index_372 [CURRENT IIS]:** Images download via Flow 17 + open in photo viewer read-only. All file types working.
+
+**Key learnings:**
+- Power Automate new-style trigger (no sp/sv/sig) returns 401 unless trigger auth = "Anyone"
+- Photo viewer requires a `File` object — must download via Flow 17 first, can't open by URL
+- `openLibraryPdf(f)` = PDF viewer read-only (no folder for save-back); `openPdfMarkup(f)` = PDF viewer with save-back to current project folder
+- Flow 17 (DOWNLOAD_FILE_URL) works for Personal FTPs paths
+
+**Pinned for next session:**
+- SharePoint delegated auth — pass user's MSAL access token to SharePoint REST API directly, so Modified By shows actual user instead of "Horner Plumbing" service account. Requires adding SharePoint scope to Entra app registration (`282e84c6...`). Eric has decision authority.
+
+**Next session:** SharePoint delegated auth (Modified By attribution).
+
+---
+
 ### Session 80
 **Date:** 2026-07-16
 **Builds:** index_361 → index_362
