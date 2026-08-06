@@ -26,18 +26,94 @@
 ## Architecture
 
 **Stack:**
-- **Database:** Global Edge ERP SQL Server (read-only access)
-- **Backend:** ASP.NET Core Web API (hosted on HP-APP, IIS, Windows Server 2025)
+- **Database:** Global Edge ERP — SQL Server instance `HP-SQL\GE`, database `Service` (read-only access)
+- **Backend:** ASP.NET Core 8 Web API (hosted on HP-APP, IIS, Windows Server 2025)
 - **Frontend:** React (PWA-enabled for native app feel)
 - **Email:** Microsoft Graph API (sends as Aaron via Entra ID / MSAL auth)
 - **Auth:** MSAL / Entra ID (same tenant as Field App: ef466c74-7a13-4920-854c-210669ea3c84)
 - **Hosting:** HP-APP (10.1.1.12) — separate IIS site or virtual directory alongside Field App
 
 **Key Decisions:**
-- Read-only SQL user for GE database (Eric believes already created — needs verification)
+- Domain account `Horner\sql.readonly` for GE database access — IIS app pool will run under this identity for production
+- Windows Integrated auth for SQL connection (not SQL auth)
 - Graph API for email (sends from Aaron's Outlook, lands in his Sent folder, preserves his signature)
 - PWA manifest so Aaron can pin to taskbar — full app experience, no browser chrome
 - ASP.NET Core + React aligns with Field App's planned backend migration path
+
+---
+
+## Database Schema (Global Edge — HP-SQL\GE / Service)
+
+**857 tables total. Key tables for Order Release:**
+
+### dbo.po (PO Header)
+- `Po-no` varchar(24) — PO number (e.g., "1199233")
+- `Vendor-code` varchar(12) — FK to vendor table
+- `Name` varchar(80) — Vendor name (denormalized)
+- `Job-no` varchar(16) — Job number (e.g., "SEL-25102")
+- `Status-code` varchar(2) — `p`/`P` = open (20,992), `C` = closed (110,971), `x` = cancelled (2,026), `r` = received (796)
+- `Po-date` datetime
+- `Ship-name`, `Ship-address__1/2`, `Ship-city`, `Ship-st`, `Ship-zip` — delivery address
+- `Buyer-code` varchar(100)
+- `Memo__1/2` varchar(4000)
+
+### dbo.[po-line] (PO Line Items)
+- `Po-no` varchar(24) — FK to po
+- `Line-no` int
+- `Item-no` varchar(32)
+- `Description__1` varchar(124), `Description__2` varchar(124)
+- `Uom-code` varchar(8)
+- `Qty-orig-ord` int — quantity originally ordered
+- `Qty-received` int — quantity already received
+- `Qty-to-rcve` int — quantity still to receive (key field for releases)
+- `fob-vendor` numeric — unit price
+- `Status-code` varchar(2) — `n` = new/open
+- `memo` varchar(8000)
+
+### dbo.vendor
+- `Vendor-code` varchar(12)
+- `Name` varchar(66)
+- `E-Mail__1` through `E-Mail__5` varchar(610) — NOTE: some vendors have blank emails (e.g., Ferguson)
+- `Telephone` varchar(28)
+- `Contact` varchar(40)
+
+### dbo.job
+- `Job-no` varchar(16)
+- `Description` varchar(60)
+- `Address`, `City`, `St`, `Zip-code`
+
+---
+
+## Development Environment
+
+**Location:** `D:\Projects\OrderReleaseApp\` on HP-APP
+
+**Directory Structure:**
+```
+D:\Projects\OrderReleaseApp\
+├── api\                    ← ASP.NET Core 8 Web API (scaffolded, builds clean)
+│   ├── Controllers\
+│   ├── Program.cs
+│   ├── appsettings.json
+│   └── OrderReleaseApi.csproj (Microsoft.Data.SqlClient 7.0.2 installed)
+└── mcp-server\             ← Custom MCP server for Claude Desktop (PowerShell + dotnet tools)
+    ├── index.js
+    └── package.json
+```
+
+**Tools on HP-APP:**
+- .NET 8 SDK 8.0.423 — installed at `C:\Program Files\dotnet\`
+- Node.js — installed at `C:\Program Files\nodejs\`
+- IIS — running (Field App on port 443)
+- Claude Desktop with MCP connectors:
+  - Filesystem MCP (scoped to `C:\inetpub\wwwroot\horner_app\` and `D:\Projects\OrderReleaseApp\`)
+  - Custom PowerShell MCP server (`D:\Projects\OrderReleaseApp\mcp-server\`) — provides `powershell` and `dotnet` tools
+  - Claude-in-Chrome
+
+**MCP Server Notes:**
+- PowerShell tool: bare `dotnet` command doesn't resolve in spawned process despite being in PATH; `dotnet` tool wraps Start-Process with file redirect as workaround
+- Config location: `%APPDATA%\Claude\claude_desktop_config.json`
+- `mcpServers` block added manually to config (not available through Settings UI)
 
 ---
 
@@ -51,27 +127,44 @@
 
 ## Open Questions
 
-1. Verify read-only SQL user exists and has access to PO tables in GE
-2. GE SQL Server connection details (server name, database name, port)
-3. What tables/views hold PO header and line item data in GE?
-4. Supplier email addresses — stored in GE or maintained separately?
+1. ~~Verify read-only SQL user exists~~ → `Horner\sql.readonly` is a domain account; Windows Integrated auth works; will configure IIS app pool identity for production
+2. ~~GE SQL connection details~~ → `HP-SQL\GE`, database `Service`, Windows auth
+3. ~~What tables hold PO data~~ → `po`, `po-line`, `vendor`, `job`, `item` — schema mapped
+4. Supplier email addresses — some vendors (e.g., Ferguson) have blank email fields in GE. Need strategy: manual entry? Separate lookup table?
 5. Email format preference — what does Aaron's current supplier email look like?
 6. Scope of initial release — Aaron only, or other users too?
 7. Entra app registration — new registration or extend existing Field App registration?
 8. Field crew request integration — future phase tie-in with Field App?
+9. `Qty-to-rcve` vs release quantity — does Aaron always release the full remaining qty, or partial? (App should support partial)
 
 ---
 
 ## Sessions
 
-### Session 1 — 2026-08-06 — Project Kickoff & Architecture
+### Session 1 — 2026-08-06 — Project Kickoff, Environment Setup & DB Discovery
 
-- Defined the problem: Aaron manually retyping PO line items into supplier emails
-- Evaluated approaches: Excel/VBA, Access, VB.NET, Power Apps, ASP.NET Core + React
-- Selected architecture: ASP.NET Core Web API + React frontend + Graph API email
+**Decisions:**
+- Selected architecture: ASP.NET Core 8 Web API + React frontend + Graph API email
 - Hosting on HP-APP alongside Field App (IIS)
 - PWA for native app feel
 - Auth via existing Entra tenant (MSAL)
-- Created master log on GitHub
+- Windows Integrated auth for GE SQL (domain account `Horner\sql.readonly`)
+
+**Infrastructure completed:**
+- Created project directory `D:\Projects\OrderReleaseApp\`
+- Built custom MCP server (Node.js) providing PowerShell and dotnet CLI tools for Claude Desktop
+- Added MCP server to `claude_desktop_config.json`
+- Installed .NET 8 SDK 8.0.423 on HP-APP
+- Scaffolded ASP.NET Core Web API project (`dotnet new webapi`)
+- Installed Microsoft.Data.SqlClient 7.0.2 NuGet package
+- Verified SQL connection to `HP-SQL\GE` / `Service` database (Windows Integrated auth)
+- Mapped PO-related database schema (po, po-line, vendor, job, item)
+- Pulled sample PO data — confirmed real data flowing (e.g., PO 1199233, 16 line items, Ferguson)
+
+**Next steps:**
+- Build API endpoints: PO search, PO detail with line items, vendor lookup
+- Build React frontend: PO search, line item grid with release quantity input, Release button
+- Wire up Graph API for email send
+- Configure IIS site for the app
 
 ---
