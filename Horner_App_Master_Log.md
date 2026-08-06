@@ -1,16 +1,18 @@
 ### Session 82 / App Migration — GitHub Pages Redirect
 **Date:** 2026-08-06
 
-**Summary:** Began retiring GitHub Pages as a distribution surface for the Horner Field App ("App Migration" project).
+**Summary:** Began retiring GitHub Pages as a distribution surface for the Horner Field App ("App Migration" project). Redirect from GitHub Pages to https://horner.app is live.
 
 **Changes:**
 - Replaced `index.html` on GitHub with a lightweight meta-refresh redirect to `https://horner.app`
 - Old index_327 build preserved as `index_327.html` — no data lost
-- New SHA: `a035355bffd2fec0c88dbaef59b406b44bc779ae`
+- Added `.nojekyll` file to fix Pages deployment timeout (legacy Jekyll build was choking on large HTML files)
+- Eric deleted old versioned `index_NNN.html` files from repo to further reduce build size
+- Pages deployment confirmed working — redirect is live at `https://itr325.github.io/Horner.app/`
 
-**App Migration — Remaining Steps (target mid-to-late August 2026):**
+**App Migration — Remaining Steps (target late August 2026):**
 1. Disable GitHub Pages (Settings → Pages → Source → None)
-2. Make repo private (also mitigates `sig=` token exposure in versioned HTML files)
+2. Make repo private (also mitigates `sig=` token exposure in remaining HTML files)
 3. Remove `https://itr325.github.io/Horner.app/` redirect URI from Entra app registration (`282e84c6-...`)
 
 ### Session 81 (continued) / My Files Feature
