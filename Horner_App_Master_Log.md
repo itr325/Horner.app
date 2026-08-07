@@ -1,3 +1,25 @@
+### Session 83 — Active Projects Flow Fix
+**Date:** 2026-08-07
+
+**Summary:** Diagnosed and fixed a Power Automate flow failure that prevented all users from loading Active Projects. Root cause: a folder named "Documents" (no parentheses) created by Susan Youngs in the SharePoint Active Projects library. The flow's Select action parsed folder names expecting `(CODE) Name` format — `indexOf(')')` returned -1, causing `substring` to fail with negative index.
+
+**Issue:**
+- User Mitch Jurecki reported "SharePoint sync error - please try again" on Active Projects tile
+- Admin Docs and Codes & Charts worked fine (different flows)
+- Eric could still see projects due to cached data from a prior successful load
+- InPrivate window confirmed the flow was broken for everyone
+
+**Root cause:** Flow 2 (Syncing Projects Folders) had a Filter Array step that correctly filtered for folders starting with `(`, but the Select action's **From** field pointed directly at `Get files (properties only)` output, completely bypassing the filter. The filter was running but its output was never consumed.
+
+**Fix:**
+- Deleted the "Documents" folder from SharePoint Active Projects (immediate fix)
+- Changed the Select action's **From** field to point at Filter Array's **Body** output instead of Get files output (permanent fix)
+- Tested by creating a folder without parentheses — flow handled it correctly, folder silently excluded
+
+**Key learning:**
+- Power Automate Filter Array does nothing if the downstream action doesn't reference its output — always verify the next action's From/input field points at the filter, not the original data source
+- Any user with SharePoint write access to Active Projects can accidentally crash the flow for all users by creating a non-conforming folder
+
 ### Session 82 / App Migration — GitHub Pages Redirect
 **Date:** 2026-08-06
 
