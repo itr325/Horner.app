@@ -39,6 +39,7 @@
 |------------|----------|-----------|
 | 2026-08-07 | Project created with MCF folder structure | Central hub for logs and memory |
 | 2026-08-07 | Confirmed hostname: midcityfoundry.syncronology.com | Replaces generic `hostname` in Singlepoint doc |
+| 2026-08-07 | Entra application name: SinglePoint | User confirmed |
 
 ---
 
@@ -86,7 +87,7 @@
 
 ## Open Questions
 
-1. What is the application name to use in Entra?
+1. ~~What is the application name to use in Entra?~~ → **SinglePoint**
 2. What DepartmentId and CompanyId values for web.appsettings.config?
 3. Which Entra groups need to be mapped to Singlepoint groups?
 4. Should auto-user-creation be enabled?
