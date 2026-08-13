@@ -1,84 +1,63 @@
-### Session 83 — Active Projects Flow Fix
-**Date:** 2026-08-07
+### Session 84 — Tag & Hold Integration (Order Release App)
+**Date:** 2026-08-13
 
-**Summary:** Diagnosed and fixed a Power Automate flow failure that prevented all users from loading Active Projects. Root cause: a folder named "Documents" (no parentheses) created by Susan Youngs in the SharePoint Active Projects library. The flow's Select action parsed folder names expecting `(CODE) Name` format — `indexOf(')')` returned -1, causing `substring` to fail with negative index.
+**Summary:** Added Tag & Hold tile to the Field App (dev build only — production untouched). Tile opens the new Tag & Hold feature from the Order Release App project inside the app via iframe. Full dev environment stood up on HP-APP.
 
-**Issue:**
-- User Mitch Jurecki reported "SharePoint sync error - please try again" on Active Projects tile
-- Admin Docs and Codes & Charts worked fine (different flows)
-- Eric could still see projects due to cached data from a prior successful load
-- InPrivate window confirmed the flow was broken for everyone
+**Changes (dev build only at `C:\inetpub\wwwroot\horner_app_dev\`):**
+- 📦 TAG & HOLD tile added to job folder grid — opens `/tagandhold.html?job={code}&embedded=1` in iframe
+- iframe positioned below app header (top: 90px), fills remaining viewport
+- Breadcrumb added: Home > Commercial > Active Projects > JOB > Tag & Hold
+- `tag-and-hold` added to `formViews` array so Back button works
+- tagandhold.html hides its own header in embedded mode
 
-**Root cause:** Flow 2 (Syncing Projects Folders) had a Filter Array step that correctly filtered for folders starting with `(`, but the Select action's **From** field pointed directly at `Get files (properties only)` output, completely bypassing the filter. The filter was running but its output was never consumed.
+**Dev Environment:**
+- IIS site "HornerAppDev" created: HTTP port 8080, HTTPS port 8443
+- Web root: `C:\inetpub\wwwroot\horner_app_dev\`
+- Self-signed cert "Horner App Dev" (thumbprint 4B83FCBC..., 5-year expiry)
+- Entra redirect URI `https://10.1.1.12:8443` added to app registration `282e84c6-...`
+- Production build 372 copied to dev, patched there — production unchanged
 
-**Fix:**
-- Deleted the "Documents" folder from SharePoint Active Projects (immediate fix)
-- Changed the Select action's **From** field to point at Filter Array's **Body** output instead of Get files output (permanent fix)
-- Tested by creating a folder without parentheses — flow handled it correctly, folder silently excluded
+**Order Release App API (runs on HP-APP):**
+- ASP.NET Core 8 at `D:\Projects\OrderReleaseApp\api\`
+- Reads GE database live via `HP-SQL\GE` (Windows Integrated auth)
+- Key endpoints: `/api/job/{jobNo}/phases`, `/api/job/{jobNo}/phase/{phase}/items`
+- Phase = `Task-no` on `po-line` table; phase names from `task` table
+- Currently manual `dotnet run` — not yet IIS-hosted
 
-**Key learning:**
-- Power Automate Filter Array does nothing if the downstream action doesn't reference its output — always verify the next action's From/input field points at the filter, not the original data source
-- Any user with SharePoint write access to Active Projects can accidentally crash the flow for all users by creating a non-conforming folder
+**Power Automate:**
+- Flow 28 — Tag & Hold Release: HTTP trigger → vendor-grouped HTML email → sends to eschieble@pinnacle-tec.com (test)
 
-### Session 82 / App Migration — GitHub Pages Redirect
-**Date:** 2026-08-06
+**Production Deployment (same session):**
+- Build 372 → 373: TAG & HOLD tile, iframe view, breadcrumb, formViews
+- `tagandhold.html` deployed to `C:\inetpub\wwwroot\horner_app\`
+- API published to `C:\inetpub\wwwroot\horner_app\api\` as IIS sub-application
+- App pool "OrderReleaseApi" running as `Horner\sql.readonly`, No Managed Code
+- ASP.NET Core Hosting Bundle installed on HP-APP
+- API accessible at `https://horner.app/api/...` (same origin, trusted Starfield cert)
+- Controller routes changed from `api/[controller]` to `[controller]` (IIS provides `/api` prefix)
+- tagandhold.html API_BASE set to `/api` (relative, same origin)
 
-**Summary:** Began retiring GitHub Pages as a distribution surface for the Horner Field App ("App Migration" project). Redirect from GitHub Pages to https://horner.app is live.
+**Next session:** iPad testing, local ledger design (shadow inventory for release tracking)
 
-**Changes:**
-- Replaced `index.html` on GitHub with a lightweight meta-refresh redirect to `https://horner.app`
-- Old index_327 build preserved as `index_327.html` — no data lost
-- Added `.nojekyll` file to fix Pages deployment timeout (legacy Jekyll build was choking on large HTML files)
-- Eric deleted old versioned `index_NNN.html` files from repo to further reduce build size
-- Pages deployment confirmed working — redirect is live at `https://itr325.github.io/Horner.app/`
+---
 
-**App Migration — Remaining Steps (target late August 2026):**
-1. Disable GitHub Pages (Settings → Pages → Source → None)
-2. Make repo private (also mitigates `sig=` token exposure in remaining HTML files)
-3. Remove `https://itr325.github.io/Horner.app/` redirect URI from Entra app registration (`282e84c6-...`)
+### Session 81
+**Date:** 2026-07-17
+**Build:** index_363
 
-### Session 81 (continued) / My Files Feature
-**Date:** 2026-07-24
-**Builds:** index_363 → index_372
+**Summary:** Fix persistent re-authentication bug — changed MSAL token cache from `sessionStorage` to `localStorage`.
 
-**Summary:** Built the My Files personal FTP tile feature end-to-end — tile, file browser, upload, and file viewing (PDF, photo, other).
+**Root cause:** `cacheLocation: "sessionStorage"` meant tokens were wiped whenever iOS Safari suspended the tab, the user closed and reopened the browser, or the page reloaded — forcing full re-auth every time.
 
-**New Power Automate Flows:**
-- **Flow 26 — Get Personal FTP Contents** (`GET_PERSONAL_FTP_URL`): Mirrors Flow 5 but targets Personal FTPs library. Body: `{ path }` → returns `{ folders, files }` with `ServerRelativeUrl` for each file. Trigger auth must be "Anyone" (not "Anyone in my tenant") or gets 401.
-- **Flow 27 — Upload to Personal FTPs** (`UPLOAD_PERSONAL_FTP_URL`): Body: `{ filename, contentBase64, folder }`. SharePoint Create File step uses Expression mode for all three fields. Trigger auth must be "Anyone".
+**Fix:** One-line change in `msalInit()` config:
+```
+cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
+```
+`localStorage` persists across tab closes, app restarts, and iOS sleep/resume. MSAL's existing silent token refresh and refresh token flow handle expiry transparently.
 
-**New Constants:**
-- `GET_PERSONAL_FTP_URL` — Flow 26
-- `UPLOAD_PERSONAL_FTP_URL` — Flow 27
+**Note for first deployment:** Users already signed in will have tokens in `sessionStorage` — those won't migrate. Everyone signs in once after this build lands, then stays signed in persistently.
 
-**Feature: My Files Tile**
-- Appears on home screen after Help tile, only if user has a matching folder in SharePoint "Personal FTPs" library
-- Folder matched by first letter of email prefix (e.g. `eschieble@...` → `ESchieble`)
-- Shows file/folder browser with Upload button (full width)
-- Upload: picks any file from iOS native picker (includes camera option natively)
-- File opening: PDFs → `openLibraryPdf()` (PDF markup viewer, read-only); Images → download via Flow 17 + open in photo viewer (read-only, no save-back); Other files → direct SharePoint URL in new tab
-
-**Build history:**
-- **index_364:** Initial My Files. Flow 26 URL missing sp/sv/sig params — tile didn't appear
-- **index_365:** Fixed Flow 26 URL. Tile appeared. Upload used wrong flow (Flow 6 hardcodes Active Projects)
-- **index_366:** Removed camera button (redundant with iOS native picker), Upload full width
-- **index_367:** Added Flow 27, fixed upload params (`contentBase64` not `base64`)
-- **index_368:** Fixed file opening — non-PDF/image open via direct SharePoint URL instead of Flow 17 (502)
-- **index_369:** Fixed PDF opening — `openLibraryPdf(f)` instead of fake `pdfViewer` view
-- **index_370:** Images tried `openLibraryPdf` — shows "Loading PDF", wrong
-- **index_371:** Images tried `window.open` SharePoint URL — Eric rejected, wants in-app viewer
-- **index_372 [CURRENT IIS]:** Images download via Flow 17 + open in photo viewer read-only. All file types working.
-
-**Key learnings:**
-- Power Automate new-style trigger (no sp/sv/sig) returns 401 unless trigger auth = "Anyone"
-- Photo viewer requires a `File` object — must download via Flow 17 first, can't open by URL
-- `openLibraryPdf(f)` = PDF viewer read-only (no folder for save-back); `openPdfMarkup(f)` = PDF viewer with save-back to current project folder
-- Flow 17 (DOWNLOAD_FILE_URL) works for Personal FTPs paths
-
-**Pinned for next session:**
-- SharePoint delegated auth — pass user's MSAL access token to SharePoint REST API directly, so Modified By shows actual user instead of "Horner Plumbing" service account. Requires adding SharePoint scope to Entra app registration (`282e84c6...`). Eric has decision authority.
-
-**Next session:** SharePoint delegated auth (Modified By attribution).
+**Deploy:** index_363.html pushed to GitHub (commit f836e6c2). Eric copied to IIS manually. Deployed to affected user — monitoring to confirm fix.
 
 ---
 
