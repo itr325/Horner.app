@@ -1,8 +1,65 @@
 # Order Release App — Master Log
 
-**Last Updated:** 2026-08-06
+**Last Updated:** 2026-08-13
 
 ---
+
+### Session 2 — Tag & Hold Feature (End-to-End)
+**Date:** 2026-08-13
+
+**Summary:** Pivoted from PO-centric workflow to field-crew-centric "Tag & Hold" feature. Built full stack: ASP.NET Core API reading live GE data, standalone HTML page, integrated into Field App via iframe, Power Automate email flow. Plumber flow: Active Projects → Job → Tag & Hold tile → Select Phase → See unreleased items → Add to cart → Submit → Email to Aaron.
+
+**Key Discovery:**
+- `Task-no` field on `po-line` table = Phase number (GE displays it as "Phase" in UI)
+- `task` table has phase name lookup (e.g., Phase 6 = FINISH PLUMBING, Phase 15 = MECH. ROOM)
+
+**API Endpoints Built (ASP.NET Core 8, `D:\Projects\OrderReleaseApp\api\`):**
+- `GET /api/job/{jobNo}/phases` — All phases with unreleased items for a job, with phase names from `task` table
+- `GET /api/job/{jobNo}/phase/{phase}/items` — All unreleased PO line items for a job+phase across all open POs
+- `GET /api/po/search?q={query}` — PO search by number (original endpoints, still available)
+- `GET /api/po/{poNo}` — Full PO detail with line items
+- `GET /api/vendor/{vendorCode}` and `GET /api/vendor/search?q={query}` — Vendor lookup
+- API runs on `http://0.0.0.0:5050` (HTTP) and `https://0.0.0.0:5051` (HTTPS, self-signed cert)
+- CORS configured for horner.app, dev site HTTP/HTTPS
+
+**Tag & Hold Page (`C:\inetpub\wwwroot\horner_app_dev\tagandhold.html`):**
+- Standalone HTML page, accepts `?job=XXX&embedded=1` URL params
+- Phase cards show phase name (bold), phase number, item count
+- Item list shows description, vendor, ordered/received/available quantities
+- Cart pattern (same as order sheets) with Add/Remove
+- Submit groups items by vendor and POSTs to Power Automate flow
+- Embedded mode hides its own header when loaded inside Field App iframe
+
+**Field App Integration (dev build on port 8443):**
+- TAG & HOLD tile added to job folder grid
+- Opens tagandhold.html in iframe with job code passed via URL
+- Breadcrumb: Home > Commercial > Active Projects > JOB > Tag & Hold
+- Back button works via formViews array
+
+**Power Automate Flow:**
+- Flow 28 — Tag & Hold Release: HTTP trigger → loops vendors → loops items → builds HTML email with vendor-grouped tables → sends to eschieble@pinnacle-tec.com (test)
+- Flow URL wired into tagandhold.html
+
+**Dev Environment Setup:**
+- IIS site "HornerAppDev" on HP-APP: HTTP port 8080, HTTPS port 8443
+- Web root: `C:\inetpub\wwwroot\horner_app_dev\`
+- Self-signed cert "Horner App Dev" (thumbprint 4B83FCBC..., 5-year expiry)
+- Entra redirect URI added: `https://10.1.1.12:8443`
+- Production build (372) copied to dev site, patched with Tag & Hold tile
+- Production site untouched
+
+**Open Items:**
+1. **Local ledger/shadow inventory** — Track releases locally so quantities update before GE catches up via billing
+2. **iPad testing** — Verify touch targets, scrolling, cart UX on actual iPad
+3. **submittedBy field** — Add logged-in user name to the release email payload
+4. **Flow trigger auth** — Currently "Anyone", consistent with other flows
+5. **Production deployment** — Once feature is solid, move to production
+6. **API persistent hosting** — Currently manual `dotnet run`; needs IIS hosting or Windows Service
+
+**Next session:** iPad testing, local ledger design, production deployment planning
+
+---
+
 
 ## Project Overview
 
