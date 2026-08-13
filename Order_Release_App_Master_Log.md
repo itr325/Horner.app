@@ -48,15 +48,25 @@
 - Production build (372) copied to dev site, patched with Tag & Hold tile
 - Production site untouched
 
+**Production Deployment (same session):**
+- ASP.NET Core Hosting Bundle installed on HP-APP
+- API published to `C:\inetpub\wwwroot\horner_app\api\` as IIS sub-application under "Horner Field App" site
+- App pool "OrderReleaseApi" running as `Horner\sql.readonly`, No Managed Code
+- Controller routes changed from `api/[controller]` to `[controller]` (IIS provides `/api` prefix)
+- API accessible at `https://horner.app/api/...` (same origin as Field App, trusted Starfield cert)
+- tagandhold.html deployed to production web root, API_BASE set to `/api` (relative)
+- Field App patched (build 372 → 373): TAG & HOLD tile, iframe view, breadcrumb, formViews
+- Flow 28 URL wired into production tagandhold.html
+
 **Open Items:**
 1. **Local ledger/shadow inventory** — Track releases locally so quantities update before GE catches up via billing
 2. **iPad testing** — Verify touch targets, scrolling, cart UX on actual iPad
 3. **submittedBy field** — Add logged-in user name to the release email payload
 4. **Flow trigger auth** — Currently "Anyone", consistent with other flows
-5. **Production deployment** — Once feature is solid, move to production
-6. **API persistent hosting** — Currently manual `dotnet run`; needs IIS hosting or Windows Service
+5. ~~Production deployment~~ — DONE (build 373)
+6. ~~API persistent hosting~~ — DONE (IIS sub-application under Horner Field App site)
 
-**Next session:** iPad testing, local ledger design, production deployment planning
+**Next session:** iPad testing, local ledger design (shadow inventory for release tracking)
 
 ---
 
