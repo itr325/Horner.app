@@ -58,6 +58,11 @@
 - Field App patched (build 372 → 373): TAG & HOLD tile, iframe view, breadcrumb, formViews
 - Flow 28 URL wired into production tagandhold.html
 
+**Post-deployment tweaks (same session):**
+- Added Release All button (gold, appears next to phase title) — one tap adds all items at full qty
+- Fixed phase card overflow for long names — widened grid columns from 140px to 170px min
+- Added spacing between Release All button row and first item card
+
 **Open Items:**
 1. **Local ledger/shadow inventory** — Track releases locally so quantities update before GE catches up via billing
 2. **iPad testing** — Verify touch targets, scrolling, cart UX on actual iPad
