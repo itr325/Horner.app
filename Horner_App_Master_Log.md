@@ -37,7 +37,12 @@
 - Controller routes changed from `api/[controller]` to `[controller]` (IIS provides `/api` prefix)
 - tagandhold.html API_BASE set to `/api` (relative, same origin)
 
-**Next session:** iPad testing, local ledger design (shadow inventory for release tracking)
+**Post-deployment tweaks (same session):**
+- Added Release All button (gold, appears next to phase title) — one tap adds all items at full qty
+- Fixed phase card overflow for long names like "UNDERGROUND PLUMBING" — removed word-break, widened grid columns from 140px to 170px min
+- Added spacing between Release All button row and first item card
+
+**Next session:** Horner App tweaks
 
 ---
 
