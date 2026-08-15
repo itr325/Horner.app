@@ -175,7 +175,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_380";
+const BUILD_ID = "index_381";
 
 // -- Microsoft Entra ID (Azure AD) Authentication ----------------------------
 // Uses loginRedirect (not popup) for reliable mobile/iOS support.
@@ -14727,7 +14727,7 @@ function App() {
     const hF = !!FORM_FOLDERS[f.name];
     return /*#__PURE__*/React.createElement("button", {
       key: f.name,
-      onClick: () => go("folder-contents", undefined, f.name),
+      onClick: () => { if (f.name === "T&M") { go("tmlog", undefined, undefined, { name: "T&M Log", folder: "T&M" }); } else if (f.name === "VALVE TAG") { go("valvetag", undefined, undefined, { name: "Valve Tag List", folder: "VALVE TAG" }); } else { go("folder-contents", undefined, f.name); } },
       style: {
         background: "white",
         border: "1.5px solid #DDE3ED",
@@ -14979,7 +14979,111 @@ function App() {
       )
     )
   ),
-  pathKey !== "TIME CARDS" && /*#__PURE__*/React.createElement("div", {
+  folder === "FORMS" && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 12 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 } },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("dailylog", undefined, undefined, { name: "Daily Field Report", folder: "FORMS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E8F0FE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDCCB"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "DAILY FIELD\nREPORT")
+      ),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("ordersheet", undefined, undefined, { name: "RFI Form", folder: "FORMS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#2ECC7120", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDCC4"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "RFI\nFORM")
+      ),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("ordersheet", undefined, undefined, { name: "RFC Form", folder: "FORMS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#F39C1220", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDCDD"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "RFC\nFORM")
+      )
+    )
+  ),
+  folder === "RETURNS" && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 12 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 } },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("ordersheet", undefined, undefined, { name: "BLK-GAL-BRA Return Sheet", folder: "RETURNS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E8F0FE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDD04"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "BLK-GAL-BRA\nRETURN")
+      ),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("ordersheet", undefined, undefined, { name: "CPVC Return Sheet", folder: "RETURNS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#2ECC7120", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDD04"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "CPVC\nRETURN")
+      ),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("ordersheet", undefined, undefined, { name: "PEX Return Sheet", folder: "RETURNS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#9B59B620", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDD04"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "PEX\nRETURN")
+      ),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("ordersheet", undefined, undefined, { name: "Finish Return Sheet", folder: "RETURNS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#F39C1220", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDD04"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "FINISH\nRETURN")
+      ),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("ordersheet", undefined, undefined, { name: "MISC Return Sheet", folder: "RETURNS" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E74C3C20", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDD04"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "MISC\nRETURN")
+      )
+    )
+  ),
+  folder === "T&M" && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 12 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 } },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("tmlog", undefined, undefined, { name: "T&M Log", folder: "T&M" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E8F0FE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\u23F1\uFE0F"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "T&M\nLOG")
+      )
+    )
+  ),
+  folder === "SAFETY" && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 12 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 } },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("safety", undefined, undefined, { name: "Site Safety Inspection", folder: "SAFETY" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E74C3C20", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83E\uDDBA"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "SITE SAFETY\nINSPECTION")
+      ),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("folder-contents", undefined, undefined, null, ["Toolbox Talks"]); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#8E44AD20", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDCD6"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "TOOLBOX\nTALKS")
+      )
+    )
+  ),
+  folder === "VALVE TAG" && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 12 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 } },
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { go("valvetag", undefined, undefined, { name: "Valve Tag List", folder: "VALVE TAG" }); },
+        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#3498DB20", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83C\uDFF7\uFE0F"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "VALVE TAG\nLIST")
+      )
+    )
+  ),
+  pathKey !== "TIME CARDS" && pathKey !== "FORMS" && pathKey !== "RETURNS" && pathKey !== "T&M" && pathKey !== "SAFETY" && pathKey !== "VALVE TAG" && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 12,
       fontSize: 17,
@@ -14998,7 +15102,7 @@ function App() {
       "VALVE TAG": "Valve Tag List"
     };
     return headings[pathKey] || pathKey || "Forms";
-  })()), folder !== "TIME CARDS" && /*#__PURE__*/React.createElement("div", {
+  })()), folder !== "TIME CARDS" && folder !== "FORMS" && folder !== "RETURNS" && folder !== "T&M" && folder !== "SAFETY" && folder !== "VALVE TAG" && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -15079,7 +15183,7 @@ function App() {
       gap: 6,
       marginBottom: folderContents.files.length > 0 ? 16 : 0
     }
-  }, folderContents.folders.filter(f => !(folder === "ORDER SHEETS" && f.name === "ORDERS") && !(folder === "TIME CARDS" && subPath.length === 0 && !tcHistoryOpen)).map(f => /*#__PURE__*/React.createElement("button", {
+  }, folderContents.folders.filter(f => !(folder === "ORDER SHEETS" && f.name === "ORDERS") && !(folder === "TIME CARDS" && subPath.length === 0 && !tcHistoryOpen) && !(folder === "SAFETY" && subPath.length === 0 && f.name === "Toolbox Talks")).map(f => /*#__PURE__*/React.createElement("button", {
     key: f.name,
     onClick: () => go("folder-contents", undefined, undefined, null, [...subPath, f.name]),
     style: {
