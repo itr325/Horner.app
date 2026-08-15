@@ -737,14 +737,16 @@
         window._foreman = params.get('foreman') || '';
         window._foremanPhone = params.get('foremanPhone') || '';
 
-        // Embedded mode — hide header and search bar
+   // Embedded mode — hide title and search bar, keep cart button visible
         if (params.get('embedded') === '1') {
-            document.querySelectorAll('.header, #jobSection').forEach(function(el) {
-                el.style.display = 'none';
-            });
+            document.getElementById('jobSection').style.display = 'none';
+            var headerTitle = document.querySelector('.header > div:first-child');
+            if (headerTitle) headerTitle.style.display = 'none';
+            var header = document.querySelector('.header');
+            if (header) { header.style.padding = '6px 20px'; header.style.justifyContent = 'flex-end'; }
         }
 
-        const jobFromUrl = params.get('job');
+                const jobFromUrl = params.get('job');
         if (jobFromUrl) {
             // Hide the manual search field
             document.getElementById('jobSection').style.display = 'none';
