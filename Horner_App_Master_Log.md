@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-**Last updated:** 2026-08-14
+**Last updated:** 2026-08-15
 
 > **Note:** This is the single master log for all Horner Field App development, including the Tag & Hold / Order Release features. The separate `Order_Release_App_Master_Log.md` has been retired and merged here as of Session 85.
 
@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_380` |
+| **Current build** | `index_381` |
 | **Primary URL** | `https://horner.app` (IIS on HP-APP) |
 | **Fallback URL** | `https://itr325.github.io/Horner.app/` (GitHub Pages — redirect only) |
 | **Web root** | `C:\inetpub\wwwroot\horner_app\` |
@@ -193,6 +193,35 @@
 ---
 
 ## 📋 Session History
+
+### Session 86 — Tile Tweaks
+**Date:** 2026-08-15
+**Build:** index_380 → index_381
+
+**Summary:** Converted all remaining list-view folder overlays to tile grid layout. Added direct-open shortcuts for single-form folders.
+
+**Tile grid conversions:**
+- **FORMS** — 3 tiles: Daily Field Report (📋), RFI Form (📄), RFC Form (📝)
+- **RETURNS** — 5 tiles: BLK-GAL-BRA, CPVC, PEX, Finish, MISC (all 🔄, color-coded backgrounds)
+- **T&M** — 1 tile: T&M Log (⏱️)
+- **SAFETY** — 2 tiles: Site Safety Inspection (🧺), Toolbox Talks (📖 — opens subfolder)
+- **VALVE TAG** — 1 tile: Valve Tag List (🏷️)
+
+**Direct-open shortcuts (top-level job folder grid):**
+- **T&M tile** — now opens T&M Log form directly, skips folder view
+- **VALVE TAG tile** — now opens Valve Tag List form directly, skips folder view
+
+**Subfolder hiding:**
+- Toolbox Talks subfolder hidden from SAFETY folder listing (tile handles navigation)
+
+**Technical:**
+- Generic heading + list renderer preserved as fallback for any future folders without custom tile blocks
+- All tile blocks use consistent styling: white bg, 1.5px #DDE3ED border, 12px radius, 46x46 icon circle, 10px bold label
+- JS validation passed on all edits
+
+**Next session:** Field crew testing feedback. Continue with ERP Audit when Aaron returns spreadsheet.
+
+---
 
 ### Session 85 — Log Merge + Email Formatting + Production Incident + Recovery
 **Date:** 2026-08-14 → 2026-08-15
