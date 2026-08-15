@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_377` |
+| **Current build** | `index_378` |
 | **Primary URL** | `https://horner.app` (IIS on HP-APP) |
 | **Fallback URL** | `https://itr325.github.io/Horner.app/` (GitHub Pages — redirect only) |
 | **Web root** | `C:\inetpub\wwwroot\horner_app\` |
@@ -194,6 +194,36 @@
 ---
 
 ## 📋 Session History
+
+### Session 85 — Log Merge + Email Formatting + Production Incident + Recovery
+**Date:** 2026-08-14 → 2026-08-15
+**Build:** index_377 → index_378
+
+**Summary:** Merged logs, rebuilt Tag & Hold email formatting end-to-end, caused and recovered from production corruption incident, established backup strategy.
+
+**Completed:**
+- Merged Order Release App log into single Horner Field App master log
+- API: Fixed item sort order to `pl.[Po-no], pl.[Line-no]`
+- API: Added `GET /api/job/{jobNo}/info` endpoint
+- API: Deployed to both production and dev IIS sub-apps
+- Dev API: Created separate `OrderReleaseApiDev` app pool, set `Horner\sql.readonly` credentials
+- `tagandhold.html`: Job info fetch on load; foreman/phone from URL params; embedded mode fixed (hides title, keeps Cart button); vendor name in submit payload
+- `index.html`: Foreman name + phone passed as URL params to tagandhold iframe
+- Flow 28: Rebuilt email — vendor name header, prose intro with PO# + job name, monospace item list with qty + description, jobsite block, foreman/phone, confirm line, HR separator per vendor
+- Email tested and confirmed working end-to-end on dev then pushed to production
+- Backup strategy established: `C:\inetpub\wwwroot\horner_app_backup\`, GitHub mirrors, BUILD_ID on every change
+
+**Production incident:**
+- Cause: PowerShell `Set-Content` on 1.6MB index.html mangled UTF-8 emoji
+- Recovery: Restored from server backup (3:07PM backup from backup server rebuild)
+- Lesson: NEVER `Set-Content` on index.html; always use `[System.IO.File]::WriteAllText()` or Invoke-WebRequest from GitHub
+
+**Deploy rules updated:**
+- Dev first, always — test before pushing to production
+- INCREMENT BUILD_ID on every change, no exceptions
+- Back up before every session
+
+**Next session:** Tag & Hold open items — submittedBy field, local ledger/shadow inventory, iPad testing
 
 ### Session 85 — Log Merge + Email Formatting (partial) + Production Incident
 **Date:** 2026-08-14
