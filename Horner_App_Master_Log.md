@@ -50,8 +50,7 @@
 - [x] Flow 28: Rebuilt email body — prose format with PO#, job name, item list, jobsite block, foreman, confirm line
 - [ ] **Test end-to-end on dev** — verify email arrives correctly formatted
 - [ ] **Push to production** once tested
-- [ ] **submittedBy field** — Add logged-in user name to release email payload
-- [ ] **Local ledger / shadow inventory** — Track releases locally; GE only updates when vendor bills arrive
+- [ ] **submittedBy field** — Add logged-in user's name to release email so Aaron knows who submitted (optional, low priority)
 - [ ] **iPad testing** — Verify touch targets, scrolling, cart UX on actual iPad
 
 ### Field App Features (priority order)
