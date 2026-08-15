@@ -124,8 +124,8 @@
 - **Custom MCP server:** `D:\Projects\OrderReleaseApp\mcp-server\index.js` — Node.js, provides `powershell` and `dotnet` tools to Claude Desktop on HP-APP; config at `%APPDATA%\Claude\claude_desktop_config.json`
 - **Backup folder:** `C:\inetpub\wwwroot\horner_app_backup\` — versioned copies of index.html and tagandhold.html
 - **web.config:** `C:\inetpub\wwwroot\horner_app\web.config` — IIS config (MIME types, rewrite rules)
-- **SVG assets:** `H.svg`, `horner-plumbing-logo.svg` in web root
-- **journal.txt:** `itr325/Horner.app` GitHub repo — purpose unknown, may be a scratch file
+- **SVG assets:** `H.svg`, `horner-plumbing-logo.svg` in web root — Horner "H" logo files used in the app header
+- **journal.txt:** `itr325/Horner.app` GitHub repo — automated session journal from May 2026 (pre-master log era, builds 99-113); kept as historical artifact
 
 ### GE ERP — Key Tables
 | Table | Key Fields |
