@@ -222,7 +222,7 @@
 - INCREMENT BUILD_ID on every change, no exceptions
 - Back up before every session
 
-**Next session:** Tag & Hold open items — submittedBy field, local ledger/shadow inventory, iPad testing
+**Next session:** UI tweaks — convert Forms list view (Daily Field Report, RFI Form, RFC Form) to tile grid layout matching rest of app
 
 ### Session 85 — Log Merge + Email Formatting (partial) + Production Incident
 **Date:** 2026-08-14
