@@ -175,7 +175,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_378";
+const BUILD_ID = "index_379";
 
 // -- Microsoft Entra ID (Azure AD) Authentication ----------------------------
 // Uses loginRedirect (not popup) for reliable mobile/iOS support.
@@ -15267,7 +15267,7 @@ function App() {
   view === "tag-and-hold" && project && /*#__PURE__*/React.createElement("div", {
     style: { position: "fixed", top: 90, left: 0, right: 0, bottom: 0, zIndex: 50, background: "#f4f4f4" }
   }, /*#__PURE__*/React.createElement("iframe", {
-    src: (function() { var _fm = EMPLOYEES.find(function(e) { return e.name === project.foreman; }); return "/tagandhold.html?job=" + encodeURIComponent(project.code) + "&embedded=1" + (project.foreman ? "&foreman=" + encodeURIComponent(project.foreman) : "") + (_fm && _fm.phone ? "&foremanPhone=" + encodeURIComponent(_fm.phone) : ""); })(),
+    src: (function() { var _fm = EMPLOYEES.find(function(e) { return e.name === project.foreman; }); return "/tagandhold.html?job=" + encodeURIComponent(project.code) + "&embedded=1" + (project.foreman ? "&foreman=" + encodeURIComponent(project.foreman) : "") + (_fm && _fm.phone ? "&foremanPhone=" + encodeURIComponent(_fm.phone) : "") + (msalAccount && msalAccount.name ? "&submittedBy=" + encodeURIComponent(msalAccount.name) : ""); })(),
     style: { width: "100%", height: "100%", border: "none" },
     title: "Tag and Hold"
   })),
