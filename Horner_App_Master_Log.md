@@ -101,12 +101,13 @@
 **START of every session:**
 1. Read `C:\inetpub\wwwroot\horner_app\Horner_App_Master_Log.md` via Filesystem connector
 2. Check open items and **Next session** notes
-3. Update memory if anything has changed
+3. Back up current `index.html` to `C:\inetpub\wwwroot\horner_app_backup\index_NNN.html` and `tagandhold.html` to `tagandhold_NNN.html` BEFORE any changes
+4. Update memory if anything has changed
 
 **END of every session:**
 1. Prepend new session summary to top of log (newest first)
 2. Write updated log to server via Filesystem connector
-3. Push log to GitHub via API
+3. Push log, `index.html`, and `tagandhold.html` to GitHub via API
 
 ### Key Infrastructure
 - **IIS server:** HP-APP, 10.1.1.12, Windows Server 2025
