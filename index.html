@@ -15267,7 +15267,7 @@ function App() {
   view === "tag-and-hold" && project && /*#__PURE__*/React.createElement("div", {
     style: { position: "fixed", top: 90, left: 0, right: 0, bottom: 0, zIndex: 50, background: "#f4f4f4" }
   }, /*#__PURE__*/React.createElement("iframe", {
-    src: "/tagandhold.html?job=" + encodeURIComponent(project.code) + "&embedded=1",
+    src: (function() { var _fm = EMPLOYEES.find(function(e) { return e.name === project.foreman; }); return "/tagandhold.html?job=" + encodeURIComponent(project.code) + "&embedded=1" + (project.foreman ? "&foreman=" + encodeURIComponent(project.foreman) : "") + (_fm && _fm.phone ? "&foremanPhone=" + encodeURIComponent(_fm.phone) : ""); })(),
     style: { width: "100%", height: "100%", border: "none" },
     title: "Tag and Hold"
   })),
