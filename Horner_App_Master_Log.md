@@ -30,6 +30,13 @@
 - **Never use PowerShell `Set-Content` on index.html** — it mangles emoji/UTF-8. Use `[System.IO.File]::WriteAllText()` with explicit UTF-8 encoding, or push to GitHub and pull down via `Invoke-WebRequest`
 - **Filesystem MCP `write_file`** is safe for small files (tagandhold.html, master log) but not for index.html (1.6MB+)
 - **Dev → Production deploy path:** Edit dev file → test on `https://10.1.1.12:8443` → push to GitHub → `Invoke-WebRequest` from GitHub to production IIS
+- **INCREMENT BUILD_ID ON EVERY DEPLOY** — no exceptions, even one-line fixes. This is what makes rollback possible.
+
+### Backup Strategy
+- **Versioned backups on server:** `C:\inetpub\wwwroot\horner_app_backup\` — copy `index.html` as `index_NNN.html` and `tagandhold.html` as `tagandhold_NNN.html` before every session
+- **GitHub:** `index.html` and `tagandhold.html` always reflect last known good state — push at end of every session
+- **Rollback:** Copy from `horner_app_backup\` or pull from GitHub via `Invoke-WebRequest`
+- **Session start:** Always back up current files to `horner_app_backup\` BEFORE making any changes
 
 ---
 
