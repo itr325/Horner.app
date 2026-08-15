@@ -656,6 +656,7 @@
             jobAddress: window._jobInfo ? (window._jobInfo.address + ', ' + window._jobInfo.city + ', ' + window._jobInfo.state + ' ' + window._jobInfo.zip).trim() : '',
             foreman: window._foreman || '',
             foremanPhone: window._foremanPhone || '',
+            submittedBy: window._submittedBy || '',
             vendors: Object.values(vendorGroups),
             submittedAt: new Date().toISOString(),
             totalItems: cart.length
@@ -736,6 +737,7 @@
         // Store foreman info from URL params
         window._foreman = params.get('foreman') || '';
         window._foremanPhone = params.get('foremanPhone') || '';
+        window._submittedBy = params.get('submittedBy') || '';
 
    // Embedded mode — hide title and search bar, keep cart button visible
         if (params.get('embedded') === '1') {
