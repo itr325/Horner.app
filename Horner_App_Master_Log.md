@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_379` |
+| **Current build** | `index_380` |
 | **Primary URL** | `https://horner.app` (IIS on HP-APP) |
 | **Fallback URL** | `https://itr325.github.io/Horner.app/` (GitHub Pages — redirect only) |
 | **Web root** | `C:\inetpub\wwwroot\horner_app\` |
@@ -222,7 +222,7 @@
 - INCREMENT BUILD_ID on every change, no exceptions
 - Back up before every session
 
-**Next session:** UI tweaks — convert Forms list view (Daily Field Report, RFI Form, RFC Form) to tile grid layout matching rest of app
+**Next session:** UI tweaks — convert Forms list view (Daily Field Report, RFI Form, RFC Form) to tile grid layout matching rest of app. Also review other list views for same treatment.
 
 ### Session 85 — Log Merge + Email Formatting (partial) + Production Incident
 **Date:** 2026-08-14
