@@ -813,9 +813,12 @@
             document.getElementById('jobSection').style.display = 'none';
             document.querySelector('.header').style.display = 'none';
             document.getElementById('fabCart').style.display = 'flex';
-            // Show TOP button on scroll
-            window.addEventListener('scroll', function() {
-                document.getElementById('fabTop').style.display = window.scrollY > 300 ? 'flex' : 'none';
+            // Prevent iOS rubber-band overscroll in iframe
+            document.documentElement.style.cssText = 'position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+            document.body.style.cssText += 'position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+            // Show TOP button on scroll (use documentElement since body is fixed)
+            document.documentElement.addEventListener('scroll', function() {
+                document.getElementById('fabTop').style.display = document.documentElement.scrollTop > 300 ? 'flex' : 'none';
             });
         }
 
