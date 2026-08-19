@@ -161,43 +161,31 @@
             margin-top: 4px;
         }
 
-        /* ── Item List ── */
-        .item-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-        .item-desc {
-            font-size: 15px;
-            font-weight: 600;
-            line-height: 1.3;
-            margin-bottom: 8px;
-        }
-        .item-meta {
-            display: flex;
-            gap: 16px;
-            font-size: 13px;
-            color: var(--text-light);
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-        .item-vendor {
-            font-size: 12px;
-            color: var(--navy-light);
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-        .qty-row {
+        /* ── Item List (order-sheet style) ── */
+        .item-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
         }
-        .qty-row label {
-            font-size: 14px;
+        .item-row:last-child {
+            border-bottom: none;
+        }
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .item-desc {
+            font-size: 16px;
             font-weight: 500;
+            color: var(--navy);
+            line-height: 1.3;
+        }
+        .item-sub {
+            font-size: 12px;
             color: var(--text-light);
+            margin-top: 3px;
         }
         .qty-input {
             width: 70px;
@@ -207,23 +195,25 @@
             border-radius: 8px;
             text-align: center;
             background: var(--card-bg);
+            flex-shrink: 0;
         }
         .qty-input:focus {
             outline: none;
             border-color: var(--navy);
         }
         .add-btn {
-            background: var(--navy);
-            color: white;
-            border: none;
+            background: var(--card-bg);
+            color: var(--text-light);
+            border: 2px solid var(--border);
             border-radius: 8px;
-            padding: 8px 20px;
-            font-size: 15px;
+            padding: 8px 14px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            margin-left: auto;
+            white-space: nowrap;
             min-width: 44px;
             min-height: 44px;
+            flex-shrink: 0;
         }
         .add-btn:disabled {
             opacity: 0.4;
@@ -231,6 +221,73 @@
         }
         .add-btn.added {
             background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        /* ── Floating Buttons ── */
+        .fab-cart {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--navy);
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+        }
+        .fab-cart svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+        .fab-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--cart-badge);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .fab-top {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--navy);
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 150;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .fab-top svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
         }
 
         /* ── Cart Panel ── */
@@ -401,6 +458,16 @@
     <div id="itemList"></div>
 </div>
 
+<!-- Floating Buttons -->
+<button class="fab-cart" id="fabCart" onclick="toggleCart()" style="display:none">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.16 14.26l.04-.12.94-1.7h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0020.04 4H5.21l-.94-2H1v2h2l3.6 7.59-1.35 2.44C4.52 15.37 5.48 17 7 17h12v-2H7.42c-.14 0-.25-.11-.25-.25z"/></svg>
+    <span class="fab-badge" id="fabBadge">0</span>
+</button>
+<button class="fab-top" id="fabTop" onclick="scrollToTop()">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    TOP
+</button>
+
 <!-- Cart Overlay -->
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()">
     <div class="cart-panel" onclick="event.stopPropagation()">
@@ -516,25 +583,19 @@
         list.innerHTML = items.map((item, idx) => {
             const inCart = cart.find(c => c.poNo === item.poNo && c.lineNo === item.lineNo);
             return `
-                <div class="item-card">
-                    <div class="item-desc">${escHtml(item.description)}</div>
-                    <div class="item-vendor">${escHtml(item.vendorName)}</div>
-                    <div class="item-meta">
-                        <span>Ordered: ${item.qtyOrigOrdered}</span>
-                        <span>Received: ${item.qtyReceived}</span>
-                        <span><strong>Available: ${item.qtyToReceive}</strong></span>
+                <div class="item-row">
+                    <div class="item-info">
+                        <div class="item-desc">${escHtml(item.description)}</div>
+                        <div class="item-sub">${escHtml(item.vendorName)} · Avail: ${item.qtyToReceive}</div>
                     </div>
-                    <div class="qty-row">
-                        <label>Release:</label>
-                        <input type="number" class="qty-input" id="qty-${idx}" 
-                               min="1" max="${item.qtyToReceive}" value="${inCart ? inCart.qty : ''}"
-                               inputmode="numeric">
-                        <button class="add-btn ${inCart ? 'added' : ''}" 
-                                onclick="addToCart(${idx})"
-                                ${inCart ? 'disabled' : ''}>
-                            ${inCart ? '✓ Added' : 'Add'}
-                        </button>
-                    </div>
+                    <input type="number" class="qty-input" id="qty-${idx}" 
+                           min="1" max="${item.qtyToReceive}" value="${inCart ? inCart.qty : ''}"
+                           inputmode="numeric">
+                    <button class="add-btn ${inCart ? 'added' : ''}" 
+                            onclick="addToCart(${idx})"
+                            ${inCart ? 'disabled' : ''}>
+                        ${inCart ? '✓ Added' : 'Add to Cart'}
+                    </button>
                 </div>
             `;
         }).join('');
@@ -580,15 +641,23 @@
 
     function updateCartBadge() {
         const badge = document.getElementById('cartBadge');
+        const fabBadge = document.getElementById('fabBadge');
         const btn = document.getElementById('submitBtn');
         if (cart.length > 0) {
             badge.style.display = 'flex';
             badge.textContent = cart.length;
+            fabBadge.style.display = 'flex';
+            fabBadge.textContent = cart.length;
             btn.disabled = false;
         } else {
             badge.style.display = 'none';
+            fabBadge.style.display = 'none';
             btn.disabled = true;
         }
+    }
+
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function toggleCart() {
@@ -739,13 +808,15 @@
         window._foremanPhone = params.get('foremanPhone') || '';
         window._submittedBy = params.get('submittedBy') || '';
 
-   // Embedded mode — hide title and search bar, keep cart button visible
+   // Embedded mode — hide entire header, use floating cart FAB instead
         if (params.get('embedded') === '1') {
             document.getElementById('jobSection').style.display = 'none';
-            var headerTitle = document.querySelector('.header > div:first-child');
-            if (headerTitle) headerTitle.style.display = 'none';
-            var header = document.querySelector('.header');
-            if (header) { header.style.padding = '6px 20px'; header.style.justifyContent = 'flex-end'; }
+            document.querySelector('.header').style.display = 'none';
+            document.getElementById('fabCart').style.display = 'flex';
+            // Show TOP button on scroll
+            window.addEventListener('scroll', function() {
+                document.getElementById('fabTop').style.display = window.scrollY > 300 ? 'flex' : 'none';
+            });
         }
 
                 const jobFromUrl = params.get('job');
