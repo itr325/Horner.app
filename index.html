@@ -176,7 +176,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_387";
+const BUILD_ID = "index_388";
 
 // -- Microsoft Entra ID (Azure AD) Authentication ----------------------------
 // Uses loginRedirect (not popup) for reliable mobile/iOS support.
@@ -17939,6 +17939,7 @@ function TimeCard({
     }
   }, /*#__PURE__*/React.createElement("input", {
     type: "number",
+    inputMode: "decimal",
     min: "0",
     max: "24",
     step: "0.5",
@@ -18065,6 +18066,7 @@ function TimeCard({
     }
   }, /*#__PURE__*/React.createElement("input", {
     type: "number",
+    inputMode: "decimal",
     min: "0",
     max: "24",
     step: "0.5",
