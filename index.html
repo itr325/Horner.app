@@ -176,7 +176,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_385";
+const BUILD_ID = "index_386";
 
 // -- Microsoft Entra ID (Azure AD) Authentication ----------------------------
 // Uses loginRedirect (not popup) for reliable mobile/iOS support.
@@ -17396,7 +17396,7 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
     };
     setPreview(null);
     flowPost(SEND_TIMECARD_URL, payload)
-      .then(function() { setSendStatus("sent"); setTimeout(function() { setSendStatus(null); }, 3000); })
+      .then(function(r) { if (!r.ok) throw new Error(r.status); setSendStatus("sent"); setTimeout(function() { setSendStatus(null); }, 3000); })
       .catch(function() { setSendStatus(null); onToast("Failed to send timecard", false); });
     setEmpId(""); setWeekEnd("");
     setRows(Array.from({ length: INIT_ROWS }, mkRow));
@@ -17682,7 +17682,7 @@ function TimeCard({
     var payload = { to: preview.to, cc: preview.cc, subject: preview.subject, body: preview.htmlBody, code: project.code, name: project.name, fileContent: preview.htmlBody, empName: preview.empName, weekEnd: preview.weekEnd };
     setPreview(null);
     flowPost(SEND_TIMECARD_URL, payload)
-      .then(function() { setSendStatus("sent"); setTimeout(function() { setSendStatus(null); }, 3000); })
+      .then(function(r) { if (!r.ok) throw new Error(r.status); setSendStatus("sent"); setTimeout(function() { setSendStatus(null); }, 3000); })
       .catch(function() { setSendStatus(null); onToast("Failed to send timecard", false); });
     reset();
   };
