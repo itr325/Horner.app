@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-**Last updated:** 2026-08-15
+**Last updated:** 2026-09-01
 
 > **Note:** This is the single master log for all Horner Field App development, including the Tag & Hold / Order Release features. The separate `Order_Release_App_Master_Log.md` has been retired and merged here as of Session 85.
 
@@ -9,7 +9,7 @@
 
 | Field | Value |
 |---|---|
-| **Current build** | `index_381` |
+| **Current build** | `index_387` |
 | **Primary URL** | `https://horner.app` (IIS on HP-APP) |
 | **Fallback URL** | `https://itr325.github.io/Horner.app/` (GitHub Pages — redirect only) |
 | **Web root** | `C:\inetpub\wwwroot\horner_app\` |
@@ -436,3 +436,25 @@ cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
 - Microsoft.Data.SqlClient 7.0.2 installed
 - SQL connection to `HP-SQL\GE` / `Service` verified
 - GE schema mapped (po, po-line, vendor, job, task tables)
+
+---
+
+### Session 86 — Timecard Send Confirmation Overlay
+**Date:** 2026-09-01
+**Build:** index_384 → index_387
+
+**Summary:** Added full-screen overlay feedback to both Commercial and Residential timecard flows. Triggered by a foreman submitting a timecard and not knowing whether it went through — the old 3.5-second toast was too easy to miss, and if the network dropped, the form data was already gone.
+
+**Changes (builds 385–387):**
+- **TimecardSendOverlay component** — shared by both timecard views. Three states:
+  - **Sending:** Spinner + "Sending Timecard… Please wait" (blocks interaction)
+  - **Sent:** Green checkmark + "Timecard Sent! / Email delivered to payroll" + OK button (auto-dismisses 3s)
+  - **Failed:** Red X + "Timecard Failed to Send / Your timecard data is still here. Tap Try Again to resend." + Try Again button
+- **Form data preserved until success** — `setPreview(null)` and `reset()` moved into `.then()` so on failure the EmailPreview is still there with all entered data; foreman taps Try Again → Send to retry
+- **`response.ok` check** — `.then()` now checks HTTP status; non-2xx throws into `.catch()` so flow errors show the red X, not the green checkmark
+- **CSS:** `@keyframes tcSpin` for spinner animation
+- **Flow 22 (Power Automate):** Added Response action (200, `{"status":"sent"}`) at end of flow so the HTTP trigger holds the connection open until the email actually sends. App spinner now reflects real flow duration.
+
+**Tested:** WiFi-off failure → red X + data preserved → WiFi on → Try Again → Send → green checkmark. Flow disabled → error path confirmed.
+
+**Next session:** TBD
