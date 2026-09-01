@@ -22,6 +22,7 @@
   #boot .sub { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 28px; }
   #boot .spin { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spn 0.7s linear infinite; }
   @keyframes spn { to { transform: rotate(360deg); } }
+      @keyframes tcSpin { to { transform: rotate(360deg); } }
   body.kb-open .fab { display: none !important; }
   @media (orientation: landscape) { .lsHint { display: none !important; } }
   /* ── Responsive / Mobile overrides ───────────────────────────────── */
@@ -175,7 +176,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_384";
+const BUILD_ID = "index_385";
 
 // -- Microsoft Entra ID (Azure AD) Authentication ----------------------------
 // Uses loginRedirect (not popup) for reliable mobile/iOS support.
@@ -17220,6 +17221,65 @@ function CalendarPicker({ value, onChange, onClose }) {
 // Residential timecard: Employee + Week Ending header; job rows with
 // job# search, phase (Rough=3 / Finish=6), Mon–Fri daily hours, row total;
 // daily column totals + weekly grand total; email to timecards@hornerplumbing.com
+// TimecardSendOverlay — full-screen sending/sent feedback for timecard flows
+function TimecardSendOverlay({ status, onDismiss }) {
+  if (!status) return null;
+  var isSending = status === "sending";
+  return /*#__PURE__*/React.createElement("div", {
+    onClick: isSending ? undefined : onDismiss,
+    style: {
+      position: "fixed", inset: 0, zIndex: 500,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      background: "rgba(0,0,0,0.55)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white", borderRadius: 20, padding: "36px 40px",
+      textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+      maxWidth: 320, width: "85%"
+    }
+  }, isSending
+    ? /*#__PURE__*/React.createElement(React.Fragment, null,
+        /*#__PURE__*/React.createElement("div", { style: {
+          width: 48, height: 48, margin: "0 auto 16px",
+          border: "4px solid #DDE3ED", borderTopColor: "#0156A4",
+          borderRadius: "50%",
+          animation: "tcSpin 0.8s linear infinite"
+        } }),
+        /*#__PURE__*/React.createElement("div", { style: {
+          fontWeight: 700, fontSize: 17, color: "#1B3A6B"
+        } }, "Sending Timecard\u2026"),
+        /*#__PURE__*/React.createElement("div", { style: {
+          fontSize: 13, color: "#7F8C9A", marginTop: 6
+        } }, "Please wait")
+      )
+    : /*#__PURE__*/React.createElement(React.Fragment, null,
+        /*#__PURE__*/React.createElement("div", { style: {
+          width: 64, height: 64, margin: "0 auto 16px",
+          background: "#27AE60", borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center"
+        } }, /*#__PURE__*/React.createElement("svg", {
+          width: 36, height: 36, viewBox: "0 0 24 24", fill: "none",
+          stroke: "white", strokeWidth: 3, strokeLinecap: "round", strokeLinejoin: "round"
+        }, /*#__PURE__*/React.createElement("polyline", { points: "6 12 10 16 18 8" }))),
+        /*#__PURE__*/React.createElement("div", { style: {
+          fontWeight: 800, fontSize: 20, color: "#27AE60"
+        } }, "Timecard Sent!"),
+        /*#__PURE__*/React.createElement("div", { style: {
+          fontSize: 13, color: "#7F8C9A", marginTop: 6
+        } }, "Email delivered to payroll"),
+        /*#__PURE__*/React.createElement("button", {
+          onClick: onDismiss,
+          style: {
+            marginTop: 20, background: "#27AE60", color: "white",
+            border: "none", borderRadius: 10, padding: "10px 32px",
+            fontSize: 14, fontWeight: 700, cursor: "pointer"
+          }
+        }, "OK")
+      )
+  ));
+}
+
 function ResidentialTimecardView({ project, onToast, employees: empList }) {
   const EMPS = empList && empList.length ? empList : EMPLOYEES;
   const RES_PHASES = [
@@ -17243,6 +17303,7 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
   const [rows, setRows] = React.useState(Array.from({ length: INIT_ROWS }, mkRow));
   const [preview, setPreview] = React.useState(null);
   const [showCal, setShowCal] = React.useState(false);
+  const [sendStatus, setSendStatus] = React.useState(null);
 
   const emp = EMPS.find(e => e.id === parseInt(empId));
   const resEmps = EMPS.filter(e => e.department === "Residential").sort((a,b)=>a.firstName.localeCompare(b.firstName));
@@ -17327,13 +17388,16 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
 
   const sendEmail = () => {
     if (!preview) return;
-    flowPost(SEND_TIMECARD_URL, {
+    setSendStatus("sending");
+    var payload = {
       to: preview.to, cc: preview.cc, subject: preview.subject,
       body: preview.htmlBody, code: "RES", name: preview.empName,
       fileContent: preview.htmlBody, empName: preview.empName, weekEnd: preview.weekEnd
-    }).then(() => { onToast("Timecard sent!", true); })
-      .catch(() => { onToast("Failed to send timecard", false); });
+    };
     setPreview(null);
+    flowPost(SEND_TIMECARD_URL, payload)
+      .then(function() { setSendStatus("sent"); setTimeout(function() { setSendStatus(null); }, 3000); })
+      .catch(function() { setSendStatus(null); onToast("Failed to send timecard", false); });
     setEmpId(""); setWeekEnd("");
     setRows(Array.from({ length: INIT_ROWS }, mkRow));
   };
@@ -17342,7 +17406,9 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
   const inputStyle = { width:"100%", padding:"7px 8px", border:"1.5px solid #DDE3ED", borderRadius:8,
     fontSize:14, boxSizing:"border-box", background:"white" };
 
-  return /*#__PURE__*/React.createElement("div", { style: { maxWidth: 480, margin: "0 auto", padding: "0 4px", boxSizing: "border-box" } },
+  return /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement(TimecardSendOverlay, { status: sendStatus, onDismiss: function() { setSendStatus(null); } }),
+    /*#__PURE__*/React.createElement("div", { style: { maxWidth: 480, margin: "0 auto", padding: "0 4px", boxSizing: "border-box" } },
     preview && /*#__PURE__*/React.createElement(EmailPreview, {
       ...preview, body: preview.htmlBody,
       onClose: () => setPreview(null), onSend: sendEmail
@@ -17457,7 +17523,7 @@ function ResidentialTimecardView({ project, onToast, employees: empList }) {
           cursor:(emp&&weekEnd)?"pointer":"not-allowed" }
       }, "Submit Timecard")
     )
-  );
+  ));
 }
 // ─── End ResidentialTimecardView ──────────────────────────────────────────────
 
@@ -17488,6 +17554,7 @@ function TimeCard({
     length: NL
   }, mkL));
   const [preview, setPreview] = useState(null);
+  const [sendStatus, setSendStatus] = useState(null);
   const emp = EMPLOYEES.find(e => e.id === parseInt(empId));
   const pm = project ? { name: project.pm || "Unassigned", email: getPmEmail(project.pm) } : null;
   const rSum = r => Object.values(r.hrs).reduce((s, v) => s + (parseFloat(v) || 0), 0);
@@ -17611,10 +17678,12 @@ function TimeCard({
   };
   const sendEmail = () => {
     if (!preview) return;
-    flowPost(SEND_TIMECARD_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: preview.htmlBody, code: project.code, name: project.name, fileContent: preview.htmlBody, empName: preview.empName, weekEnd: preview.weekEnd })
-      .then(() => { onToast("Timecard sent!", true); })
-      .catch(() => { onToast("Failed to send timecard", false); });
+    setSendStatus("sending");
+    var payload = { to: preview.to, cc: preview.cc, subject: preview.subject, body: preview.htmlBody, code: project.code, name: project.name, fileContent: preview.htmlBody, empName: preview.empName, weekEnd: preview.weekEnd };
     setPreview(null);
+    flowPost(SEND_TIMECARD_URL, payload)
+      .then(function() { setSendStatus("sent"); setTimeout(function() { setSendStatus(null); }, 3000); })
+      .catch(function() { setSendStatus(null); onToast("Failed to send timecard", false); });
     reset();
   };
   const reset = () => {
@@ -17623,7 +17692,9 @@ function TimeCard({
     setRows(Array.from({ length: NR }, mkR));
     setLabs(Array.from({ length: NL }, mkL));
   };
-  return /*#__PURE__*/React.createElement("div", null, preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
+  return /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement(TimecardSendOverlay, { status: sendStatus, onDismiss: function() { setSendStatus(null); } }),
+    /*#__PURE__*/React.createElement("div", null, preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
     onClose: () => setPreview(null),
     onSend: sendEmail
   })), /*#__PURE__*/React.createElement("div", {
@@ -17975,7 +18046,7 @@ function TimeCard({
       background: "#F0F4FA",
       fontSize: 12
     }
-  }, rSum(row).toFixed(1)))))))));
+  }, rSum(row).toFixed(1))))))))));
 }
 function ValveTagList({
   project,
