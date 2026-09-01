@@ -441,7 +441,7 @@ cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
 
 ### Session 86 — Timecard Send Confirmation Overlay
 **Date:** 2026-09-01
-**Build:** index_384 → index_387
+**Build:** index_384 → index_388
 
 **Summary:** Added full-screen overlay feedback to both Commercial and Residential timecard flows. Triggered by a foreman submitting a timecard and not knowing whether it went through — the old 3.5-second toast was too easy to miss, and if the network dropped, the form data was already gone.
 
@@ -454,6 +454,8 @@ cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
 - **`response.ok` check** — `.then()` now checks HTTP status; non-2xx throws into `.catch()` so flow errors show the red X, not the green checkmark
 - **CSS:** `@keyframes tcSpin` for spinner animation
 - **Flow 22 (Power Automate):** Added Response action (200, `{"status":"sent"}`) at end of flow so the HTTP trigger holds the connection open until the email actually sends. App spinner now reflects real flow duration.
+
+- **`inputMode: "decimal"` on commercial timecard hours inputs** — iPad now shows numeric keypad instead of full keyboard when entering hours (residential already had this)
 
 **Tested:** WiFi-off failure → red X + data preserved → WiFi on → Try Again → Send → green checkmark. Flow disabled → error path confirmed.
 
