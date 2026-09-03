@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-**Last updated:** 2026-09-01
+**Last updated:** 2026-09-03
 
 > **Note:** This is the single master log for all Horner Field App development, including the Tag & Hold / Order Release features. The separate `Order_Release_App_Master_Log.md` has been retired and merged here as of Session 85.
 
@@ -460,3 +460,60 @@ cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
 **Tested:** WiFi-off failure → red X + data preserved → WiFi on → Try Again → Send → green checkmark. Flow disabled → error path confirmed.
 
 **Next session:** TBD
+
+---
+
+### Session 87 — 2026-09-03
+**Builds:** 389 → 390 → 391 → 392 → 393 → 394 → 395 (production: 395)
+
+**Additional Lead (AL) feature — full pipeline:**
+- Added `additionalLead` field to Create New Job form (below Project Lead, optional)
+- Purple AL badge on project list cards and detail header (conditional — only shows when assigned)
+- Added `additionalLead` to project normalizer so it persists across syncs
+- "Change Additional Lead" section added to Admin panel (Change PM / PL / AL)
+- SharePoint: `AL` and `AL_Email` columns added to Documents library
+- Power Automate flows updated:
+  - Create Job flow: writes `additionalLead` to AL column, trigger schema updated
+  - Fetch Projects flow: Select action maps `additionalLead` from AL column
+  - New Update AL flow created (workflow `41728d4256584f5ea85ff2809efea317`)
+- `UPDATE_AL_URL` constant added; tile and breadcrumb labels updated to "Change PM / PL / AL"
+
+**Pipe lengths — QTY → Ft label:**
+- All 7 pipe sections (BLK pipe, Type M/L copper, CPVC, Foam Core, SCH 40, SCH 80 CPVC) now show "Ft" instead of "QTY" via `qtyUnit: "Ft"` property
+- Column header changed from `QTY (unit)` to just the unit name
+- Pipe length selector (10'/20') unchanged
+
+**Sticky jump bar fix:**
+- Section tab bar on all order sheets now sticks below breadcrumb (was hidden behind it on scroll)
+- Added `CRUMB_H` constant and `getCrumbH()` function for dynamic breadcrumb height measurement
+- Handles multi-line breadcrumbs (e.g. BLK-GAL-BRA with long path)
+- Both regular and case-qty jump bars + scroll offsets updated
+- Added `className="crumb-bar"` to breadcrumb for DOM measurement
+
+**File share button (📤):**
+- Added to all FileRow instances — downloads file via flow, calls `navigator.share()` for native iOS share sheet (Save to Files, Mail, Messages, AirDrop)
+- Also added to PDF viewer slide-out toolbar — uses already-loaded PDF bytes, no re-download
+- Desktop fallback: browser download
+
+**Valve Tag List — PDF submit + SharePoint save:**
+- Submit now requires Address and Project Lead (can still save without them)
+- Generates PDF client-side using pdf-lib (already bundled)
+- Sends HTML email with PDF attachment via new Power Automate flow (workflow `96188f931b834045aab1fbe36bce40b5`)
+- Saves PDF to project's VALVE TAG folder in SharePoint
+- Replaced old `mailto:` approach with flow-based email
+- `SEND_VALVE_TAG_URL` constant added
+
+**Project tile reorder:**
+- Project root: PLANS → ORDER SHEETS → TAG & HOLD → TIME CARDS appear first, rest alphabetical
+- Tag & Hold tile injected after ORDER SHEETS via flatMap (not a SharePoint folder)
+- TAG & HOLD added to FOLDER_STYLES with 📦 icon and #2E86C1 color
+
+**Time Cards tile cleanup:**
+- Commercial Time Card tile now first, History second
+- Site Safety Inspection tile removed (redundant — exists in SAFETY folder)
+- Header changed from "Time Cards / Site Safety Inspection" to "Time Cards"
+
+**How To presentation:**
+- Built 10-slide PowerPoint + PDF for Patrick meeting covering Tag & Hold, Timecards, Order Sheets, Adding a New Job, badge reference
+
+**Next session:** Finish AL badge testing (verify Power Automate fetch flow returns additionalLead). Tile rearranging if more needed. ERP Audit when Aaron returns spreadsheet.
