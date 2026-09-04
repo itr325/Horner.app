@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-**Last updated:** 2026-09-03
+**Last updated:** 2026-09-04
 
 > **Note:** This is the single master log for all Horner Field App development, including the Tag & Hold / Order Release features. The separate `Order_Release_App_Master_Log.md` has been retired and merged here as of Session 85.
 
@@ -517,3 +517,20 @@ cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
 - Built 10-slide PowerPoint + PDF for Patrick meeting covering Tag & Hold, Timecards, Order Sheets, Adding a New Job, badge reference
 
 **Next session:** Finish AL badge testing (verify Power Automate fetch flow returns additionalLead). Tile rearranging if more needed. ERP Audit when Aaron returns spreadsheet.
+
+---
+
+### Session 86 — 2026-09-04 (Build 396)
+
+**Valve Tag List — fillable tag numbers + add-row buttons:**
+- TAG # column changed from auto-numbered (i+1) to editable input field
+- New `upTagNum(i, v)` function: typing a number auto-fills all rows below with incrementing values (type 5 in row 1 → row 2 gets 6, row 3 gets 7, etc.)
+- `mkRow()` updated with `tagNum: ""` field
+- All references guarded with `(r.tagNum || "").trim()` to handle legacy saved data from SharePoint that lacks the field (was causing blank-screen crash)
+- Email HTML and PDF generation updated to use `r.tagNum` instead of sequential index
+- `hasData` and `canSubmit` checks updated to include `tagNum`
+- Input uses `type="number"`, `inputMode="decimal"`, `pattern="[0-9]*"` — iPhone shows numeric pad; iPad always shows full keyboard (iPadOS limitation, not a bug)
+- Replaced single "Add 20 More Rows" button with three buttons: + 5 Rows, + 10 Rows, + 20 Rows in a flex row with gap and total count label
+- `addRows()` parameterized to `addRows(count)`
+
+**Next session:** ERP Audit when Aaron returns spreadsheet. App Migration remaining steps when Eric says go. AL badge testing.
