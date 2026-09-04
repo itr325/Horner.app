@@ -18710,9 +18710,11 @@ function ValveTagList({
       minWidth: 52
     }
   }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
     value: r.tagNum || "",
     onChange: e => upTagNum(i, e.target.value),
-    inputMode: "numeric",
+    inputMode: "decimal",
+    pattern: "[0-9]*",
     placeholder: "#",
     style: { ...vtInp, textAlign: "center", fontWeight: 700, fontSize: 12, width: 52 }
   })), /*#__PURE__*/React.createElement("td", {
