@@ -18359,7 +18359,7 @@ function ValveTagList({
   };
   const fmtDate = iso => iso ? iso.slice(5, 7) + "/" + iso.slice(8, 10) + "/" + iso.slice(2, 4) : "";
   const submit = () => {
-    const hasData = rows.some(r => r.tagNum.trim() || r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim());
+    const hasData = rows.some(r => (r.tagNum || "").trim() || r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim());
     if (!project?.code) { onToast("No project selected", false); return; }
     if (!hasData) { onToast("No entries to submit", false); return; }
     if (!address.trim()) { onToast("Address is required before submitting", false); return; }
@@ -18383,7 +18383,7 @@ function ValveTagList({
     html += '<th style="padding:6px;text-align:left">UNIT #</th>';
     html += '<th style="padding:6px;text-align:left">LOCATION</th></tr>';
     rows.forEach((r, i) => {
-      if (!r.tagNum.trim() && r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
+      if (!(r.tagNum || "").trim() && r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
       const bg = i % 2 === 0 ? "#F7F9FC" : "#FFFFFF";
       html += '<tr style="background:' + bg + '">';
       html += '<td style="padding:5px 6px;border-bottom:1px solid #DDE3ED">' + (r.tagNum || '') + '</td>';
@@ -18428,7 +18428,7 @@ function ValveTagList({
         page.drawLine({ start: { x: 40, y: y }, end: { x: 570, y: y }, thickness: 0.5, color: PDFLib.rgb(0.6, 0.6, 0.6) });
         y -= lh;
         rows.forEach((r, i) => {
-          if (!r.tagNum.trim() && r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
+          if (!(r.tagNum || "").trim() && r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
           if (y < 50) { page = pdfDoc.addPage([612, 792]); y = 750; }
           draw(r.tagNum || '', cols[0], 9, false);
           draw(r.ch === "---" ? "" : r.ch, cols[1], 9, false);
@@ -18473,7 +18473,7 @@ function ValveTagList({
     }, mkRow));
     setSaveMsg("");
   };
-  const canSubmit = !!(project?.code && rows.some(r => r.tagNum.trim() || r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim()));
+  const canSubmit = !!(project?.code && rows.some(r => (r.tagNum || "").trim() || r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim()));
   // Table cell input styles — compact for dense rows
   const vtInp = {
     width: "100%",
@@ -18710,7 +18710,7 @@ function ValveTagList({
       minWidth: 52
     }
   }, /*#__PURE__*/React.createElement("input", {
-    value: r.tagNum,
+    value: r.tagNum || "",
     onChange: e => upTagNum(i, e.target.value),
     inputMode: "numeric",
     placeholder: "#",
