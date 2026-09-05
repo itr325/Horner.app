@@ -1,5 +1,5 @@
 # Horner Field App — Master Project Log
-**Last updated:** 2026-09-04
+**Last updated:** 2026-09-05
 
 > **Note:** This is the single master log for all Horner Field App development, including the Tag & Hold / Order Release features. The separate `Order_Release_App_Master_Log.md` has been retired and merged here as of Session 85.
 
@@ -532,5 +532,16 @@ cache: { cacheLocation: "localStorage", storeAuthStateInCookie: false }
 - Input uses `type="number"`, `inputMode="decimal"`, `pattern="[0-9]*"` — iPhone shows numeric pad; iPad always shows full keyboard (iPadOS limitation, not a bug)
 - Replaced single "Add 20 More Rows" button with three buttons: + 5 Rows, + 10 Rows, + 20 Rows in a flex row with gap and total count label
 - `addRows()` parameterized to `addRows(count)`
+
+### Session 86 continued — 2026-09-05 (Build 397)
+
+**Valve Tag PDF — polished layout with Horner logo:**
+- Embedded Horner Plumbing logo as base64 PNG constant (`HORNER_LOGO_B64`)
+- PDF header: navy bar with white "VALVE TAG LIST" title, logo on left, job info on right side
+- Navy table header row with white text, alternating gray/white row stripes, horizontal cell borders
+- Gap spacing: when tag numbers jump (e.g. 47 → 56), 1.5 row-heights of blank space inserted
+- Table header repeats on page breaks
+- Email preview: added plain-text `body` prop so preview shows data table (was blank because only `htmlBody` was set)
+- Simplified email body concept: PDF is the deliverable, email body is just a summary
 
 **Next session:** ERP Audit when Aaron returns spreadsheet. App Migration remaining steps when Eric says go. AL badge testing.
