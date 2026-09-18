@@ -176,7 +176,7 @@ const NAVY = "#1B3A6B",
 // Build stamp — bump this string on every revision (index_45 -> 46 -> ...).
 // Rendered as a small fixed-position label so every on-device test is unambiguously
 // against a known build (see HANDOFF_2026-05-14_session2 "Caching red flag").
-const BUILD_ID = "index_388";
+const BUILD_ID = "index_399";
 
 // -- Microsoft Entra ID (Azure AD) Authentication ----------------------------
 // Uses loginRedirect (not popup) for reliable mobile/iOS support.
@@ -282,7 +282,8 @@ const CONTACTS = {
 const PROJECTS_FETCH_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aa5cb91c782f4b8b89e06f3441595c68/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=RwoZXivyVk7EY3kRWvPdQumUigq_hsyDWIAvcP4ZsY4";
 const CREATE_JOB_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/11e466c55592491db4c6ea9e7604ef94/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rLUohgGyf5ErtQBFSuLa3OmC_wZHIClpAFdBT0EHz4E";
 const UPDATE_PM_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/4f704ea9da2f4eeda6518a676ac2bb0b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gS73UO7R4CbO13dGN1sKBICk3bog6_ZCDQjThKPHDDY";
-const UPDATE_FOREMAN_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e79d744536424864b588708455a86b5d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iVGpbXlu5x8fAFBKRuDs4Fqtc36dnWU0kiq9UA1m2UA";
+const UPDATE_AL_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/18/workflows/41728d4256584f5ea85ff2809efea317/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y8L-um2hJZMu00SW9_FBtXYcXs-YaJolYg7WJu6_onc";
+  const UPDATE_FOREMAN_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e79d744536424864b588708455a86b5d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iVGpbXlu5x8fAFBKRuDs4Fqtc36dnWU0kiq9UA1m2UA";
 const PROJECTS_CACHE_KEY = "horner.projects.cache.v1";
 // Fetch Folder Contents flow — called every time the user navigates into a project or folder.
 // Body: { code, path }. Response: { folders: [{name}], files: [{name, url}] }.
@@ -344,6 +345,8 @@ const LOAD_EMPLOYEES_URL = "https://defaultef466c747a134920854c210669ea3c.84.env
 const SAVE_EMPLOYEES_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0f451411a32e4f5fb6120c2c9b1bec0c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=USJ_h97JaNrRm9tIOIGp2bA6vk3PNA_fb_BX5rYC4vA";
 const SAVE_VALVE_TAGS_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f52f767d8f3b4522974577b0d8e74a96/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8qZ2IUm2yu0HdOpdmzr7BU86zZ4cesQlyPr5kCF-ZcA";
 const LOAD_VALVE_TAGS_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b9269ca9025144b0b336231848e4c5d1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=6BcAn7ZKyHCnwhwOMwkawhTVzmAXP31C_IB5iNbTKhE";
+const SEND_VALVE_TAG_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/96188f931b834045aab1fbe36bce40b5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=m8Ae8wPyXchhdYTXl2rYkHLLDUflMwD9plQGxyl3QH0"; // TODO: add flow URL once created
+const HORNER_LOGO_B64 = "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";
 const SAVE_CART_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/236149804e3743ea9b8a9fb00ab4da47/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=5mIFFL4dRnl8R8q9epNIuEk-MVnMBW8ZP7r7WY-iiuI";
 const LOAD_CART_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/215b53a599a34e5fba95f731657523a4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8scu1FF9HHkvN7Zx0isOJO0GvuGc446kmeFa9SSLwh4";
 const GET_FILE_CONTENT_URL = "https://defaultef466c747a134920854c210669ea3c.84.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c4a417ef5626459d8f4d3826c981d562/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=6eSWMOkj8CM3BLcuAp1qYHEBA-Xo49pOTOcYff-S5LI";
@@ -434,7 +437,8 @@ const FOLDER_STYLES = {
   "T&M":                 { icon: "💰", color: "#E74C3C" },
   "TIME CARDS":          { icon: "⏱️", color: "#2ECC71" },
   "TOOLBOX TALKS":       { icon: "🧰", color: "#8E44AD" },
-  "VALVE TAG":           { icon: "🔖", color: "#3498DB" }
+  "VALVE TAG":           { icon: "🔖", color: "#3498DB" },
+  "TAG & HOLD":          { icon: "📦", color: "#2E86C1" }
 };
 const DEFAULT_FOLDER_STYLE = { icon: "📁", color: "#5A6B7E" };
 const getFolderStyle = (name) => FOLDER_STYLES[(name || "").toUpperCase()] || DEFAULT_FOLDER_STYLE;
@@ -522,8 +526,10 @@ const STD = {
   }
 };
 const HEADER_H = 56,
+  CRUMB_H = 33,
   JUMP_H = 80;
-const lbl = {
+function getCrumbH() { var el = document.querySelector('.crumb-bar'); return el ? el.getBoundingClientRect().height : CRUMB_H; }
+  const lbl = {
   fontSize: 11,
   fontWeight: 700,
   color: "#7F8C9A",
@@ -1401,6 +1407,7 @@ const BGA = [{
   label: 'PIPE - 21 FT LENGTHS',
   shortLabel: 'Pipe',
   noMat: true,
+  qtyUnit: "Ft",
   itemMeta: {
     '1/2" pipe': {
       upc: 'BLK 1/2x21'
@@ -1931,6 +1938,7 @@ const COPPER = [{
   sizeColor: "#B87333",
   shortLabel: "Type M",
   noMat: true,
+  qtyUnit: "Ft",
   itemMeta: {
     '3" Type M Copper Pipe': {
       sizeOpts: ["10'", "20'"],
@@ -1972,6 +1980,7 @@ const COPPER = [{
   sizeColor: "#B87333",
   shortLabel: "Type L",
   noMat: true,
+  qtyUnit: "Ft",
   itemMeta: {
     '4" Type L Copper Pipe': {
       sizeOpts: ["10'", "20'"],
@@ -2491,6 +2500,7 @@ const CPVC = [{
   label: 'CPVC Pipe',
   shortLabel: 'Pipe',
   noMat: true,
+  qtyUnit: "Ft",
   itemMeta: {
     '2" CPVC Pipe': {
       sizeOpts: ["10'", "20'"],
@@ -3098,6 +3108,7 @@ const PVC = [{
   label: 'Foam Core Pipe',
   shortLabel: 'Foam Core',
   noMat: true,
+  qtyUnit: "Ft",
   itemMeta: {
     '10" PVC Pipe (Foam Core)': {
       sizeOpts: ["10'", "20'"],
@@ -3134,6 +3145,7 @@ const PVC = [{
   label: 'SCH 40 Solid Pipe',
   shortLabel: 'SCH 40',
   noMat: true,
+  qtyUnit: "Ft",
   itemMeta: {
     '8" PVC Pipe (SCH 40)': {
       sizeOpts: ["10'", "20'"],
@@ -4641,6 +4653,7 @@ const SCH80 = [{
   label: "SCH80 CPVC Pipe",
   shortLabel: "Pipe",
   noMat: true,
+  qtyUnit: "Ft",
   itemMeta: {
     '1/2" Sch80 CPVC': {
       sizeOpts: ["10'", "20'"],
@@ -6896,8 +6909,11 @@ function EmailPreview({
   subject,
   body,
   onClose,
-  onSend
+  onSend,
+  showNeededBy
 }) {
+  const [neededBy, setNeededBy] = React.useState("");
+  const [tagAndHold, setTagAndHold] = React.useState(false);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
@@ -7018,7 +7034,69 @@ function EmailPreview({
     style: {
       fontWeight: 700
     }
-  }, subject)), /*#__PURE__*/React.createElement("pre", {
+  }, subject)), showNeededBy && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: "10px 0",
+      borderBottom: "1px solid #EEF0F5",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      cursor: "pointer",
+      userSelect: "none",
+      background: tagAndHold ? "#FFF3CD" : "#F7F9FC",
+      border: tagAndHold ? "1.5px solid #E67E22" : "1.5px solid #DDE3ED",
+      borderRadius: 8,
+      padding: "6px 12px",
+      fontWeight: 700,
+      fontSize: 13,
+      color: tagAndHold ? "#D35400" : "#7F8C9A",
+      transition: "all 0.15s"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: tagAndHold,
+    onChange: function(e) { setTagAndHold(e.target.checked); },
+    style: { width: 18, height: 18, cursor: "pointer", accentColor: "#E67E22" }
+  }), "\uD83D\uDFE1 Tag & Hold"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flex: 1,
+      minWidth: 200
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      color: "#7F8C9A",
+      fontSize: 11,
+      textTransform: "uppercase",
+      whiteSpace: "nowrap"
+    }
+  }, "\uD83D\uDCC5 Needed By"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: neededBy,
+    onChange: function(e) { setNeededBy(e.target.value); },
+    style: {
+      flex: 1,
+      padding: "7px 10px",
+      borderRadius: 7,
+      border: tagAndHold && !neededBy ? "1.5px solid #E74C3C" : "1.5px solid #DDE3ED",
+      fontSize: 13,
+      fontFamily: "inherit",
+      color: "#2C3E50",
+      maxWidth: 180
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 11, color: tagAndHold ? "#E74C3C" : "#AAB2BD", fontStyle: "italic", fontWeight: tagAndHold ? 700 : 400 }
+  }, tagAndHold ? "required" : "optional"))), /*#__PURE__*/React.createElement("pre", {
     style: {
       whiteSpace: "pre-wrap",
       fontFamily: "monospace",
@@ -7049,7 +7127,7 @@ function EmailPreview({
       cursor: "pointer"
     }
   }, "Back to Edit"), /*#__PURE__*/React.createElement("button", {
-    onClick: onSend,
+    onClick: function() { if (tagAndHold && !neededBy) { alert("A Needed By date is required for Tag & Hold orders."); return; } onSend(neededBy, tagAndHold); },
     style: {
       flex: 2,
       background: RED,
@@ -7240,9 +7318,17 @@ function CartSummaryView({ cart, project, onClose, onClearCart, onRemoveItem, on
     setPreview({ to: CONTACTS.purchasing, cc: pmEmail, subject: subj, body: body, htmlBody: html });
   };
 
-  const sendEmail = function() {
+  const sendEmail = function(neededBy, tagAndHold) {
     if (!preview) return;
-    flowPost(SEND_CART_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: preview.htmlBody, code: project.code, name: project.name, fileContent: preview.htmlBody })
+    let htmlBody = preview.htmlBody;
+    if (tagAndHold) {
+      htmlBody = '<div style="background:#FFF3CD;border:2px solid #E67E22;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-weight:700;font-size:14px;color:#D35400;">\uD83D\uDFE1 TAG &amp; HOLD ORDER</div>' + htmlBody;
+    }
+    if (neededBy) {
+      const fmt = neededBy.slice(5).replace("-", "/") + "/" + neededBy.slice(0,4);
+      htmlBody = htmlBody.replace("</table>", '<tr><td style="font-weight:700;padding:2px 16px 2px 0;">Needed By</td><td style="color:#E67E22;font-weight:700;">' + fmt + '</td></tr></table>');
+    }
+    flowPost(SEND_CART_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: htmlBody, code: project.code, name: project.name, fileContent: htmlBody })
       .then(function() { onToast("Order sent!", true); })
       .catch(function() { onToast("Failed to send email", false); });
     setPreview(null);
@@ -7253,7 +7339,7 @@ function CartSummaryView({ cart, project, onClose, onClearCart, onRemoveItem, on
   return /*#__PURE__*/React.createElement("div", {
     style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start" }
   },
-    preview && /*#__PURE__*/React.createElement(EmailPreview, Object.assign({}, preview, { onClose: function() { setPreview(null); }, onSend: sendEmail })),
+    preview && /*#__PURE__*/React.createElement(EmailPreview, Object.assign({}, preview, { onClose: function() { setPreview(null); }, onSend: sendEmail, showNeededBy: true })),
     /*#__PURE__*/React.createElement("div", {
       style: { background: "white", width: "100%", maxWidth: 700, maxHeight: "100vh", display: "flex", flexDirection: "column", borderRadius: "0 0 16px 16px", overflow: "hidden" }
     },
@@ -7399,7 +7485,7 @@ function OrderSheet({
     if (!el) return;
     const bar = document.querySelector(".jump-bar");
     const barH = bar ? bar.getBoundingClientRect().height : JUMP_H;
-    const y = el.getBoundingClientRect().top + window.scrollY - (HEADER_H + barH + 4);
+    const y = el.getBoundingClientRect().top + window.scrollY - (HEADER_H + getCrumbH() + barH + 4);
     window.scrollTo({
       top: y,
       behavior: "smooth"
@@ -7445,11 +7531,19 @@ function OrderSheet({
       body
     });
   };
-  const sendEmail = () => {
+  const sendEmail = (neededBy, tagAndHold) => {
     if (!preview) return;
-    flowPost(SEND_TIMECARD_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: preview.htmlBody })
-      .then(() => { onToast("Timecard sent!", true); })
-      .catch(() => { onToast("Failed to send timecard", false); });
+    let body = preview.htmlBody || preview.body || "";
+    if (tagAndHold) {
+      body = "\uD83D\uDFE1 TAG & HOLD ORDER\n" + body;
+    }
+    if (neededBy) {
+      const fmt = neededBy.slice(5).replace("-", "/") + "/" + neededBy.slice(0,4);
+      body = "Needed By: " + fmt + "\n" + body;
+    }
+    flowPost(SEND_TIMECARD_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: body })
+      .then(() => { onToast("Order sent!", true); })
+      .catch(() => { onToast("Failed to send order", false); });
     setPreview(null);
     reset();
   };
@@ -7525,7 +7619,8 @@ function OrderSheet({
     onSubmit: submit
   }), preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
     onClose: () => setPreview(null),
-    onSend: sendEmail
+    onSend: sendEmail,
+    showNeededBy: true
   })), /*#__PURE__*/React.createElement("button", {
     className: "fab",
     onClick: onOpenCart || (() => setShowGrocery(true)),
@@ -7737,7 +7832,7 @@ function OrderSheet({
     className: "jump-bar",
     style: {
       position: "sticky",
-      top: HEADER_H,
+      top: HEADER_H + getCrumbH(),
       zIndex: 50,
       background: NAVY,
       padding: "6px 12px",
@@ -7863,7 +7958,7 @@ function OrderSheet({
         fontSize: 10,
         fontWeight: 700
       }
-    }, "QTY in ", sec.qtyUnit))), openGuide === sec.id && sec.sectionStandard && (() => {
+    }, "Qty in ", sec.qtyUnit))), openGuide === sec.id && sec.sectionStandard && (() => {
       const info = STD_INFO[sec.sectionStandard];
       return /*#__PURE__*/React.createElement("div", {
         style: {
@@ -7923,7 +8018,7 @@ function OrderSheet({
         textTransform: "uppercase",
         textAlign: "center"
       }
-    }, sec.qtyUnit ? "QTY (" + sec.qtyUnit + ")" : "QTY")), onAddToCart && /*#__PURE__*/React.createElement("div", null), sec.items.map((item, idx) => {
+    }, sec.qtyUnit ? sec.qtyUnit : "QTY")), onAddToCart && /*#__PURE__*/React.createElement("div", null), sec.items.map((item, idx) => {
       const key = sec.id + "|" + item;
       const itm = items[key] || {
         mat: "—",
@@ -8158,9 +8253,17 @@ function ShopCartSummaryView({ cart, project, onClose, onClearCart, onRemoveItem
     setPreview({ to: "shoporder@hornerplumbing.com", cc: pmEmail, subject: subj, body: body, htmlBody: html });
   };
 
-  const sendEmail = function() {
+  const sendEmail = function(neededBy, tagAndHold) {
     if (!preview) return;
-    flowPost(SEND_CART_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: preview.htmlBody, code: project.code, name: project.name, fileContent: preview.htmlBody })
+    let htmlBody = preview.htmlBody;
+    if (tagAndHold) {
+      htmlBody = '<div style="background:#FFF3CD;border:2px solid #E67E22;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-weight:700;font-size:14px;color:#D35400;">\uD83D\uDFE1 TAG &amp; HOLD ORDER</div>' + htmlBody;
+    }
+    if (neededBy) {
+      const fmt = neededBy.slice(5).replace("-", "/") + "/" + neededBy.slice(0,4);
+      htmlBody = htmlBody.replace("</table>", '<tr><td style="font-weight:700;padding:2px 16px 2px 0;">Needed By</td><td style="color:#E67E22;font-weight:700;">' + fmt + '</td></tr></table>');
+    }
+    flowPost(SEND_CART_URL, { to: preview.to, cc: preview.cc, subject: preview.subject, body: htmlBody, code: project.code, name: project.name, fileContent: htmlBody })
       .then(function() { onToast("Shop order sent!", true); })
       .catch(function() { onToast("Failed to send email", false); });
     setPreview(null);
@@ -8173,7 +8276,7 @@ function ShopCartSummaryView({ cart, project, onClose, onClearCart, onRemoveItem
   return /*#__PURE__*/React.createElement("div", {
     style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start" }
   },
-    preview && /*#__PURE__*/React.createElement(EmailPreview, Object.assign({}, preview, { onClose: function() { setPreview(null); }, onSend: sendEmail })),
+    preview && /*#__PURE__*/React.createElement(EmailPreview, Object.assign({}, preview, { onClose: function() { setPreview(null); }, onSend: sendEmail, showNeededBy: true })),
     /*#__PURE__*/React.createElement("div", {
       style: { background: "white", width: "100%", maxWidth: 700, maxHeight: "100vh", display: "flex", flexDirection: "column", borderRadius: "0 0 16px 16px", overflow: "hidden" }
     },
@@ -8289,9 +8392,17 @@ function BlankOrderSheet({
       body
     });
   };
-  const sendEmail = () => {
+  const sendEmail = (neededBy, tagAndHold) => {
     if (!preview) return;
-    const url = "mailto:" + preview.to + "?cc=" + encodeURIComponent(preview.cc) + "&subject=" + encodeURIComponent(preview.subject) + "&body=" + encodeURIComponent(preview.body);
+    let body = preview.body;
+    if (tagAndHold) {
+      body = "\uD83D\uDFE1 TAG & HOLD ORDER\n" + body;
+    }
+    if (neededBy) {
+      const fmt = neededBy.slice(5).replace("-", "/") + "/" + neededBy.slice(0,4);
+      body = "Needed By: " + fmt + "\n" + body;
+    }
+    const url = "mailto:" + preview.to + "?cc=" + encodeURIComponent(preview.cc) + "&subject=" + encodeURIComponent(preview.subject) + "&body=" + encodeURIComponent(body);
     const a = document.createElement("a");
     a.href = url;
     a.rel = "noopener";
@@ -8334,7 +8445,8 @@ function BlankOrderSheet({
     }
   }, preview && /*#__PURE__*/React.createElement(EmailPreview, _extends({}, preview, {
     onClose: () => setPreview(null),
-    onSend: sendEmail
+    onSend: sendEmail,
+    showNeededBy: true
   })), /*#__PURE__*/React.createElement("button", {
     className: "fab",
     onClick: () => window.scrollTo({
@@ -8617,7 +8729,7 @@ function CaseQuantityReference({
       if (!el) return;
       const bar = document.querySelector(".cq-jump-bar");
       const barH = bar ? bar.getBoundingClientRect().height : JUMP_H;
-      const y = el.getBoundingClientRect().top + window.scrollY - (HEADER_H + barH + 4);
+      const y = el.getBoundingClientRect().top + window.scrollY - (HEADER_H + getCrumbH() + barH + 4);
       window.scrollTo({
         top: y,
         behavior: "smooth"
@@ -8705,7 +8817,7 @@ function CaseQuantityReference({
     className: "cq-jump-bar",
     style: {
       position: "sticky",
-      top: HEADER_H,
+      top: HEADER_H + getCrumbH(),
       zIndex: 50,
       background: NAVY,
       padding: "6px 12px",
@@ -9362,6 +9474,27 @@ function FileRow(props) {
   const isPdf = /\.pdf$/i.test(f.name || "");
   const _ext = (f.name || "").split(".").pop().toLowerCase();
   const isImage = ["jpg","jpeg","png","gif","heic","heif","webp","bmp","tif","tiff"].includes(_ext);
+  const [sharing, setSharing] = useState(false);
+  const doShare = (e) => {
+    e.stopPropagation();
+    if (!f.url || sharing) return;
+    if (!navigator.share) { props.onOpen && props.onOpen(f.url, f.name); return; }
+    setSharing(true);
+    flowPost(DOWNLOAD_FILE_URL, { path: f.url })
+      .then(r => r.ok ? r.text() : Promise.reject(r.status))
+      .then(text => {
+        var b64 = text.replace(/^"|"$/g, "");
+        var mimeMap = { pdf:"application/pdf", jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", gif:"image/gif", webp:"image/webp", heic:"image/heic", doc:"application/msword", docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document", xls:"application/vnd.ms-excel", xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
+        var mime = mimeMap[_ext] || "application/octet-stream";
+        var byteChars = atob(b64);
+        var byteArr = new Uint8Array(byteChars.length);
+        for (var i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        var file = new File([byteArr], f.name, { type: mime });
+        return navigator.share({ files: [file] });
+      })
+      .catch(() => {})
+      .finally(() => setSharing(false));
+  };
   return /*#__PURE__*/React.createElement("button", {
     onClick: () => { if (isPdf) props.onMarkup(f); else props.onOpen(f.url, f.name); },
     style: {
@@ -9409,6 +9542,13 @@ function FileRow(props) {
       /*#__PURE__*/React.createElement("div", { style: { color: "#7F8C9A", fontSize: 11 } },
         isPdf ? "Tap to mark up" : isImage ? "Tap to view" : "Opens in SharePoint")
     ),
+    /*#__PURE__*/React.createElement("button", {
+      onClick: doShare,
+      style: {
+        background: "none", border: "none", cursor: "pointer", padding: "6px",
+        fontSize: 18, color: sharing ? "#999" : "#2980B9", flexShrink: 0
+      }
+    }, sharing ? "\u23F3" : "\uD83D\uDCE4"),
     /*#__PURE__*/React.createElement("span", {
       style: { color: isPdf ? "#1B3A6B" : isImage ? "#E67E22" : "#BDC3C7", fontSize: 18 }
     }, isPdf ? "\u270F\uFE0F" : isImage ? "\u203A" : "\u203A")
@@ -11224,6 +11364,26 @@ function PdfMarkupView(props) {
         opacity: (!hasAnnotations && !saving) ? 0.5 : 1
       }
     }, saving ? "\u22EF" : "\u2713"),
+    // Share - download file and open native share sheet
+    /*#__PURE__*/React.createElement("button", {
+      onClick: function() {
+        if (!pdfBytesRef.current) return;
+        var blob = new Blob([pdfBytesRef.current], { type: "application/pdf" });
+        var shareFile = new File([blob], file.name || "plan.pdf", { type: "application/pdf" });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+          navigator.share({ files: [shareFile] }).catch(function() {});
+        } else {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a"); a.href = url; a.download = file.name || "plan.pdf"; a.click();
+          URL.revokeObjectURL(url);
+        }
+      },
+      title: "Share / Save",
+      style: {
+        width: 44, height: 44, borderRadius: 8, border: "none",
+        background: "#2E3850", color: "white", fontSize: 18, cursor: "pointer"
+      }
+    }, "\uD83D\uDCE4"),
     /*#__PURE__*/React.createElement("div", { style: { width: 40, height: 1, background: "#39435A", margin: "2px 0" } }),
     // Pan mode toggle — 1-finger drag pans instead of drawing
     /*#__PURE__*/React.createElement("button", {
@@ -12288,7 +12448,7 @@ var HELP_SECTIONS = [
         "Tap Create Job.",
       ]},
       { type: "warn", text: "Job Code and Name cannot contain: # % & * : < > ? / \\ | \" { }  — these break the SharePoint folder path." },
-      { type: "h3", text: "Change PM / Project Lead" },
+      { type: "h3", text: "Change PM / PL / AL" },
       { type: "p", text: "Select the job, choose new PM and/or Project Lead, tap Update. Changes are written to SharePoint immediately." },
       { type: "h3", text: "Add/Remove Employees" },
       { type: "p", text: "Add, edit, or remove employees from the app's shared employee list. Changes are saved to SharePoint and take effect across all dropdowns immediately." },
@@ -12872,10 +13032,12 @@ function App() {
     code: "",
     name: "",
     pm: "",
-    foreman: ""
+    foreman: "",
+    additionalLead: ""
   });
   const [editPm, setEditPm] = useState({ code: "", pm: "" });
   const [editForeman, setEditForeman] = useState({ code: "", foreman: "" });
+  const [editAL, setEditAL] = useState({ code: "", additionalLead: "" });
   const [toast, setToast] = useState(null);
   // Projects state — start with cached list if available, else empty.
   // SharePoint (via PROJECTS_FETCH_URL) is the source of truth; cache only exists for fast initial render.
@@ -12950,6 +13112,7 @@ function App() {
             name: p.name,
             pm: p.pm || "",
             foreman: p.foreman || "",
+            additionalLead: p.additionalLead || "",
           }))
           .sort((a, b) => a.code.localeCompare(b.code));
         // 1-to-1 sync: even an empty result is committed (replaces cache).
@@ -13033,6 +13196,7 @@ function App() {
     if (view === "admin" || view === "adminPmForeman") setEditPm({ code: "", pm: "" });
     if (view !== "codesCharts" && view !== "adminDocs") setLibPath([]);
     if (view === "admin" || view === "adminPmForeman") setEditForeman({ code: "", foreman: "" });
+        if (view === "admin" || view === "adminPmForeman") setEditAL({ code: "", additionalLead: "" });
     // Load My Files contents when navigating to the view
     if (view === "myFiles" && myFilesFolder && GET_PERSONAL_FTP_URL) {
       setMyFilesLoading(true);
@@ -13074,7 +13238,14 @@ function App() {
   const rootDisplayFolders = (() => {
     const real = (folderContents && folderContents.folders) ? folderContents.folders.slice() : [];
     const combined = real.concat(rootSyntheticFolders);
-    combined.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+    const priority = ["PLANS","ORDER SHEETS","TIME CARDS"];
+    combined.sort((a, b) => {
+      const ai = priority.indexOf(a.name), bi = priority.indexOf(b.name);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+    });
     return combined;
   })();
   // Identify the "latest" version in each PDF version family so FileRow can badge it.
@@ -13712,6 +13883,7 @@ function App() {
     const current = (key, label) => /*#__PURE__*/React.createElement("span", { key: key, style: { color:"white", fontWeight:600, fontSize:13 } }, label);
     // Helper: wrap crumbs in the standard breadcrumb bar
     const bar = (crumbs) => /*#__PURE__*/React.createElement("div", {
+      className: "crumb-bar",
       style: { padding:"6px 16px", fontSize:13, color:"rgba(255,255,255,0.8)", background:"#0256A4",
         borderBottom:"1px solid rgba(255,255,255,0.15)", display:"flex", alignItems:"center", gap:4, flexWrap:"wrap",
         position:"sticky", top: HEADER_H, zIndex:99, boxShadow:"0 1px 4px rgba(0,0,0,0.12)" }
@@ -13747,7 +13919,7 @@ function App() {
       crumb("h", "Home", () => go("home")), sep("s1"), current("c", "Admin")
     ]);
     if (view === "adminNewJob" || view === "adminPmForeman" || view === "adminRollover" || view === "adminEmployees") {
-      const subLabel = view === "adminNewJob" ? "New Job" : view === "adminPmForeman" ? "Change PM / Project Lead" : view === "adminRollover" ? "Toolbox Talks Rollover" : "Add / Remove Employees";
+      const subLabel = view === "adminNewJob" ? "New Job" : view === "adminPmForeman" ? "Change PM / PL / AL" : view === "adminRollover" ? "Toolbox Talks Rollover" : "Add / Remove Employees";
       return bar([
         crumb("h", "Home", () => go("home")), sep("s1"),
         crumb("a", "Admin", () => go("admin")), sep("s2"),
@@ -14552,7 +14724,16 @@ function App() {
       fontSize: 11,
       fontWeight: 700
     }
-  }, "PL: ", p.foreman)), /*#__PURE__*/React.createElement("button", { onClick: function(e) { e.stopPropagation(); setProject(p); loadCart(p); setCartView(true); }, style: { position: "relative", background: "none", border: "none", cursor: "pointer", fontSize: 24, padding: "2px 0", lineHeight: 1, alignSelf: "center" } }, "\uD83D\uDED2", (cartCounts[p.code] > 0 || shopCartCounts[p.code] > 0) && /*#__PURE__*/React.createElement("span", { style: { position: "absolute", top: -2, right: -2, background: RED, borderRadius: "50%", width: 9, height: 9, display: "block" } })))))), view === "projects" && projects.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "PL: ", p.foreman), p.additionalLead && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#F3E5F5",
+      color: "#7B1FA2",
+      borderRadius: 6,
+      padding: "3px 9px",
+      fontSize: 11,
+      fontWeight: 700
+    }
+  }, "AL: ", p.additionalLead)), /*#__PURE__*/React.createElement("button", { onClick: function(e) { e.stopPropagation(); setProject(p); loadCart(p); setCartView(true); }, style: { position: "relative", background: "none", border: "none", cursor: "pointer", fontSize: 24, padding: "2px 0", lineHeight: 1, alignSelf: "center" } }, "\uD83D\uDED2", (cartCounts[p.code] > 0 || shopCartCounts[p.code] > 0) && /*#__PURE__*/React.createElement("span", { style: { position: "absolute", top: -2, right: -2, background: RED, borderRadius: "50%", width: 9, height: 9, display: "block" } })))))), view === "projects" && projects.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       padding: "48px 24px",
@@ -14646,7 +14827,16 @@ function App() {
       fontSize: 12,
       fontWeight: 700
     }
-  }, "PL: ", project.foreman), /*#__PURE__*/React.createElement("span", {
+  }, "PL: ", project.foreman), project.additionalLead && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: "#F3E5F5",
+      color: "#7B1FA2",
+      borderRadius: 6,
+      padding: "3px 10px",
+      fontSize: 12,
+      fontWeight: 700
+    }
+  }, "AL: ", project.additionalLead), /*#__PURE__*/React.createElement("span", {
     style: {
       background: "#E8F5E9",
       color: GREEN,
@@ -14726,7 +14916,7 @@ function App() {
   }, rootDisplayFolders.map(f => {
     const fs = getFolderStyle(f.name);
     const hF = !!FORM_FOLDERS[f.name];
-    return /*#__PURE__*/React.createElement("button", {
+    const tile = /*#__PURE__*/React.createElement("button", {
       key: f.name,
       onClick: () => { if (f.name === "T&M") { go("tmlog", undefined, undefined, { name: "T&M Log", folder: "T&M" }); } else if (f.name === "VALVE TAG") { go("valvetag", undefined, undefined, { name: "Valve Tag List", folder: "VALVE TAG" }); } else { go("folder-contents", undefined, f.name); } },
       style: {
@@ -14772,42 +14962,14 @@ function App() {
         textAlign: "center"
       }
     }, f.name));
-  }), /*#__PURE__*/React.createElement("button", {
-    key: "tag-and-hold",
-    onClick: function() { go("tag-and-hold"); },
-    style: {
-      background: "white",
-      border: "1.5px solid #DDE3ED",
-      borderRadius: 12,
-      padding: "14px 10px",
-      cursor: "pointer",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 8,
-      position: "relative",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 46,
-      height: 46,
-      background: "#2E86C120",
-      borderRadius: 12,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 22
-    }
-  }, "\uD83D\uDCE6"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      fontWeight: 700,
-      color: "#2C3E50",
-      lineHeight: 1.3,
-      textAlign: "center"
-    }
-  }, "TAG & HOLD"))),
+    const arr = [tile];
+    if (f.name === "ORDER SHEETS") arr.push(/*#__PURE__*/React.createElement("button", {
+      key: "tag-and-hold",
+      onClick: function() { go("tag-and-hold"); },
+      style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
+    }, /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#2E86C120", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDCE6"), /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "TAG & HOLD")));
+    return arr;
+  }).flat()),
   !folderLoading && !folderError && folderContents && folderContents.files.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: rootDisplayFolders.length > 0 ? 16 : 0
@@ -14937,13 +15099,6 @@ function App() {
   folder === "TIME CARDS" && /*#__PURE__*/React.createElement("div", { style: { marginBottom: 12 } },
     /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 } },
       /*#__PURE__*/React.createElement("button", {
-        onClick: function() { setTcHistoryOpen(!tcHistoryOpen); },
-        style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
-      },
-        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E8F0FE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDCCB"),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "TIME CARD\nHISTORY")
-      ),
-      /*#__PURE__*/React.createElement("button", {
         onClick: function() { go("timecard", undefined, undefined, { name: "Commercial Time Card", folder: "TIME CARDS" }); },
         style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
       },
@@ -14951,11 +15106,11 @@ function App() {
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "COMMERCIAL\nTIME CARD")
       ),
       /*#__PURE__*/React.createElement("button", {
-        onClick: function() { go("safety", undefined, undefined, { name: "Site Safety Inspection", folder: "TIME CARDS" }); },
+        onClick: function() { setTcHistoryOpen(!tcHistoryOpen); },
         style: { background: "white", border: "1.5px solid #DDE3ED", borderRadius: 12, padding: "14px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }
       },
-        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E74C3C20", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83E\uDDBA"),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "SITE SAFETY\nINSPECTION")
+        /*#__PURE__*/React.createElement("div", { style: { width: 46, height: 46, background: "#E8F0FE", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 } }, "\uD83D\uDCCB"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2C3E50", lineHeight: 1.3, textAlign: "center" } }, "TIME CARD\nHISTORY")
       )
     )
   ),
@@ -15097,7 +15252,7 @@ function App() {
       "FORMS": "Forms",
       "ORDER SHEETS": "Order Forms",
       "RETURNS": "Returns",
-      "TIME CARDS": "Time Cards / Site Safety Inspection",
+      "TIME CARDS": "Time Cards",
       "T&M": "T & M",
       "SAFETY": "Safety",
       "VALVE TAG": "Valve Tag List"
@@ -15466,7 +15621,7 @@ function App() {
   }, [{
     id: "newJob", icon: "\u2795", label: "New Job", color: "#1A3A5C", action: () => go("adminNewJob")
   }, {
-    id: "changePm", icon: "\u270F\uFE0F", label: "Change PM / Project Lead", color: "#2980B9", action: () => go("adminPmForeman")
+    id: "changePm", icon: "\u270F\uFE0F", label: "Change PM / PL / AL", color: "#2980B9", action: () => go("adminPmForeman")
   }, {
     id: "rollover", icon: "\uD83D\uDCC5", label: "Toolbox Talks Rollover", color: "#E67E22", action: () => go("adminRollover")
   }, {
@@ -15545,6 +15700,20 @@ function App() {
   }, "— Unassigned —"), EMPLOYEES.filter(emp => ["Foreman","Journeymen","5th Year","4th Year"].includes(emp.position)).sort((a, b) => a.firstName.localeCompare(b.firstName)).map(emp => /*#__PURE__*/React.createElement("option", {
     key: emp.id,
     value: emp.name
+  }, emp.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Additional Lead (optional)"), /*#__PURE__*/React.createElement("select", {
+    value: newJob.additionalLead,
+    onChange: e => setNewJob({
+      ...newJob,
+      additionalLead: e.target.value
+    }),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "— Unassigned —"), EMPLOYEES.filter(emp => ["Foreman","Journeymen","5th Year","4th Year"].includes(emp.position)).sort((a, b) => a.firstName.localeCompare(b.firstName)).map(emp => /*#__PURE__*/React.createElement("option", {
+    key: emp.id,
+    value: emp.name
   }, emp.name)))), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       if (!newJob.code || !newJob.name) {
@@ -15561,7 +15730,8 @@ function App() {
           code: newJob.code,
           name: newJob.name,
           pm: newJob.pm,
-          foreman: newJob.foreman || ""
+          foreman: newJob.foreman || "",
+          additionalLead: newJob.additionalLead || ""
         })
         .then(r => r.ok ? r : Promise.reject(r.status))
         .then(() => {
@@ -15572,7 +15742,8 @@ function App() {
             code: newJob.code,
             name: newJob.name,
             pm: newJob.pm,
-            foreman: newJob.foreman || ""
+            foreman: newJob.foreman || "",
+            additionalLead: newJob.additionalLead || ""
           };
           setProjects(prev => {
             if (prev.some(p => p.code === added.code)) return prev;
@@ -15584,7 +15755,8 @@ function App() {
             code: "",
             name: "",
             pm: "",
-            foreman: ""
+            foreman: "",
+            additionalLead: ""
           });
         })
         .catch(() => {
@@ -15767,7 +15939,91 @@ function App() {
       fontWeight: 700,
       cursor: "pointer"
     }
-  }, "Update Project Lead in SharePoint \u2192")))
+  }, "Update Project Lead in SharePoint \u2192"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "white",
+      borderRadius: 14,
+      padding: 18,
+      border: "1.5px solid #DDE3ED",
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 14,
+      color: NAVY,
+      marginBottom: 14
+    }
+  }, "\u270F\uFE0F Change Additional Lead"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 11
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "Job"), /*#__PURE__*/React.createElement("select", {
+    value: editAL.code,
+    onChange: e => setEditAL({ code: e.target.value, additionalLead: "" }),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", { value: "" }, "\u2014 Select a job \u2014"), projects.map(p => /*#__PURE__*/React.createElement("option", {
+    key: p.code,
+    value: p.code
+  }, "(" + p.code + ") " + p.name + " \u2014 " + (p.additionalLead || "Unassigned"))))), editAL.code && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    style: lbl
+  }, "New Additional Lead"), /*#__PURE__*/React.createElement("select", {
+    value: editAL.additionalLead,
+    onChange: e => setEditAL({ ...editAL, additionalLead: e.target.value }),
+    style: inp
+  }, /*#__PURE__*/React.createElement("option", { value: "" }, "\u2014 Select an Additional Lead \u2014"), EMPLOYEES.filter(e => ["Foreman","Journeymen","5th Year","4th Year"].includes(e.position)).sort((a, b) => a.firstName.localeCompare(b.firstName)).map(e => /*#__PURE__*/React.createElement("option", {
+    key: e.name,
+    value: e.name
+  }, e.name)))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (!editAL.code || !editAL.additionalLead) {
+        showToast("Select a job and a new Additional Lead", false);
+        return;
+      }
+      const proj = projects.find(p => p.code === editAL.code);
+      if (!proj) return;
+      if (proj.additionalLead === editAL.additionalLead) {
+        showToast("That Additional Lead is already assigned", false);
+        return;
+      }
+      const oldALName = proj.additionalLead || "Unassigned";
+      const newALName = editAL.additionalLead;
+      if (!window.confirm("Change Additional Lead on (" + proj.code + ") " + proj.name + " from " + oldALName + " \u2192 " + newALName + "?")) return;
+      showToast("Updating Additional Lead in SharePoint\u2026", true);
+      flowPost(UPDATE_AL_URL, {
+          path: "(" + proj.code + ") " + proj.name,
+          additionalLead: newALName,
+          additionalLeadEmail: (EMPLOYEES.find(e => e.name === newALName) || {}).email || ""
+        })
+        .then(r => r.ok ? r : Promise.reject(r.status))
+        .then(() => {
+          showToast("Additional Lead updated for (" + proj.code + ")", true);
+          setProjects(prev => {
+            const next = prev.map(p => p.code === editAL.code ? { ...p, additionalLead: editAL.additionalLead } : p);
+            try { localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(next)); } catch (e) {}
+            return next;
+          });
+          setEditAL({ code: "", additionalLead: "" });
+        })
+        .catch(() => {
+          showToast("SharePoint error \u2014 please try again", false);
+        });
+    },
+    style: {
+      background: NAVY,
+      color: "white",
+      border: "none",
+      borderRadius: 10,
+      padding: "13px",
+      fontSize: 15,
+      fontWeight: 700,
+      cursor: "pointer"
+    }
+  }, "Update Additional Lead in SharePoint \u2192")))
   ), view === "adminRollover" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       background: "white",
@@ -18089,6 +18345,7 @@ function ValveTagList({
   onToast
 }) {
   const mkRow = () => ({
+    tagNum: "",
     ch: "---",
     purpose: "",
     unit: "",
@@ -18180,9 +18437,21 @@ function ValveTagList({
     ...r,
     [f]: v
   } : r));
-  const addRows = () => {
+  const upTagNum = (i, v) => {
+    setRows(rs => {
+      const next = rs.map((r, x) => x === i ? { ...r, tagNum: v } : r);
+      const num = parseInt(v, 10);
+      if (!isNaN(num)) {
+        for (let k = i + 1; k < next.length; k++) {
+          next[k] = { ...next[k], tagNum: String(num + (k - i)) };
+        }
+      }
+      return next;
+    });
+  };
+  const addRows = (count) => {
     const updated = [...rowsRef.current, ...Array.from({
-      length: 20
+      length: count
     }, mkRow)];
     setRows(updated);
     // Auto-save on row-add — pass updated array directly to beat stale-closure
@@ -18190,47 +18459,192 @@ function ValveTagList({
   };
   const fmtDate = iso => iso ? iso.slice(5, 7) + "/" + iso.slice(8, 10) + "/" + iso.slice(2, 4) : "";
   const submit = () => {
-    const hasData = rows.some(r => r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim());
-    if (!project?.code) {
-      onToast("No project selected", false);
-      return;
-    }
-    if (!hasData) {
-      onToast("No entries to submit", false);
-      return;
-    }
+    const hasData = rows.some(r => (r.tagNum || "").trim() || r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim());
+    if (!project?.code) { onToast("No project selected", false); return; }
+    if (!hasData) { onToast("No entries to submit", false); return; }
+    if (!address.trim()) { onToast("Address is required before submitting", false); return; }
+    if (!emp) { onToast("Project Lead is required before submitting", false); return; }
     const subj = project.code + " " + project.name + " Valve Tag List";
+    // Build HTML email body
+    let html = '<div style="font-family:Arial,sans-serif;max-width:700px">';
+    html += '<h2 style="color:#1B3A6B;margin:0 0 8px">VALVE TAG LIST</h2>';
+    html += '<table style="font-size:13px;margin-bottom:12px">';
+    html += '<tr><td style="font-weight:700;padding:2px 12px 2px 0">Job #:</td><td>' + project.code + '</td></tr>';
+    html += '<tr><td style="font-weight:700;padding:2px 12px 2px 0">Job Name:</td><td>' + project.name + '</td></tr>';
+    html += '<tr><td style="font-weight:700;padding:2px 12px 2px 0">Address:</td><td>' + address.trim() + '</td></tr>';
+    html += '<tr><td style="font-weight:700;padding:2px 12px 2px 0">Date Created:</td><td>' + fmtDate(dateCreated) + '</td></tr>';
+    html += '<tr><td style="font-weight:700;padding:2px 12px 2px 0">Project Lead:</td><td>' + emp.name + (emp.phone ? " \xB7 " + emp.phone : "") + '</td></tr>';
+    html += '</table>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    html += '<tr style="background:#1B3A6B;color:white">';
+    html += '<th style="padding:6px;text-align:left">TAG #</th>';
+    html += '<th style="padding:6px;text-align:left">TYPE</th>';
+    html += '<th style="padding:6px;text-align:left">PURPOSE</th>';
+    html += '<th style="padding:6px;text-align:left">UNIT #</th>';
+    html += '<th style="padding:6px;text-align:left">LOCATION</th></tr>';
+    rows.forEach((r, i) => {
+      if (!(r.tagNum || "").trim() && r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
+      const bg = i % 2 === 0 ? "#F7F9FC" : "#FFFFFF";
+      html += '<tr style="background:' + bg + '">';
+      html += '<td style="padding:5px 6px;border-bottom:1px solid #DDE3ED">' + (r.tagNum || '') + '</td>';
+      html += '<td style="padding:5px 6px;border-bottom:1px solid #DDE3ED">' + (r.ch === "---" ? "" : r.ch) + '</td>';
+      html += '<td style="padding:5px 6px;border-bottom:1px solid #DDE3ED">' + (r.purpose || "") + '</td>';
+      html += '<td style="padding:5px 6px;border-bottom:1px solid #DDE3ED">' + (r.unit || "") + '</td>';
+      html += '<td style="padding:5px 6px;border-bottom:1px solid #DDE3ED">' + (r.location || "") + '</td></tr>';
+    });
+    html += '</table>';
+    html += '<p style="font-size:11px;color:#999;margin-top:12px">Sent from Horner Field App</p></div>';
+    // Build plain-text body for preview
     let body = "VALVE TAG LIST\n";
     body += "Job #: " + project.code + "\n";
     body += "Job Name: " + project.name + "\n";
-    if (address.trim()) body += "Address: " + address.trim() + "\n";
+    body += "Address: " + address.trim() + "\n";
     body += "Date Created: " + fmtDate(dateCreated) + "\n";
-    if (emp) body += "Project Lead: " + emp.name + (emp.phone ? " \xB7 " + emp.phone : "") + "\n";
-    body += "\nTAG #  TYPE       PURPOSE                          UNIT #   LOCATION\n";
-    body += "-----  ---------  -------------------------------  -------  --------\n";
-    rows.forEach((r, i) => {
-      if (r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
-      body += String(i + 1).padEnd(5) + "  " + (r.ch === "---" ? "       " : r.ch).padEnd(9) + "  " + (r.purpose || "").padEnd(31) + "  " + (r.unit || "").padEnd(7) + "  " + (r.location || "") + "\n";
+    body += "Project Lead: " + emp.name + (emp.phone ? " - " + emp.phone : "") + "\n\n";
+    body += "TAG #  TYPE     PURPOSE                        UNIT #  LOCATION\n";
+    body += "----  -------  -----------------------------  ------  --------\n";
+    rows.forEach(r => {
+      if (!(r.tagNum || "").trim() && r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
+      const tag = (r.tagNum || "").padEnd(6);
+      const type = (r.ch === "---" ? "" : r.ch).padEnd(9);
+      const purp = (r.purpose || "").substring(0, 30).padEnd(31);
+      const unit = (r.unit || "").padEnd(8);
+      body += tag + type + purp + unit + (r.location || "") + "\n";
     });
-    body += "\nSent from Horner Field App";
-    // Routing: TO project PM, CC commercial admin (matches PDF original intent with dynamic PM)
-    setPreview({
-      to: pm?.email || "",
-      cc: CONTACTS.admin,
-      subject: subj,
-      body
-    });
+    setPreview({ to: pm?.email || "", cc: CONTACTS.admin, subject: subj, body: body, htmlBody: html });
   };
   const sendEmail = () => {
-    if (!preview) return;
-    const url = "mailto:" + preview.to + "?cc=" + encodeURIComponent(preview.cc) + "&subject=" + encodeURIComponent(preview.subject) + "&body=" + encodeURIComponent(preview.body);
-    const a = document.createElement("a");
-    a.href = url;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => setPreview(null), 150);
+    if (!preview || saving) return;
+    setSaving(true);
+    onToast("Generating PDF and sending\u2026", true);
+    // Generate PDF client-side using pdf-lib
+    const PDFLib = window.PDFLib;
+    if (!PDFLib) { onToast("PDF library not loaded", false); setSaving(false); return; }
+    PDFLib.PDFDocument.create().then(pdfDoc => {
+      const font = pdfDoc.embedStandardFont(PDFLib.StandardFonts.Helvetica);
+      const fontBold = pdfDoc.embedStandardFont(PDFLib.StandardFonts.HelveticaBold);
+      return Promise.all([font, fontBold]).then(([f, fb]) => {
+        const W = 612, H = 792, M = 40, R = W - M;
+        const navy = PDFLib.rgb(0.106, 0.227, 0.420);
+        const gray = PDFLib.rgb(0.6, 0.6, 0.6);
+        const ltGray = PDFLib.rgb(0.933, 0.937, 0.949);
+        const white = PDFLib.rgb(1, 1, 1);
+        const black = PDFLib.rgb(0, 0, 0);
+        const lh = 16;
+        let page = pdfDoc.addPage([W, H]);
+        let y = H - M;
+
+        // === HEADER BAR ===
+        const hdrH = 36;
+        page.drawRectangle({ x: M, y: y - hdrH, width: R - M, height: hdrH, color: navy });
+        page.drawText("VALVE TAG LIST", { x: M + 12, y: y - hdrH + 12, size: 16, font: fb, color: white });
+        y -= hdrH + 10;
+
+        // === LOGO + JOB INFO ===
+        const logoBytes = Uint8Array.from(atob(HORNER_LOGO_B64), c => c.charCodeAt(0));
+        const logoImg = pdfDoc.embedPng(logoBytes);
+        return logoImg.then(img => {
+        const logoW = 160; const logoH = logoW * (img.height / img.width);
+        page.drawImage(img, { x: M, y: y - logoH, width: logoW, height: logoH });
+        const infoX = 340;
+        const infoLines = [
+          ["Job #:", project.code],
+          ["Job Name:", project.name],
+          ["Address:", address.trim()],
+          ["Date Created:", fmtDate(dateCreated)],
+          ["Project Lead:", emp.name + (emp.phone ? "  \xB7  " + emp.phone : "")]
+        ];
+        let infoY = y - 4;
+        infoLines.forEach(([label, val]) => {
+          page.drawText(label, { x: infoX, y: infoY, size: 9, font: fb, color: navy });
+          page.drawText(val || "", { x: infoX + 85, y: infoY, size: 9, font: f, color: black });
+          infoY -= 14;
+        });
+        y -= Math.max(logoH, 70) + 10;
+
+        // === TABLE ===
+        const cols = [M, M + 45, M + 95, M + 310, M + 380];
+        const colR = R;
+        const heads = ["TAG #", "TYPE", "PURPOSE", "UNIT #", "LOCATION"];
+        const rowH = 18;
+
+        // Helper: draw table header
+        const drawHeader = () => {
+          page.drawRectangle({ x: M, y: y - rowH, width: colR - M, height: rowH, color: navy });
+          heads.forEach((h, i) => {
+            page.drawText(h, { x: cols[i] + 4, y: y - rowH + 5, size: 8, font: fb, color: white });
+          });
+          y -= rowH;
+        };
+
+        // Helper: draw row
+        const drawRow = (r, even) => {
+          if (even) page.drawRectangle({ x: M, y: y - rowH, width: colR - M, height: rowH, color: ltGray });
+          // Cell borders
+          page.drawLine({ start: { x: M, y: y }, end: { x: colR, y: y }, thickness: 0.3, color: gray });
+          const vals = [
+            r.tagNum || "",
+            r.ch === "---" ? "" : r.ch,
+            (r.purpose || "").substring(0, 45),
+            r.unit || "",
+            r.location || ""
+          ];
+          vals.forEach((v, i) => {
+            page.drawText(v, { x: cols[i] + 4, y: y - rowH + 5, size: 8, font: f, color: black });
+          });
+          y -= rowH;
+        };
+
+        drawHeader();
+        let rowIdx = 0;
+        let prevTag = null;
+        rows.forEach(r => {
+          if (!(r.tagNum || "").trim() && r.ch === "---" && !r.purpose.trim() && !r.unit.trim() && !r.location.trim()) return;
+          // Detect gap in tag numbers and add spacing
+          const curTag = parseInt(r.tagNum, 10);
+          if (prevTag !== null && !isNaN(curTag) && curTag > prevTag + 1) {
+            y -= rowH * 1.5;
+          }
+          prevTag = isNaN(curTag) ? prevTag : curTag;
+          if (y - rowH < 50) {
+            page = pdfDoc.addPage([W, H]);
+            y = H - M;
+            drawHeader();
+          }
+          drawRow(r, rowIdx % 2 === 0);
+          rowIdx++;
+        });
+        // Bottom border of last row
+        page.drawLine({ start: { x: M, y: y }, end: { x: colR, y: y }, thickness: 0.3, color: gray });
+
+        // === FOOTER ===
+        y -= 16;
+        page.drawText("Sent from Horner Field App", { x: M, y: y, size: 7, font: f, color: gray });
+
+        return pdfDoc.saveAsBase64();
+        }); // end logoImg.then
+      });
+    }).then(b64 => {
+      const filename = "ValveTagList_" + project.code + "_" + isoToday().replace(/-/g, "") + ".pdf";
+      const folderPath = "/Active Projects/(" + project.code + ") " + project.name + "/VALVE TAG";
+      return flowPost(SEND_VALVE_TAG_URL, {
+        to: preview.to,
+        cc: preview.cc,
+        subject: preview.subject,
+        htmlBody: preview.htmlBody,
+        pdfBase64: b64,
+        filename: filename,
+        folderPath: folderPath
+      });
+    }).then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      setSaving(false);
+      setPreview(null);
+      onToast("Valve tag list sent and saved to SharePoint", true);
+    }).catch(err => {
+      setSaving(false);
+      onToast("Failed: " + (err.message || "unknown error"), false);
+    });
   };
   const reset = () => {
     if (!window.confirm("Reset the valve tag list? All entries will be cleared.")) return;
@@ -18242,7 +18656,7 @@ function ValveTagList({
     }, mkRow));
     setSaveMsg("");
   };
-  const canSubmit = !!(project?.code && rows.some(r => r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim()));
+  const canSubmit = !!(project?.code && rows.some(r => (r.tagNum || "").trim() || r.ch !== "---" || r.purpose.trim() || r.unit.trim() || r.location.trim()));
   // Table cell input styles — compact for dense rows
   const vtInp = {
     width: "100%",
@@ -18475,14 +18889,18 @@ function ValveTagList({
     }
   }, /*#__PURE__*/React.createElement("td", {
     style: {
-      textAlign: "center",
-      fontSize: 11,
-      fontWeight: 700,
-      color: "#7F8C9A",
-      padding: "3px 4px",
-      minWidth: 40
+      padding: "2px 3px",
+      minWidth: 52
     }
-  }, i + 1), /*#__PURE__*/React.createElement("td", {
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: r.tagNum || "",
+    onChange: e => upTagNum(i, e.target.value),
+    inputMode: "decimal",
+    pattern: "[0-9]*",
+    placeholder: "#",
+    style: { ...vtInp, textAlign: "center", fontWeight: 700, fontSize: 12, width: 52 }
+  })), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "2px 3px"
     }
@@ -18524,21 +18942,26 @@ function ValveTagList({
     style: {
       padding: "14px",
       display: "flex",
-      justifyContent: "center"
+      justifyContent: "center",
+      gap: 8,
+      alignItems: "center"
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: addRows,
+  }, [5, 10, 20].map(n => /*#__PURE__*/React.createElement("button", {
+    key: n,
+    onClick: () => addRows(n),
     style: {
       background: NAVY,
       color: "white",
       border: "none",
       borderRadius: 8,
-      padding: "10px 24px",
+      padding: "10px 16px",
       fontSize: 13,
       fontWeight: 700,
       cursor: "pointer"
     }
-  }, "+ Add 20 More Rows (" + rows.length + " total)")));
+  }, "+ " + n + " Rows")), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: 11, color: "#7F8C9A", fontWeight: 600, alignSelf: "center" }
+  }, rows.length + " total")));
 }
 function Sec({
   title,
