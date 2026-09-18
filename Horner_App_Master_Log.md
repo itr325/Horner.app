@@ -1,5 +1,17 @@
 # Horner Field App — Master Project Log
-**Last updated:** 2026-09-05
+Last updated: 2026-09-18
+
+---
+
+## Session — 2026-09-18
+**Builds 398–399 | Needed By + Tag & Hold on order sheets**
+
+- **Build 398** — Added optional "Needed By" date picker to the shared EmailPreview component, gated by showNeededBy prop. Enabled on all 4 order-sheet components (CartSummaryView, OrderSheet, ShopCartSummaryView, BlankOrderSheet). Date injected as HTML table row or plain-text prefix on send. Non-order-sheet screens unchanged.
+- **Build 399** — Added "Tag & Hold" checkbox alongside the date picker. When checked: date becomes mandatory (send blocked with alert), email gets a yellow TAG & HOLD ORDER banner (HTML) or text prefix (mailto). Checkbox styled with orange highlight when active.
+- **Firewall fix** — horner.app unreachable from internet; DNS was correct (.245 A record), issue was a disabled HTTPS allow policy on the FortiGate.
+- **GitHub token** — Fine-grained PAT had expired (401). Classic PAT "Horner App Deploy" regenerated and saved to github.token on HP-APP.
+- **Deploy** — Build 399 deployed to production via direct IIS file copy. GitHub backup pushed (index.html + index_399.html).
+
 
 > **Note:** This is the single master log for all Horner Field App development, including the Tag & Hold / Order Release features. The separate `Order_Release_App_Master_Log.md` has been retired and merged here as of Session 85.
 
